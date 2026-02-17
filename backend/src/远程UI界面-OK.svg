@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 23.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1400 1080" style="enable-background:new 0 0 1400 1080;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#EFEFEF;stroke:#DDDDDD;stroke-dasharray:5,5;}
+	.st1{fill:#FFFFFF;stroke:#E5E5E5;}
+	.st2{fill:#F0F0F0;stroke:#E5E5E5;}
+	.st3{fill:none;stroke:#666666;stroke-width:2;}
+	.st4{font-family:'Alibaba-PuHuiTi-R';}
+	.st5{font-size:18px;}
+	.st6{fill:#999999;}
+	.st7{font-size:11px;}
+	.st8{fill:#FFFFFF;}
+	.st9{fill:#E5E5E5;}
+	.st10{fill:#F0F0F0;}
+	.st11{fill:none;stroke:#E5E5E5;}
+	.st12{fill:none;stroke:#F0F0F0;}
+	.st13{font-size:7.0281px;}
+	.st14{font-size:7.1678px;}
+	.st15{font-size:9.1226px;}
+	.st16{fill:#666666;}
+	.st17{font-size:8.471px;}
+	.st18{font-family:'Arial-BoldMT';}
+	.st19{font-family:'Alibaba-PuHuiTi-L';}
+	.st20{font-size:19.1695px;}
+	.st21{font-size:12.4602px;}
+	.st22{fill:#232323;}
+	.st23{enable-background:new    ;}
+	.st24{font-family:'AdobeSongStd-Light-GBpc-EUC-H';}
+	.st25{fill:#6B6B6B;}
+	.st26{font-family:'ArialMT';}
+	.st27{font-size:20.1816px;}
+	.st28{font-size:12.109px;}
+	.st29{fill:#FAFAFA;stroke:#E5E5E5;}
+	.st30{font-family:'MicrosoftYaHeiUILight';}
+	.st31{fill:#FAFAFA;}
+	.st32{fill:#595757;}
+	.st33{font-size:11.5017px;}
+	.st34{fill:#E6E6E6;stroke:#9FA0A0;}
+	.st35{fill:#231815;}
+	.st36{font-size:10.5432px;}
+</style>
+<g id="图层_1">
+	<rect class="st0" width="1400" height="1080"/>
+	<rect class="st1" width="1400" height="64"/>
+	<path class="st2" d="M32,12h24c4.4,0,8,3.6,8,8v24c0,4.4-3.6,8-8,8H32c-4.4,0-8-3.6-8-8V20C24,15.6,27.6,12,32,12z"/>
+	<path class="st3" d="M44,22l10,5v10l-10,5l-10-5V27L44,22z"/>
+	<text transform="matrix(1 0 0 1 78 30)" class="st4 st5">确认生产图/效果图</text>
+	<text transform="matrix(1 0 0 1 78 48)" class="st6 st4 st7">生产图与邮件</text>
+	<text transform="matrix(1 0 0 1 79 562)" class="st6 st4 st7">总订单</text>
+	<text transform="matrix(1 0 0 1 204 562)" class="st6 st4 st7">待处理</text>
+	<g>
+		<g>
+			<path class="st8" d="M32,849.6h224c4.4,0,8,1.7,8,3.9v127.4c0,2.1-3.6,3.9-8,3.9H32c-4.4,0-8-1.7-8-3.9V853.5
+				C24,851.3,27.6,849.6,32,849.6z"/>
+			<path class="st9" d="M256,984.9H32c-4.7,0-8.5-1.8-8.5-4.1V853.5c0-2.3,3.8-4.1,8.5-4.1h224c4.7,0,8.5,1.8,8.5,4.1v127.4
+				C264.5,983.1,260.7,984.9,256,984.9z M32,849.9c-4.1,0-7.5,1.6-7.5,3.6v127.4c0,2,3.4,3.6,7.5,3.6h224c4.1,0,7.5-1.6,7.5-3.6
+				V853.5c0-2-3.4-3.6-7.5-3.6H32z"/>
+		</g>
+		<path class="st10" d="M56,861.9h176c11,0,20,9,20,20v0c0,11-9,20-20,20H56c-11,0-20-9-20-20v0C36,870.8,45,861.9,56,861.9z"/>
+		<text transform="matrix(1 0 0 1 99.9149 885.4255)" class="st4 st5">已确认订单</text>
+	</g>
+	<g>
+		<g>
+			<g>
+				<path class="st8" d="M32,369.2h224c4.4,0,8,5.8,8,13v429.6c0,7.2-3.6,13-8,13H32c-4.4,0-8-5.8-8-13V382.2
+					C24,375,27.6,369.2,32,369.2z"/>
+				<path class="st9" d="M256,825.6H32c-4.7,0-8.5-6.2-8.5-13.8V382.2c0-7.6,3.8-13.8,8.5-13.8h224c4.7,0,8.5,6.2,8.5,13.8v429.6
+					C264.5,819.4,260.7,825.6,256,825.6z M32,370c-4.1,0-7.5,5.5-7.5,12.2v429.6c0,6.7,3.4,12.2,7.5,12.2h224
+					c4.1,0,7.5-5.5,7.5-12.2V382.2c0-6.7-3.4-12.2-7.5-12.2H32z"/>
+			</g>
+			<path class="st10" d="M56,380.9h176c11,0,20,9,20,20v0c0,11-9,20-20,20H56c-11,0-20-9-20-20v0C36,389.8,45,380.9,56,380.9z"/>
+			<text transform="matrix(1 0 0 1 108.5762 405.9361)" class="st4 st5">待确认订单</text>
+		</g>
+		<g>
+			<path class="st11" d="M44,432.6h202.7c0.9,0,1.6,2.3,1.6,5.2v87.3c0,2.9-0.7,5.2-1.6,5.2H44c-0.9,0-1.6-2.3-1.6-5.2v-87.3
+				C42.4,434.9,43.1,432.6,44,432.6z"/>
+			<line class="st12" x1="42.4" y1="456" x2="248.2" y2="456"/>
+			<text transform="matrix(1.0903 0 0 1 48.7466 446.928)" class="st6 st4 st13">订单ID</text>
+			<text transform="matrix(1 0 0 1 140.1255 446.8889)" class="st6 st4 st14">客户名称</text>
+			<text transform="matrix(1 0 0 1 224.8359 446.8889)" class="st6 st4 st14">产品</text>
+			<text transform="matrix(1 0 0 1 50.2026 474.2571)" class="st4 st15">#PO-202602-001</text>
+			<text transform="matrix(1 0 0 1 140.1255 474.2571)" class="st16 st4 st17">Maura McHale</text>
+			<text transform="matrix(1 0 0 1 216.6657 474.2571)" class="st16 st4 st17">B-E01A</text>
+			<line class="st12" x1="42.4" y1="488.6" x2="248.2" y2="488.6"/>
+			<text transform="matrix(1 0 0 1 50.2026 506.8381)" class="st4 st15">#PO-202602-002</text>
+			<text transform="matrix(1 0 0 1 140.1255 506.8381)" class="st16 st4 st17">Kim Alison</text>
+			<text transform="matrix(1 0 0 1 216.6657 506.8381)" class="st16 st4 st17">B-G01B</text>
+		</g>
+	</g>
+	<g>
+		<g>
+			<path class="st8" d="M34.8,122.6h224c4.4,0,8,2.8,8,6.3v208.7c0,3.5-3.6,6.3-8,6.3h-224c-4.4,0-8-2.8-8-6.3V128.9
+				C26.8,125.4,30.4,122.6,34.8,122.6z"/>
+			<path class="st9" d="M258.8,344.3h-224c-4.7,0-8.5-3-8.5-6.7V128.9c0-3.7,3.8-6.7,8.5-6.7h224c4.7,0,8.5,3,8.5,6.7v208.7
+				C267.3,341.3,263.5,344.3,258.8,344.3z M34.8,123c-4.1,0-7.5,2.7-7.5,5.9v208.7c0,3.3,3.4,5.9,7.5,5.9h224c4.1,0,7.5-2.7,7.5-5.9
+				V128.9c0-3.3-3.4-5.9-7.5-5.9H34.8z"/>
+		</g>
+		<path class="st10" d="M56,131.9h176c11,0,20,7.6,20,16.9v0c0,9.4-9,16.9-20,16.9H56c-11,0-20-7.6-20-16.9v0
+			C36,139.5,45,131.9,56,131.9z"/>
+		<text transform="matrix(1 0 0 1 108.5762 156.9999)" class="st4 st5">订单概览</text>
+		<g>
+			<circle class="st1" cx="104.9" cy="290.1" r="31.5"/>
+			<circle class="st1" cx="183.1" cy="290.1" r="31.5"/>
+			<circle class="st1" cx="104.9" cy="218.6" r="31.5"/>
+			<circle class="st1" cx="183.1" cy="218.6" r="31.5"/>
+			<text transform="matrix(1 0 0 1 89.8351 213.8723)" class="st18 st5">128</text>
+			<text transform="matrix(1 0 0 1 88.6154 233.8723)" class="st6 st19 st7">总订单</text>
+			<text transform="matrix(1 0 0 1 173.138 213.8723)" class="st18 st5">41</text>
+			<text transform="matrix(1 0 0 1 166.9129 233.8723)" class="st6 st19 st7">待处理</text>
+			<text transform="matrix(1 0 0 1 94.8405 283.9999)" class="st18 st5">23</text>
+			<text transform="matrix(1 0 0 1 88.6154 303.9999)" class="st6 st19 st7">生产中</text>
+			<text transform="matrix(1 0 0 1 173.138 283.9999)" class="st18 st5">64</text>
+			<text transform="matrix(1 0 0 1 166.9129 303.9999)" class="st6 st19 st7">已交付</text>
+		</g>
+	</g>
+	<path class="st1" d="M297,128.1h1060.9c4.2,0,7.6,3.4,7.6,7.7v684.4c0,4.2-3.4,7.7-7.6,7.7H297c-4.2,0-7.6-3.4-7.6-7.7V135.8
+		C289.4,131.5,292.8,128.1,297,128.1z"/>
+	<text transform="matrix(0.9883 0 0 1 312.1592 170.2578)" class="st18 st20">ORD-20231024-001</text>
+	<text transform="matrix(0.9883 0 0 1 312.1592 199.0117)" class="st16 st4 st21">客户名: zhangsf@example.com | 创建时间: 2023-10-24 09:30</text>
+	<g transform="translate(750, 0)">
+		<path class="st22" d="M324.3,151.1h106.1c2.1,0,3.8,1.7,3.8,3.8v23c0,2.1-1.7,3.8-3.8,3.8H324.3c-2.1,0-3.8-1.7-3.8-3.8v-23
+			C320.5,152.8,322.2,151.1,324.3,151.1z"/>
+		<text transform="matrix(0.9883 0 0 1 338.6652 170.2578)" class="st23"><tspan x="0" y="0" class="st8 st24 st21">✏️</tspan><tspan x="12.5" y="0" class="st8 st4 st21"> 客户要求修改</tspan></text>
+		<path class="st25" d="M449.3,151.1h96.6c2.1,0,3.8,1.7,3.8,3.8v23c0,2.1-1.7,3.8-3.8,3.8h-96.6c-2.1,0-3.8-1.7-3.8-3.8v-23
+			C445.5,152.8,447.2,151.1,449.3,151.1z"/>
+		<text transform="matrix(0.9883 0 0 1 468.2023 170.2578)" class="st23"><tspan x="0" y="0" class="st8 st24 st21">✅</tspan><tspan x="12.5" y="0" class="st8 st4 st21"> 客户已确认</tspan></text>
+	</g>
+	<line class="st12" x1="312.2" y1="218.2" x2="1342.8" y2="218.2"/>
+	<path class="st0" d="M319.7,233.5h1015.5c4.2,0,7.6,4.3,7.6,9.5v552.6c0,5.3-3.4,9.5-7.6,9.5H319.7c-4.2,0-7.6-4.3-7.6-9.5V243
+		C312.2,237.8,315.6,233.5,319.7,233.5z"/>
+	<g transform="translate(244, 40)">
+		<rect x="96.1" y="263.5" class="st1" width="577.1" height="403.6"/>
+		<text transform="matrix(0.9532 0 0 1 305.2368 465.332)" class="st23"><tspan x="0" y="0" class="st6 st26 st27">600px </tspan><tspan x="60.6" y="0" class="st6 st24 st27">宽度效果图预览</tspan></text>
+		<text transform="matrix(0.9532 0 0 1 340.8491 495.6045)" class="st23"><tspan x="0" y="0" class="st6 st24 st28">点击放大</tspan><tspan x="48.4" y="0" class="st6 st26 st28"> / </tspan><tspan x="58.5" y="0" class="st6 st24 st28">右键另存为</tspan></text>
+	</g>
+	<g>
+		<path class="st29" d="M951.1,306.3h363.7c1.5,0,2.7,3.4,2.7,7.7v61.3c0,4.2-1.2,7.7-2.7,7.7H951.1c-1.5,0-2.7-3.4-2.7-7.7V314
+			C948.4,309.7,949.6,306.3,951.1,306.3z"/>
+		<text transform="matrix(0.9883 0 0 1 1000.3367 335.0417)" class="st23"><tspan x="0" y="0" class="st4 st21">邮件内容预览:</tspan><tspan x="78.3" y="0" class="st30 st21">模版一</tspan></text>
+		<text transform="matrix(0.9883 0 0 1 998.8048 359.0036)" class="st23"><tspan x="0" y="0" class="st16 st4 st21">尊敬的客户您好，您的订单 #ORD-20231024-001 </tspan><tspan x="0" y="15" class="st16 st4 st21">设计效果图已完成，请查阅附件。</tspan></text>
+	</g>
+	<g>
+		<path class="st29" d="M951.1,445.7h363.7c1.5,0,2.7,3.4,2.7,7.7v61.3c0,4.2-1.2,7.7-2.7,7.7H951.1c-1.5,0-2.7-3.4-2.7-7.7v-61.3
+			C948.4,449.1,949.6,445.7,951.1,445.7z"/>
+		<text transform="matrix(0.9883 0 0 1 1000.3367 474.4459)" class="st23"><tspan x="0" y="0" class="st4 st21">邮件内容预览:</tspan><tspan x="78.3" y="0" class="st30 st21">模版二</tspan></text>
+		<text transform="matrix(0.9883 0 0 1 998.8048 498.4078)" class="st23"><tspan x="0" y="0" class="st16 st4 st21">尊敬的客户您好，您的订单 #ORD-20231024-001 </tspan><tspan x="0" y="15" class="st16 st4 st21">设计效果图已完成，请查阅附件。</tspan></text>
+	</g>
+	<g>
+		<path class="st29" d="M951.1,572.3h363.7c1.5,0,2.7,3.4,2.7,7.7v61.3c0,4.2-1.2,7.7-2.7,7.7H951.1c-1.5,0-2.7-3.4-2.7-7.7V580
+			C948.4,575.8,949.6,572.3,951.1,572.3z"/>
+		<text transform="matrix(0.9883 0 0 1 1000.3367 601.0842)" class="st23"><tspan x="0" y="0" class="st4 st21">邮件内容预览:</tspan><tspan x="78.3" y="0" class="st30 st21">模版三</tspan></text>
+		<text transform="matrix(0.9883 0 0 1 998.8048 625.0461)" class="st23"><tspan x="0" y="0" class="st16 st4 st21">尊敬的客户您好，您的订单 #ORD-20231024-001 </tspan><tspan x="0" y="15" class="st16 st4 st21">设计效果图已完成，请查阅附件。</tspan></text>
+	</g>
+	<g>
+		<path class="st1" d="M297,846.9h513.4c4.2,0,7.6,3.4,7.6,7.7V1031c0,4.2-3.4,7.7-7.6,7.7H297c-4.2,0-7.6-3.4-7.6-7.7V854.6
+			C289.4,850.4,292.8,846.9,297,846.9z"/>
+		<path class="st31" d="M297,846.9h513.4c4.2,0,7.6,3.4,7.6,7.7v23c0,4.2-3.4,7.7-7.6,7.7H297c-4.2,0-7.6-3.4-7.6-7.7v-23
+			C289.4,850.4,292.8,846.9,297,846.9z"/>
+		<rect x="289.4" y="880.5" class="st31" width="528.6" height="4.8"/>
+		<line class="st11" x1="289.4" y1="885.3" x2="818" y2="885.3"/>
+		<text transform="matrix(0.9883 0 0 1 304.5815 870.9043)" class="st23"><tspan x="0" y="0" class="st16 st24 st21">今日新订单</tspan><tspan x="62.3" y="0" class="st16 st18 st21"> (5)</tspan></text>
+		<text transform="matrix(0.9883 0 0 1 704.2905 870.9043)" class="st32 st19 st33">查看全部</text>
+		<g transform="translate(0, 40)">
+			<line class="st12" x1="289.4" y1="893.2" x2="818" y2="893.2"/>
+			<text transform="matrix(0.9883 0 0 1 304.5815 874.0361)" class="st26 st21">ORD-20231024-005</text>
+			<path class="st34" d="M711.5,860.6h37.9c5.2,0,9.5,4.3,9.5,9.6l0,0c0,5.3-4.2,9.6-9.5,9.6h-37.9c-5.2,0-9.5-4.3-9.5-9.6l0,0
+				C702,864.9,706.2,860.6,711.5,860.6z"/>
+			<g>
+				<text transform="matrix(0.9883 0 0 1 713.5706 874.6744)" class="st19 st21">新订单</text>
+			</g>
+			<path class="st34" d="M711.5,903.8h37.9c5.2,0,9.5,4.3,9.5,9.6l0,0c0,5.3-4.2,9.6-9.5,9.6h-37.9c-5.2,0-9.5-4.3-9.5-9.6l0,0
+				C702,908.1,706.2,903.8,711.5,903.8z"/>
+			<g>
+				<text transform="matrix(0.9883 0 0 1 713.5706 917.8234)" class="st19 st21">新订单</text>
+			</g>
+			<text transform="matrix(0.9883 0 0 1 304.5815 921.96)" class="st26 st21">ORD-20231024-006</text>
+		</g>
+	</g>
+	<g transform="translate(578, 0)">
+		<path class="st1" d="M266.5,846.9h513.4c4.2,0,7.6,3.4,7.6,7.7V1031c0,4.2-3.4,7.7-7.6,7.7H266.5c-4.2,0-7.6-3.4-7.6-7.7V854.6
+			C258.9,850.4,262.3,846.9,266.5,846.9z"/>
+		<path class="st31" d="M266.5,846.9h513.4c4.2,0,7.6,3.4,7.6,7.7v23c0,4.2-3.4,7.7-7.6,7.7H266.5c-4.2,0-7.6-3.4-7.6-7.7v-23
+			C258.9,850.4,262.3,846.9,266.5,846.9z"/>
+		<rect x="258.9" y="880.5" class="st31" width="528.6" height="4.8"/>
+		<line class="st11" x1="258.9" y1="885.3" x2="787.5" y2="885.3"/>
+		<text transform="matrix(0.9883 0 0 1 274.0967 870.9043)" class="st23"><tspan x="0" y="0" class="st16 st24 st21">已确认订单</tspan><tspan x="62.3" y="0" class="st16 st18 st21"> (</tspan><tspan x="69.9" y="0" class="st16 st24 st21">最近</tspan><tspan x="94.8" y="0" class="st16 st18 st21">)</tspan></text>
+		<g transform="translate(0, 40)">
+			<rect x="258.9" y="845.3" class="st0" width="528.6" height="47.9"/>
+			<line class="st12" x1="258.9" y1="893.2" x2="787.5" y2="893.2"/>
+			<text transform="matrix(0.9883 0 0 1 274.0967 874.0361)" class="st26 st21">ORD-20231023-099</text>
+			<text transform="matrix(0.9883 0 0 1 699.9815 874.0361)" class="st35 st19 st36">已进入生产</text>
+			<rect x="258.9" y="893.2" class="st0" width="528.6" height="47.9"/>
+			<text transform="matrix(0.9883 0 0 1 274.0967 921.96)" class="st26 st21">ORD-20231023-098</text>
+			<text transform="matrix(0.9883 0 0 1 699.9815 921.96)" class="st35 st19 st36">已进入生产</text>
+		</g>
+	</g>
+	<text transform="matrix(0.9883 0 0 1 1280.248 869.9256)" class="st32 st19 st33">查看全部</text>
+</g>
+<g id="图层_2">
+</g>
+</svg>

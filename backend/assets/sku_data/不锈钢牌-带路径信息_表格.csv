@@ -1,0 +1,25 @@
+编号,材质,外观,颜色,规格,工艺,对应SVG文件名 (新字段),渲染路径 (D:\PetTag_Project\templates)
+B-C01A,不锈钢,圆形,钢本色,大,抛光,round_big_silver.svg,\templates\round_big_silver.svg
+B-C02A,不锈钢,圆形,钢本色,小,抛光,round_small_silver.svg,\templates\round_small_silver.svg
+B-C01B,不锈钢,圆形,金色,大,抛光,round_big_gold.svg,\templates\round_big_gold.svg
+B-C02B,不锈钢,圆形,金色,小,抛光,round_small_gold.svg,\templates\round_small_gold.svg
+B-C01C,不锈钢,圆形,玫瑰金,大,抛光,round_big_rosegold.svg,\templates\round_big_rosegold.svg
+B-C02C,不锈钢,圆形,玫瑰金,小,抛光,round_small_rosegold.svg,\templates\round_small_rosegold.svg
+B-C01D,不锈钢,圆形,黑色,大,抛光,round_big_black.svg,\templates\round_big_black.svg
+B-C02D,不锈钢,圆形,黑色,小,抛光,round_small_black.svg,\templates\round_small_black.svg
+B-E01A,不锈钢,骨形,钢本色,大,抛光,bone_big_silver.svg,\templates\bone_big_silver.svg
+B-E02A,不锈钢,骨形,钢本色,小,抛光,bone_small_silver.svg,\templates\bone_small_silver.svg
+B-E01B,不锈钢,骨形,金色,大,抛光,bone_big_gold.svg,\templates\bone_big_gold.svg
+B-E02B,不锈钢,骨形,金色,小,抛光,bone_small_gold.svg,\templates\bone_small_gold.svg
+B-E01C,不锈钢,骨形,玫瑰金,大,抛光,bone_big_rosegold.svg,\templates\bone_big_rosegold.svg
+B-E02C,不锈钢,骨形,玫瑰金,小,抛光,bone_small_rosegold.svg,\templates\bone_small_rosegold.svg
+B-E01D,不锈钢,骨形,黑色,大,抛光,bone_big_black.svg,\templates\bone_big_black.svg
+B-E02D,不锈钢,骨形,黑色,小,抛光,bone_small_black.svg,\templates\bone_small_black.svg
+B-G01A,不锈钢,心形,钢本色,大,抛光,heart_big_silver.svg,\templates\heart_big_silver.svg
+B-G02A,不锈钢,心形,钢本色,小,抛光,heart_small_silver.svg,\templates\heart_small_silver.svg
+B-G01B,不锈钢,心形,金色,大,抛光,heart_big_gold.svg,\templates\heart_big_gold.svg
+B-G02B,不锈钢,心形,金色,小,抛光,heart_small_gold.svg,\templates\heart_small_gold.svg
+B-G01C,不锈钢,心形,玫瑰金,大,抛光,heart_big_rosegold.svg,\templates\heart_big_rosegold.svg
+B-G02C,不锈钢,心形,玫瑰金,小,抛光,heart_small_rosegold.svg,\templates\heart_small_rosegold.svg
+B-G01D,不锈钢,心形,黑色,大,抛光,heart_big_black.svg,\templates\heart_big_black.svg
+B-G02D,不锈钢,心形,黑色,小,抛光,heart_small_black.svg,\templates\heart_small_black.svg

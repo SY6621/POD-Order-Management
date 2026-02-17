@@ -1,0 +1,10 @@
+字体ID,对应文件名,用途,缩放偏置 (Scaling Offset),存放路径 (D:\PetTag_Project\fonts)
+back_standard,back_standard.ttf,背面默认字体 (电话/地址),1.0 (标准),\fonts\back_standard.ttf
+F-01,F-01.ttf,正面名字：风格 A,1,\fonts\F-01.ttf
+F-02,F-02.ttf,正面名字：风格 B,1,\fonts\F-02.ttf
+F-03,F-03.ttf,正面名字：风格 C,0.95 (较宽),\fonts\F-03.ttf
+F-04,F-04.ttf,正面名字：风格 D,1.05 (较细),\fonts\F-04.ttf
+F-05,F-05.ttf,正面名字：风格 E,1.10 (艺术体),\fonts\F-05.ttf
+F-06,F-06.ttf,正面名字：风格 F,1,\fonts\F-06.ttf
+F-07,F-07.ttf,正面名字：风格 G,0.90 (紧凑),\fonts\F-07.ttf
+F-08,F-08.ttf,正面名字：风格 H,1,\fonts\F-08.ttf

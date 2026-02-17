@@ -1,0 +1,13 @@
+编号,材质,外观,颜色,规格,工艺,对应SVG正面,对应SVG反面,渲染路径
+B-C01A,不锈钢,圆形,钢本色,大,抛光,B-C01A-front.svg,B-C01A-back.svg,\templates\
+B-C01B,不锈钢,圆形,金色,大,抛光,B-C01B-front.svg,B-C01B-back.svg,\templates\
+B-C01C,不锈钢,圆形,玫瑰金,大,抛光,B-C01C-front.svg,B-C01C-back.svg,\templates\
+B-C01D,不锈钢,圆形,黑色,大,抛光,B-C01D-front.svg,B-C01D-back.svg,\templates\
+B-E01A,不锈钢,骨形,钢本色,大,抛光,B-E01A-front.svg,B-E01A-back.svg,\templates\
+B-E01B,不锈钢,骨形,金色,大,抛光,B-E01B-front.svg,B-E01B-back.svg,\templates\
+B-E01C,不锈钢,骨形,玫瑰金,大,抛光,B-E01C-front.svg,B-E01C-back.svg,\templates\
+B-E01D,不锈钢,骨形,黑色,大,抛光,B-E01D-front.svg,B-E01D-back.svg,\templates\
+B-G01A,不锈钢,心形,钢本色,大,抛光,B-G01A-front.svg,B-G01A-back.svg,\templates\
+B-G01B,不锈钢,心形,金色,大,抛光,B-G01B-front.svg,B-G01B-back.svg,\templates\
+B-G01C,不锈钢,心形,玫瑰金,大,抛光,B-G01C-front.svg,B-G01C-back.svg,\templates\
+B-G01D,不锈钢,心形,黑色,大,抛光,B-G01D-front.svg,B-G01D-back.svg,\templates\

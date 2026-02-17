@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "etsy-order-automation"
+version = "0.1.0"
+description = "ETSY订单自动化处理系统 - 自动读取邮件、解析订单、生成效果图和物流标签"
+authors = ["Your Name <your.email@example.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+# Python版本要求
+python = "^3.10"
+
+# ===== 核心依赖 =====
+# HTTP请求库，用于API调用
+requests = "^2.31.0"
+# IMAP邮件客户端，用于读取Etsy订单邮件
+imapclient = "^3.0.0"
+# 图像处理库，用于效果图生成
+pillow = "^10.2.0"
+# PDF生成库，用于物流标签生成
+reportlab = "^4.0.8"
+# SVG生成库，用于矢量图形处理
+svgwrite = "^1.4.3"
+# 数据库ORM，用于订单数据存储
+sqlalchemy = "^2.0.25"
+# 环境变量管理
+python-dotenv = "^1.0.0"
+# 模板引擎，用于生成邮件/报告
+jinja2 = "^3.1.3"
+# 日期时间处理
+python-dateutil = "^2.8.2"
+pymupdf = "^1.26.7"
+supabase = "^2.27.2"
+svglib = "^1.6.0"
+fastapi = "^0.128.2"
+uvicorn = "^0.40.0"
+
+[tool.poetry.group.dev.dependencies]
+# ===== 开发依赖 =====
+# 代码格式化工具
+black = "^24.1.1"
+# 单元测试框架
+pytest = "^8.0.0"
+# 代码静态检查
+pylint = "^3.0.3"
+# 类型检查
+mypy = "^1.8.0"
+# 测试覆盖率
+pytest-cov = "^4.1.0"
+
+[tool.black]
+# Black代码格式化配置
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.pylint.messages_control]
+# Pylint配置
+disable = "C0114,C0115,C0116"
+
+[tool.pytest.ini_options]
+# Pytest配置
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

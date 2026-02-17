@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>生产订单管理系统 - 仪表盘</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- 图标库（lucide） -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text-main: #000000;
+      --text-muted: #666666;
+      --text-soft: #999999;
+      --border-subtle: #e5e5e5;
+      --border-soft: #dddddd;
+      --card-shadow: 0 8px 24px rgba(0,0,0,0.04);
+      --radius-lg: 10px;
+      --radius-sm: 999px;
+      --badge-bg: #f5f5f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      min-height: 100vh;
+      background-color: var(--bg);
+    }
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 24px 24px 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-cube {
+      width: 40px;
+      height: 40px;
+      position: relative;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      background: linear-gradient(135deg, #ffffff, #f5f5f5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-cube-inner {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid #999999;
+      position: relative;
+      transform: rotate(35deg);
+    }
+
+    .logo-cube-inner::before,
+    .logo-cube-inner::after {
+      content: "";
+      position: absolute;
+      border-radius: 4px;
+      border: 1px solid #cccccc;
+    }
+
+    .logo-cube-inner::before {
+      width: 18px;
+      height: 18px;
+      top: -6px;
+      left: 4px;
+    }
+
+    .logo-cube-inner::after {
+      width: 18px;
+      height: 18px;
+      top: 4px;
+      left: -6px;
+    }
+
+    .header-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-title-main {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .header-title-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Nav Tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .tab svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tab-active {
+      color: var(--text-main);
+      background-color: #f7f7f7;
+    }
+
+    .tab-active::after {
+      content: "";
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      bottom: -6px;
+      height: 1px;
+      background-color: var(--text-main);
+    }
+
+    .tab:hover {
+      background-color: #f7f7f7;
+      color: var(--text-main);
+    }
+
+    .tab-primary {
+      border: 1px solid var(--border-subtle);
+      background-color: #fafafa;
+    }
+
+    /* Main Content */
+    .main {
+      padding-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background-color: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      padding: 16px 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .icon-button {
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: #ffffff;
+      transition: background-color 0.12s ease;
+    }
+
+    .icon-button svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .icon-button:hover {
+      background-color: #f5f5f5;
+    }
+
+    .card-number {
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Table Section */
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .section-title-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    /* Search Bar */
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 420px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-soft);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      font-size: 12px;
+      background-color: #fafafa;
+      outline: none;
+    }
+
+    .search-input:focus {
+      background-color: #ffffff;
+      border-color: #bbbbbb;
+    }
+
+    /* Table */
+    .table-shell {
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      background-color: #ffffff;
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1200px;
+    }
+
+    thead {
+      background-color: #fafafa;
+    }
+
+    th, td {
+      font-size: 12px;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 500;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tbody tr:hover {
+      background-color: #fafafa;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      background-color: var(--badge-bg);
+      border: 1px solid var(--border-soft);
+      font-size: 11px;
+      color: var(--text-main);
+    }
+
+    .link-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-main);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .link-ghost:hover {
+      background-color: #f7f7f7;
+    }
+
+    /* Progress Bar */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background-color: #000000;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      color: var(--text-soft);
+      min-width: 36px;
+    }
+
+    .actions-button {
+      width: 26px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      cursor: pointer;
+    }
+
+    .actions-button:hover {
+      background-color: #f5f5f5;
+    }
+
+    /* Responsive */
+    @media (max-width: 960px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="shell">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="logo-cube">
+            <div class="logo-cube-inner"></div>
+          </div>
+          <div class="header-title">
+            <div class="header-title-main">生产订单管理系统</div>
+            <div class="header-title-sub">生产订单与邮件管理平台</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <div class="tab tab-active">
+          <i data-lucide="layout-dashboard"></i>
+          仪表盘
+        </div>
+        <div class="tab">待确认订单</div>
+        <div class="tab tab-primary">
+          <i data-lucide="plus"></i>
+          创建订单
+        </div>
+        <div class="tab">
+          <i data-lucide="box"></i>
+          生产中订单
+        </div>
+        <div class="tab">已完成订单</div>
+        <div class="tab">
+          <i data-lucide="mail"></i>
+          邮件模板
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="main">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="card">
+            <div class="card-header">
+              <span>总订单数</span>
+              <button class="icon-button"><i data-lucide="refresh-cw"></i></button>
+            </div>
+            <div class="card-number">3</div>
+            <div class="card-sub">全部订单</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span>待处理</span>
+              <button class="icon-button"><i data-lucide="refresh-cw"></i></button>
+            </div>
+            <div class="card-number">1</div>
+            <div class="card-sub">等待处理的订单</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span>生产中</span>
+              <button class="icon-button"><i data-lucide="refresh-cw"></i></button>
+            </div>
+            <div class="card-number">1</div>
+            <div class="card-sub">正在生产</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span>已完成</span>
+              <button class="icon-button"><i data-lucide="refresh-cw"></i></button>
+            </div>
+            <div class="card-number">1</div>
+            <div class="card-sub">已完成订单</div>
+          </div>
+        </div>
+
+        <!-- Orders Table Section -->
+        <section class="section">
+          <div class="section-header">
+            <div class="section-title-row">最近订单\待确认订单</div>
+            <div class="section-title-sub">最新的生产订单</div>
+          </div>
+
+          <!-- Search -->
+          <div class="search-row">
+            <div class="search-input-wrap">
+              <i data-lucide="search" class="search-icon" style="width:14px;height:14px;"></i>
+              <input type="text" class="search-input" placeholder="搜索订单号、客户名称或产品...">
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-shell">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>订单号</th>
+                    <th>客户名称</th>
+                    <th>产品名称</th>
+                    <th>设计稿件</th>
+                    <th>确认订单邮件</th>
+                    <th>生产表单</th>
+                    <th>订单进度</th>
+                    <th>数量</th>
+                    <th>状态</th>
+                    <th>创建日期</th>
+                    <th>交付日期</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>3926894577</td>
+                    <td>Maura McHale</td>
+                    <td>B-E01A</td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="eye" style="width:12px;height:12px;"></i> 查看</span>
+                      <span class="link-ghost"><i data-lucide="download" style="width:12px;height:12px;"></i></span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="mail" style="width:12px;height:12px;"></i> 查看</span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="file-text" style="width:12px;height:12px;"></i> 3926894577.pdf</span>
+                    </td>
+                    <td>
+                      <div class="progress-wrap">
+                        <div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div>
+                        <span class="progress-label">65%</span>
+                      </div>
+                    </td>
+                    <td>1</td>
+                    <td><span class="badge">生产中</span></td>
+                    <td>2024-01-15</td>
+                    <td>2024-02-15</td>
+                    <td><button class="actions-button"><i data-lucide="more-vertical" style="width:14px;height:14px;"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td>3926524897</td>
+                    <td>Kim Alison</td>
+                    <td>B-G01B</td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="eye" style="width:12px;height:12px;"></i> 查看</span>
+                      <span class="link-ghost"><i data-lucide="download" style="width:12px;height:12px;"></i></span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="mail" style="width:12px;height:12px;"></i> 查看</span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="file-text" style="width:12px;height:12px;"></i> 3926524897.pdf</span>
+                    </td>
+                    <td>
+                      <div class="progress-wrap">
+                        <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
+                        <span class="progress-label">20%</span>
+                      </div>
+                    </td>
+                    <td>1</td>
+                    <td><span class="badge">待处理</span></td>
+                    <td>2024-01-20</td>
+                    <td>2024-02-28</td>
+                    <td><button class="actions-button"><i data-lucide="more-vertical" style="width:14px;height:14px;"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td>3872318945</td>
+                    <td>Laura Alcarria</td>
+                    <td>B-C01B</td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="eye" style="width:12px;height:12px;"></i> 查看</span>
+                      <span class="link-ghost"><i data-lucide="download" style="width:12px;height:12px;"></i></span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="mail" style="width:12px;height:12px;"></i> 查看</span>
+                    </td>
+                    <td>
+                      <span class="link-ghost"><i data-lucide="file-text" style="width:12px;height:12px;"></i> 3872318945.pdf</span>
+                    </td>
+                    <td>
+                      <div class="progress-wrap">
+                        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+                        <span class="progress-label">100%</span>
+                      </div>
+                    </td>
+                    <td>2</td>
+                    <td><span class="badge">已完成</span></td>
+                    <td>2024-01-10</td>
+                    <td>2024-01-25</td>
+                    <td><button class="actions-button"><i data-lucide="more-vertical" style="width:14px;height:14px;"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Initialize Lucide Icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

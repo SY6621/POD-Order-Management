@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Effect image generation service with font embedding"""
+"""Effect image generation service with font embedding + Supabase Storage upload"""
 
 import base64
 from pathlib import Path
@@ -74,6 +74,60 @@ class EffectImageService:
     </style>
   </defs>'''
     
+    def generate_and_upload(self, order: dict) -> dict:
+        """
+        一键处理：根据订单信息生成正面+背面效果图并上传到 Supabase Storage。
+        返回 {"effect_image_url": str, "effect_image_back_url": str}
+        """
+        from src.services.database_service import db
+
+        etsy_id = order.get("etsy_order_id", "unknown")
+        shape = order.get("product_shape", "Heart")
+        color = order.get("product_color", "Gold")
+        size = order.get("product_size", "Large")
+        front_text = order.get("front_text", "")
+        back_text = order.get("back_text", "")
+        font_code = order.get("font_code") or "F-01"
+
+        result = self.generate_effect_svg(
+            shape=shape, color=color, size=size,
+            text_front=front_text, text_back=back_text,
+            font_code=font_code, order_id=etsy_id
+        )
+        if not result:
+            print(f"❌ 效果图生成失败: 订单 {etsy_id}")
+            return {}
+
+        front_path, back_path = result
+        order_id = order.get("id")
+        update_data = {}
+
+        # 上传正面 SVG
+        front_url = db.upload_file("effect-images", front_path, f"{etsy_id}_front.svg")
+        if front_url:
+            update_data["effect_image_url"] = front_url
+            print(f"✅ 正面效果图 URL: {front_url}")
+
+        # 上传背面 SVG（如果有背面模板且有背面文字）
+        back_url = None
+        if back_path:
+            back_url = db.upload_file("effect-images", back_path, f"{etsy_id}_back.svg")
+            if back_url:
+                update_data["effect_image_back_url"] = back_url
+                print(f"✅ 背面效果图 URL: {back_url}")
+
+        # 一次性将所有 URL 写回 orders 表
+        if update_data and order_id:
+            db.update("orders", {"id": order_id}, update_data)
+            print(f"✅ 效果图 URL 已写入数据库")
+
+        return {
+            "effect_image_url": front_url,
+            "effect_image_back_url": back_url,
+            "svg_front_path": front_path,
+            "svg_back_path": back_path
+        }
+
     def generate_effect_svg(self, shape, color, size, text_front, text_back="", font_code="F-01", order_id=""):
         front_template = template_service.get_template_content(shape, color, size, "F")
         back_template = template_service.get_template_content(shape, color, size, "B")

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>15C 预览 · 生产中订单（路由验证）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 路由路径标注样式 */
+    .route-badge {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      z-index: 9999;
+    }
+    .nav-route-tip {
+      font-family: monospace;
+      font-size: 9px;
+      color: #94a3b8;
+      margin-left: 4px;
+    }
+    .nav-active { background-color: #eff6ff; color: #2563eb; }
+    .nav-normal { color: #475569; }
+    .nav-normal:hover { background-color: #f8fafc; }
+  </style>
+</head>
+<body class="bg-slate-200">
+
+  <!-- 路由路径标注 -->
+  <div class="route-badge">当前路由: /production → Production.vue</div>
+
+  <div class="min-h-[964px] min-w-max flex items-center justify-center p-8">
+    <div class="flex h-[900px] w-[1480px] bg-white shadow-2xl rounded-2xl overflow-hidden shrink-0">
+
+      <!-- 左侧导航栏 -->
+      <div class="w-64 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto shrink-0">
+        <div class="p-6">
+          <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-2 h-6 bg-blue-600 rounded-full"></span>
+            仪表盘总览
+          </h1>
+        </div>
+
+        <nav class="px-4 space-y-1">
+          <!-- 仪表盘总览 → / -->
+          <a href="#" onclick="showRoute('/')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span class="font-medium">仪表盘总览</span>
+            </div>
+            <span class="nav-route-tip">→ /</span>
+          </a>
+
+          <!-- 待确认订单 → /pending -->
+          <a href="#" onclick="showRoute('/pending')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+              <span class="font-medium">待确认订单</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">32</span>
+              <span class="nav-route-tip">→ /pending</span>
+            </div>
+          </a>
+
+          <!-- 生产中订单 Active → /production（当前页） -->
+          <div class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-blue-50 text-blue-600">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V7.86c0-.55-.45-1-1-1H14.5c-.85 0-1.65-.33-2.25-.93L11 4.71"/><path d="M5.8 5.81a2.2 2.2 0 0 1 3.1 0l1.3 1.3"/></svg>
+              <span class="font-medium">生产中订单</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-200 text-blue-700">18</span>
+              <span style="font-family:monospace;font-size:9px;color:#3b82f6">← 当前</span>
+            </div>
+          </div>
+
+          <!-- 已完成订单 → /completed -->
+          <a href="#" onclick="showRoute('/completed')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span class="font-medium">已完成订单</span>
+            </div>
+            <span class="nav-route-tip">→ /completed</span>
+          </a>
+
+          <!-- 物流追踪 → /logistics -->
+          <a href="#" onclick="showRoute('/logistics')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+              <span class="font-medium">物流追踪</span>
+            </div>
+            <span class="nav-route-tip">→ /logistics</span>
+          </a>
+
+          <!-- 邮件模板 → /email -->
+          <a href="#" onclick="showRoute('/email')" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <span class="font-medium">邮件模板</span>
+            </div>
+            <span class="nav-route-tip">→ /email</span>
+          </a>
+        </nav>
+
+        <!-- 统计卡片 2×2 -->
+        <div class="p-4 mt-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center">
+              <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                  <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                  <circle cx="40" cy="40" r="28" stroke="#3b82f6" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="43.98" stroke-linecap="round" />
+                </svg>
+                <span class="text-lg font-bold z-10 text-blue-600">128</span>
+              </div>
+              <span class="text-xs font-medium text-slate-600">总订单</span>
+              <span class="text-[10px] text-slate-400">本月累计</span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center">
+              <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                  <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                  <circle cx="40" cy="40" r="28" stroke="#f97316" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="131.95" stroke-linecap="round" />
+                </svg>
+                <span class="text-lg font-bold z-10 text-orange-600">32</span>
+              </div>
+              <span class="text-xs font-medium text-slate-600">待确认</span>
+              <span class="text-[10px] text-slate-400">需处理</span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center">
+              <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                  <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                  <circle cx="40" cy="40" r="28" stroke="#a855f7" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="144.26" stroke-linecap="round" />
+                </svg>
+                <span class="text-lg font-bold z-10 text-purple-600">18</span>
+              </div>
+              <span class="text-xs font-medium text-slate-600">生产作业</span>
+              <span class="text-[10px] text-slate-400">进行中</span>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center">
+              <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                  <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                  <circle cx="40" cy="40" r="28" stroke="#22c55e" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="87.96" stroke-linecap="round" />
+                </svg>
+                <span class="text-lg font-bold z-10 text-green-600">50%</span>
+              </div>
+              <span class="text-xs font-medium text-slate-600">已交付</span>
+              <span class="text-[10px] text-slate-400">物流送达</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最新订单列表 -->
+        <div class="p-4 mt-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-700">最新订单列表</h3>
+            <span class="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">2 须跟进</span>
+          </div>
+          <div class="space-y-3">
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div class="flex justify-between items-start mb-1">
+                <span class="text-xs font-bold text-slate-800">#PO-2602-001</span>
+                <span class="text-[10px] font-medium text-orange-500">⚠须跟进</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-600">Maura McHale</span>
+                <span class="text-[10px] text-slate-400">B-E01A</span>
+              </div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div class="flex justify-between items-start mb-1">
+                <span class="text-xs font-bold text-slate-800">#PO-2603-005</span>
+                <span class="text-[10px] font-medium text-purple-500">生产中</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-600">Jennifer Lee</span>
+                <span class="text-[10px] text-slate-400">B-G01A</span>
+              </div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div class="flex justify-between items-start mb-1">
+                <span class="text-xs font-bold text-slate-800">#PO-2603-004</span>
+                <span class="text-[10px] font-medium text-purple-500">生产中</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-600">David Kim</span>
+                <span class="text-[10px] text-slate-400">B-E01C</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧主内容区 -->
+      <div class="flex-1 bg-slate-50 p-6 overflow-y-auto h-full">
+        <!-- 标题栏 -->
+        <div class="mb-5 flex items-center gap-3">
+          <h2 class="text-2xl font-bold text-slate-800">生产中订单</h2>
+          <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">18 卡</span>
+          <span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-bold">⚠2 单须跟进</span>
+        </div>
+
+        <!-- 订单表格 -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-5">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                <tr class="h-[32px]">
+                  <th class="px-3 whitespace-nowrap font-medium">优先级</th>
+                  <th class="px-3 whitespace-nowrap font-medium">订单ID</th>
+                  <th class="px-3 whitespace-nowrap font-medium">客户名称</th>
+                  <th class="px-3 whitespace-nowrap font-medium">产品</th>
+                  <th class="px-3 whitespace-nowrap font-medium">数量</th>
+                  <th class="px-3 whitespace-nowrap font-medium">下单日期</th>
+                  <th class="px-3 whitespace-nowrap font-medium">交货日期</th>
+                  <th class="px-3 whitespace-nowrap font-medium">进度</th>
+                  <th class="px-3 whitespace-nowrap font-medium">生产文档</th>
+                  <th class="px-3 whitespace-nowrap font-medium">状态</th>
+                </tr>
+              </thead>
+              <tbody id="orderTable" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 订单详情面板（点击表格行展开） -->
+        <div id="detailPanel" class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 flex flex-col items-center justify-center text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/></svg>
+          <p class="text-sm">点击上方订单行查看详情</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 路由跳转提示弹窗 -->
+  <div id="routeToast" style="display:none;position:fixed;bottom:24px;right:24px;background:#1e293b;color:#f1f5f9;padding:10px 18px;border-radius:10px;font-family:monospace;font-size:13px;z-index:9999;">
+    跳转路由: <span id="routeTarget"></span>
+  </div>
+
+<script>
+const orders = [
+  { id:'#PO-2602-001', customer:'Maura McHale', product:'B-E01A · 圆形', qty:1, orderDate:'2026-02-01', dueDate:'2026-02-03', progress:60, hasPdf:true, urgent:true, craft:'抛光 · 30mm', frontText:'Love You · F-04', backText:'Forever' },
+  { id:'#PO-2603-002', customer:'Robert Lee', product:'B-G01B · 心形', qty:5, orderDate:'2026-02-28', dueDate:'2026-03-01', progress:80, hasPdf:false, urgent:true, craft:'拉丝 · 25mm', frontText:'Always · F-02', backText:'My Love' },
+  { id:'#PO-2603-003', customer:'Jennifer Lee', product:'B-G01A · 骨头', qty:2, orderDate:'2026-02-28', dueDate:'2026-03-04', progress:45, hasPdf:false, urgent:false, craft:'抛光 · 28mm', frontText:'Rex · F-01', backText:'Good Boy' },
+  { id:'#PO-2603-004', customer:'David Kim', product:'B-E01C · 方形', qty:10, orderDate:'2026-03-01', dueDate:'2026-03-05', progress:30, hasPdf:false, urgent:false, craft:'镜面 · 32mm', frontText:'Forever · F-06', backText:'2024.08.18' },
+]
+
+function renderTable() {
+  const tbody = document.getElementById('orderTable')
+  tbody.innerHTML = orders.map((o, i) => `
+    <tr onclick="selectOrder(${i})" class="h-[28px] cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100">
+      <td class="px-3"><span class="w-2 h-2 rounded-full inline-block ${o.urgent ? 'bg-orange-500' : 'bg-blue-400'}"></span></td>
+      <td class="px-3 whitespace-nowrap font-medium text-slate-700">${o.id}</td>
+      <td class="px-3 whitespace-nowrap text-slate-600">${o.customer}</td>
+      <td class="px-3 whitespace-nowrap font-mono text-slate-500">${o.product}</td>
+      <td class="px-3 whitespace-nowrap text-slate-600">${o.qty}</td>
+      <td class="px-3 whitespace-nowrap text-slate-400">${o.orderDate}</td>
+      <td class="px-3 whitespace-nowrap font-medium ${o.urgent ? 'text-slate-500' : 'text-slate-400'}">${o.dueDate}${o.urgent ? ' <span class="text-orange-500">⚠</span>' : ''}</td>
+      <td class="px-3 whitespace-nowrap">
+        <div class="flex items-center gap-2">
+          <div class="w-16 h-1.5 bg-slate-100 rounded-full"><div style="width:${o.progress}%" class="h-1.5 rounded-full ${o.urgent ? 'bg-orange-500' : 'bg-blue-500'}"></div></div>
+          <span class="text-[10px] text-slate-400">${o.progress}%</span>
+        </div>
+      </td>
+      <td class="px-3 whitespace-nowrap">${o.hasPdf ? '<span class="text-blue-600 text-[10px] cursor-pointer hover:underline">查看</span>' : '<span class="text-[10px] text-slate-400">—</span>'}</td>
+      <td class="px-3 whitespace-nowrap">${o.urgent ? '<span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">须跟进</span>' : '<span class="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-bold">生产中</span>'}</td>
+    </tr>
+  `).join('')
+}
+
+function selectOrder(i) {
+  const o = orders[i]
+  document.getElementById('detailPanel').innerHTML = `
+    <div class="flex justify-between items-start mb-5">
+      <div class="flex gap-4">
+        <div class="w-24 h-24 bg-slate-50 rounded-lg overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-800">${o.id} · 生产中订单</h3>
+          <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-slate-600 mt-2">
+            <div><span class="text-slate-400 mr-2">客户:</span>${o.customer}</div>
+            <div><span class="text-slate-400 mr-2">产品:</span>${o.product}</div>
+            <div><span class="text-slate-400 mr-2">工艺:</span>${o.craft}</div>
+            <div><span class="text-slate-400 mr-2">正面:</span>${o.frontText}</div>
+            <div><span class="text-slate-400 mr-2">背面:</span>${o.backText}</div>
+            <div><span class="text-slate-400 mr-2">数量:</span>${o.qty} 付</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col items-end gap-2">
+        ${o.urgent ? '<span class="bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg text-sm font-bold">⚠ 已逾期 · 须跟进</span>' : '<span class="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-bold">生产中</span>'}
+        <div class="text-right text-sm">
+          <div><span class="text-slate-400 mr-2">下单时间:</span>${o.orderDate}</div>
+          <div class="text-slate-500 font-medium"><span class="text-slate-400 mr-2 font-normal">交货时间:</span>${o.dueDate}${o.urgent ? ' <span class="text-orange-600">已逾期</span>' : ''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-bold text-slate-700">生产进度</span>
+        <span class="bg-slate-100 text-slate-600 px-3 py-0.5 rounded-full text-xs font-bold">生产中· <span class="${o.urgent ? 'text-orange-600' : 'text-blue-600'}">${o.urgent ? '须跟进' : '正常'}</span></span>
+      </div>
+      <div class="w-full h-2 bg-slate-100 rounded-full mb-2"><div style="width:${o.progress}%" class="h-2 rounded-full ${o.urgent ? 'bg-orange-500' : 'bg-blue-500'}"></div></div>
+      <div class="flex justify-between text-xs text-slate-400">
+        <span>${o.progress}% 已完成</span>
+        ${o.urgent ? `<span>交货时间 ${o.dueDate} <span class="text-orange-600 font-medium">已逾期</span> — 请立即联系工厂跟进进度</span>` : '<span>预计按时交货</span>'}
+      </div>
+    </div>
+    <div class="border border-slate-200 rounded-xl p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-bold text-slate-700">生产文档</span>
+        ${o.hasPdf ? '<div class="flex gap-2"><button class="bg-slate-800 text-white px-3 py-1 rounded-lg text-xs">在新标签页查看</button><button class="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded-lg text-xs">下载 PDF</button></div>' : ''}
+      </div>
+      <div class="bg-slate-100 rounded-lg h-[120px] flex items-center justify-center text-slate-400 text-sm">
+        ${o.hasPdf ? `<span>${o.id}_生产文档.pdf</span>` : '<span>暂无生产文档</span>'}
+      </div>
+    </div>
+    <div class="flex justify-center gap-4 mt-2">
+      <button class="bg-slate-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium">生成物流面单</button>
+      <button class="bg-white border border-slate-200 text-slate-600 px-5 py-2.5 rounded-lg text-sm font-medium">发货通知邮件</button>
+      <button class="bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium">标记完成</button>
+    </div>
+  `
+  document.getElementById('detailPanel').className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-6'
+}
+
+function showRoute(path) {
+  const toast = document.getElementById('routeToast')
+  document.getElementById('routeTarget').textContent = path
+  toast.style.display = 'block'
+  setTimeout(() => { toast.style.display = 'none' }, 2500)
+}
+
+renderTable()
+</script>
+</body>
+</html>

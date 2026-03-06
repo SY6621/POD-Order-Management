@@ -1,6 +1,279 @@
 # -*- coding: utf-8 -*-
 """
 PDF generation service for POD production documents
+Pixel-accurate layout based on SVG template
+"""
+
+from pathlib import Path
+from typing import Optional
+from datetime import datetime
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+from src.config.settings import settings
+
+# Page dimensions (A4 in points: 595.28 x 841.89)
+PAGE_WIDTH = 595.3
+PAGE_HEIGHT = 822
+
+# Colors
+RED = colors.Color(0.9, 0, 0.07)  # #E60012
+GRAY = colors.Color(0.4, 0.4, 0.4)  # #666666
+LIGHT_GRAY = colors.Color(0.83, 0.83, 0.83)  # #D3D3D3
+LIGHT_YELLOW = colors.Color(1, 1, 0.9)
+
+
+class PDFService:
+    """PDF document generation service with pixel-accurate layout"""
+    
+    def __init__(self):
+        self.output_dir = settings.OUTPUT_DIR
+        self.fonts_dir = settings.FONTS_DIR
+        self.photos_dir = settings.ASSETS_DIR / "photos"
+        settings.ensure_output_dir()
+        self._register_fonts()
+    
+    def _register_fonts(self):
+        """Register Chinese fonts"""
+        try:
+            back_font = self.fonts_dir / "back_standard.ttf"
+            if back_font.exists():
+                pdfmetrics.registerFont(TTFont("ChineseFont", str(back_font)))
+                print("[OK] Font registered: ChineseFont")
+        except Exception as e:
+            print(f"[WARN] Font registration failed: {e}")
+    
+    def generate_production_pdf(self, order_data) -> Optional[Path]:
+        """Generate production PDF with pixel-accurate layout"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"POD_{order_data.order_id}_{timestamp}.pdf"
+        pdf_path = self.output_dir / filename
+        
+        try:
+            c = canvas.Canvas(str(pdf_path), pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
+            
+            # Draw all sections
+            self._draw_title(c, order_data)
+            self._draw_info_section(c, order_data)
+            self._draw_preview_section(c, order_data)
+            self._draw_shipping_section(c, order_data)
+            
+            c.save()
+            print(f"[OK] Production PDF generated: {filename}")
+            return pdf_path
+            
+        except Exception as e:
+            print(f"[ERROR] PDF generation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def _draw_title(self, c, order_data):
+        """Draw title section"""
+        # Main title: POD-订单生产文件
+        c.setFont("Helvetica", 36)
+        c.drawCentredString(PAGE_WIDTH/2, PAGE_HEIGHT - 55, "POD-")
+        
+        try:
+            c.setFont("ChineseFont", 36)
+            c.drawString(PAGE_WIDTH/2 - 30, PAGE_HEIGHT - 55, "订单生产文件")
+        except:
+            c.setFont("Helvetica", 36)
+            c.drawCentredString(PAGE_WIDTH/2, PAGE_HEIGHT - 55, "POD-Order Production")
+        
+        # SKU code (red, bold)
+        c.setFillColor(RED)
+        c.setFont("Helvetica-Bold", 22)
+        c.drawCentredString(PAGE_WIDTH/2, PAGE_HEIGHT - 105, order_data.sku)
+        
+        # "产品编号 (SKU)" subtitle
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 10)
+        try:
+            c.setFont("ChineseFont", 10)
+            c.drawCentredString(PAGE_WIDTH/2, PAGE_HEIGHT - 122, "产品编号 (SKU)")
+        except:
+            c.drawCentredString(PAGE_WIDTH/2, PAGE_HEIGHT - 122, "Product Code (SKU)")
+    
+    def _draw_info_section(self, c, order_data):
+        """Draw three-column info section"""
+        start_y = PAGE_HEIGHT - 165
+        row_height = 17.7
+        
+        # Column positions
+        col1_label_x, col1_value_x = 38, 106
+        col2_label_x, col2_value_x = 224, 292
+        col3_label_x, col3_value_x = 369, 452
+        
+        label_width = 67.7
+        
+        # Section headers (red)
+        c.setFillColor(RED)
+        c.setFont("Helvetica-Bold", 12)
+        try:
+            c.setFont("ChineseFont", 12)
+        except:
+            pass
+        c.drawString(col1_label_x, start_y + 15, "订单信息")
+        c.drawString(col2_label_x, start_y + 15, "产品 (SKU) 规格")
+        c.drawString(col3_label_x, start_y + 15, "定制详情")
+        
+        # Column 1: Order Info
+        col1_data = [
+            ("订单ID:", order_data.order_id),
+            ("客户:", order_data.customer_name),
+            ("订单日期:", order_data.order_date),
+            ("发货日期:", order_data.ship_date),
+        ]
+        self._draw_table_column(c, col1_label_x, col1_value_x, start_y, col1_data, row_height, label_width)
+        
+        # Column 2: Product Info
+        col2_data = [
+            ("形状:", order_data.shape),
+            ("颜色:", order_data.color),
+            ("尺寸:", order_data.size),
+            ("工艺:", order_data.craft),
+        ]
+        self._draw_table_column(c, col2_label_x, col2_value_x, start_y, col2_data, row_height, label_width)
+        
+        # Column 3: Customization (yellow background)
+        col3_data = [
+            ("正面:", order_data.front_text),
+            ("正面字体:", order_data.front_font),
+            ("背面文字:", order_data.back_text),
+        ]
+        self._draw_table_column(c, col3_label_x, col3_value_x, start_y, col3_data, row_height, label_width, 
+                                bg_color=LIGHT_YELLOW)
+    
+    def _draw_table_column(self, c, label_x, value_x, start_y, data, row_height, label_width, bg_color=None):
+        """Draw a table column with labels and values"""
+        for i, (label, value) in enumerate(data):
+            y = start_y - (i * row_height)
+            
+            # Draw label cell (gray background)
+            c.setFillColor(LIGHT_GRAY)
+            c.rect(label_x, y - row_height + 2, label_width, row_height, fill=1, stroke=1)
+            
+            # Draw value cell
+            if bg_color:
+                c.setFillColor(bg_color)
+            else:
+                c.setFillColor(colors.white)
+            c.rect(value_x, y - row_height + 2, 77.2, row_height, fill=1, stroke=1)
+            
+            # Draw text
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 9)
+            try:
+                c.setFont("ChineseFont", 9)
+            except:
+                pass
+            c.drawString(label_x + 3, y - 10, label)
+            c.drawString(value_x + 3, y - 10, str(value))
+    
+    def _draw_preview_section(self, c, order_data):
+        """Draw image preview section"""
+        preview_y = PAGE_HEIGHT - 390
+        
+        # Left box: Product photo placeholder
+        c.setStrokeColor(GRAY)
+        c.setLineWidth(0.5)
+        c.rect(38, preview_y - 120, 140, 120, stroke=1, fill=0)
+        
+        # "外观，颜色实拍图" label (red)
+        c.setFillColor(RED)
+        c.setFont("Helvetica", 10)
+        try:
+            c.setFont("ChineseFont", 10)
+            c.drawCentredString(108, preview_y - 135, "外观，颜色实拍图")
+        except:
+            c.drawCentredString(108, preview_y - 135, "Product Photo")
+        
+        # Right box: Effect image with dimensions
+        c.setStrokeColor(GRAY)
+        c.rect(190, preview_y - 120, 165, 120, stroke=1, fill=0)
+        
+        # Dimension labels
+        c.setFillColor(RED)
+        c.setFont("Helvetica", 10)
+        c.drawCentredString(272, preview_y + 5, f"{order_data.width_mm} mm")
+        c.saveState()
+        c.translate(185, preview_y - 60)
+        c.rotate(90)
+        c.drawCentredString(0, 0, f"{order_data.height_mm} mm")
+        c.restoreState()
+        
+        # Effect image info
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 9)
+        c.drawString(200, preview_y - 100, f"Front Text: {order_data.front_text}")
+        c.drawString(200, preview_y - 112, f"Font: {order_data.front_font}")
+        c.drawString(200, preview_y - 124, f"Back Text: {order_data.back_text}")
+    
+    def _draw_shipping_section(self, c, order_data):
+        """Draw shipping label and info section"""
+        shipping = order_data.shipping
+        section_y = PAGE_HEIGHT - 610
+        
+        # === Left side: Shipping label mockup ===
+        label_x, label_y = 38, section_y - 180
+        label_w, label_h = 140, 180
+        
+        # Label border
+        c.setStrokeColor(colors.black)
+        c.setLineWidth(1)
+        c.rect(label_x, label_y, label_w, label_h, stroke=1, fill=0)
+        
+        # Postlink header
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(label_x + 5, label_y + label_h - 20, "Postlink")
+        c.setFont("Helvetica", 8)
+        c.drawRightString(label_x + label_w - 5, label_y + label_h - 20, "PX  PX")
+        
+        # TO: recipient
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(label_x + 5, label_y + label_h - 40, "TO:")
+        c.setFont("Helvetica", 8)
+        c.drawString(label_x + 25, label_y + label_h - 40, shipping.recipient_name)
+        c.drawString(label_x + 25, label_y + label_h - 52, shipping.recipient_address)
+        c.drawString(label_x + 25, label_y + label_h - 64, 
+                    f"{shipping.recipient_postal_code};{shipping.recipient_city}")
+        
+        # Country code (large)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawRightString(label_x + label_w - 10, label_y + label_h - 75, shipping.recipient_country_code)
+        
+        # Barcode placeholder
+        c.setFont("Helvetica", 7)
+        c.drawCentredString(label_x + label_w/2, label_y + 55, f"[{shipping.tracking_number}]")
+        c.rect(label_x + 10, label_y + 60, label_w - 20, 20, stroke=1, fill=0)
+        
+        # Ref No
+        c.setFont("Helvetica", 7)
+        c.drawString(label_x + 5, label_y + 40, f"Ref No: {shipping.ref_no}")
+        c.drawString(label_x + 5, label_y + 30, "pet ID tag | 0.03KG")
+        
+        # "面单样版 10X10cm" watermark
+        c.setFillColor(colors.Color(1, 0.6, 0))  # Orange
+        c.setFont("Helvetica-Bold", 14)
+        try:
+            c.setFont("ChineseFont", 14)
+            c.drawString(label_x + 15, label_y + 10, "面单样版 10X10cm")
+        except:
+            c.drawString(label_x + 5, label_y + 10, "Label Sample 10X10cm")
+        
+        # === Right side: Shipping info ===
+        info_x = 334
+        info_y = section_y
+        
+        # Header backgroun# -*- coding: utf-8 -*-
+"""
+PDF generation service for POD production documents
 Pixel-accurate layout based on template
 """
 
@@ -33,25 +306,13 @@ class PDFService:
         self._register_fonts()
     
     def _register_fonts(self):
-        """注册中文字体 - 使用阿里巴巴普惠体"""
         try:
-            # 优先使用阿里巴巴普惠体（完整中文支持）
-            alibaba_font_path = self.fonts_dir / "阿里巴巴普惠体" / "ALIBABAPUHUITI-3-55-REGULAR.TTF"
-            if alibaba_font_path.exists():
-                pdfmetrics.registerFont(TTFont("CN", str(alibaba_font_path)))
-                print(f"[OK] Font registered: CN (阿里巴巴普惠体)")
-            else:
-                # 备用：back_standard.ttf
-                fallback_path = self.fonts_dir / "back_standard.ttf"
-                if fallback_path.exists():
-                    pdfmetrics.registerFont(TTFont("CN", str(fallback_path)))
-                    print(f"[OK] Font registered: CN (back_standard)")
-                else:
-                    print(f"[WARN] No Chinese font found!")
+            font_path = self.fonts_dir / "back_standard.ttf"
+            if font_path.exists():
+                pdfmetrics.registerFont(TTFont("CN", str(font_path)))
+                print("[OK] Font registered: CN")
         except Exception as e:
             print(f"[WARN] Font registration failed: {e}")
-            import traceback
-            traceback.print_exc()
     
     def _font(self, c, size, bold=False):
         try:

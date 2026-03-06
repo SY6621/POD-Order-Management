@@ -5,43 +5,37 @@ const routes = [
     path: '/',
     name: 'Dashboard',
     component: () => import('../views/Dashboard/Dashboard.vue'),
-    meta: { title: '仪表盘' }
+    meta: { title: '仪表盘总览' }
   },
   {
-    path: '/orders',
-    name: 'Orders',
-    component: () => import('../views/Orders/Orders.vue'),
-    meta: { title: '订单管理' }
-  },
-  {
-    path: '/effects',
-    name: 'Effects',
-    component: () => import('../views/Effects/Effects.vue'),
-    meta: { title: '效果图生成' }
+    path: '/pending',
+    name: 'PendingOrders',
+    component: () => import('../views/PendingOrders/PendingOrders.vue'),
+    meta: { title: '待确认订单' }
   },
   {
     path: '/production',
     name: 'Production',
     component: () => import('../views/Production/Production.vue'),
-    meta: { title: '生产文档' }
+    meta: { title: '生产中订单' }
+  },
+  {
+    path: '/completed',
+    name: 'CompletedOrders',
+    component: () => import('../views/CompletedOrders/CompletedOrders.vue'),
+    meta: { title: '已完成订单' }
   },
   {
     path: '/logistics',
     name: 'Logistics',
     component: () => import('../views/Logistics/Logistics.vue'),
-    meta: { title: '物流管理' }
+    meta: { title: '物流追踪' }
   },
   {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('../views/Settings/Settings.vue'),
-    meta: { title: '系统设置' }
-  },
-  {
-    path: '/remote',
-    name: 'Remote',
-    component: () => import('../views/Remote/Remote.vue'),
-    meta: { title: '远程协作工作台' }
+    path: '/email',
+    name: 'EmailTemplates',
+    component: () => import('../views/EmailTemplates/EmailTemplates.vue'),
+    meta: { title: '邮件模板' }
   }
 ]
 

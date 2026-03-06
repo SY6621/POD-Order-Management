@@ -121,48 +121,100 @@ class ShippingService:
         color_codes = {"silver": "A", "gold": "B", "rose gold": "C", "rosegold": "C", "black": "D"}
         size_codes = {"large": "01", "small": "02"}
         
+        # 调试输出
+        print(f"[DEBUG] generate_sku: shape='{shape}' -> lower='{shape.lower()}'")
+        print(f"[DEBUG] shape_codes lookup: {shape_codes.get(shape.lower(), 'NOT FOUND')}")
+        
         shape_code = shape_codes.get(shape.lower(), "E")
         color_code = color_codes.get(color.lower(), "A")
         size_code = size_codes.get(size.lower(), "01")
         
-        return f"B-{shape_code}{size_code}{color_code}"
+        sku = f"B-{shape_code}{size_code}{color_code}"
+        print(f"[DEBUG] Generated SKU: {sku}")
+        return sku
     
     def create_order_data(self, raw_data: Dict[str, Any]) -> OrderData:
-        product_trans = self.translate_product_info(
-            raw_data.get("shape", "Bone"),
-            raw_data.get("color", "Gold"),
-            raw_data.get("size", "Large")
+        # ===== 真实数据库字段名对齐 =====
+        # orders 表: product_shape / product_color / product_size / product_craft
+        # 收件人信息: recipient_name / street_address / city / state_code / postal_code / country
+        # 字体: font_code
+        # 订单号: etsy_order_id
+        
+        shape = raw_data.get("product_shape") or raw_data.get("shape", "Bone")
+        color = raw_data.get("product_color") or raw_data.get("color", "Gold")
+        size  = raw_data.get("product_size")  or raw_data.get("size", "Large")
+        craft = raw_data.get("product_craft") or raw_data.get("craft", "抛光")
+        
+        product_trans = self.translate_product_info(shape, color, size)
+        # 必须用英文原始值生成 SKU，翻译后的中文无法匹配 SKU 字典
+        sku = self.generate_sku(shape, color, size)
+        
+        # 订单号
+        order_id = raw_data.get("etsy_order_id") or raw_data.get("order_id", "")
+        
+        # 字体：数据库字段 font_code
+        front_font = raw_data.get("font_code") or raw_data.get("font", "F-01")
+        if not front_font:
+            front_font = "F-01"
+        
+        # 收件人：数据库字段 recipient_name / street_address / city / state_code / postal_code / country
+        shipping_name = (
+            raw_data.get("recipient_name") or
+            raw_data.get("shipping_name") or
+            raw_data.get("customer_name", "")
+        )
+        shipping_address = (
+            raw_data.get("street_address") or
+            raw_data.get("shipping_address_line1") or
+            raw_data.get("shipping_address", "")
+        )
+        shipping_city = (
+            raw_data.get("city") or
+            raw_data.get("shipping_city", "")
+        )
+        shipping_state = (
+            raw_data.get("state_code") or
+            raw_data.get("state") or
+            raw_data.get("shipping_state", "")
+        )
+        shipping_postal = (
+            raw_data.get("postal_code") or
+            raw_data.get("shipping_postal_code", "")
+        )
+        country = (
+            raw_data.get("country") or
+            raw_data.get("shipping_country", "")
+        )
+        tracking_number = (
+            raw_data.get("tracking_number") or ""
         )
         
-        sku = self.generate_sku(
-            raw_data.get("shape", "Bone"),
-            raw_data.get("color", "Gold"),
-            raw_data.get("size", "Large")
-        )
-        
-        country = raw_data.get("shipping_country", "")
         shipping = ShippingLabel(
-            tracking_number=raw_data.get("tracking_number", ""),
-            recipient_name=raw_data.get("shipping_name", ""),
-            recipient_address=raw_data.get("shipping_address", ""),
-            recipient_city=raw_data.get("shipping_city", ""),
-            recipient_state=raw_data.get("shipping_state", ""),
-            recipient_postal_code=raw_data.get("shipping_postal_code", ""),
+            tracking_number=tracking_number,
+            recipient_name=shipping_name,
+            recipient_address=shipping_address,
+            recipient_city=shipping_city,
+            recipient_state=shipping_state,
+            recipient_postal_code=shipping_postal,
             recipient_country=country,
             recipient_country_code=self.get_country_code(country),
-            ref_no=raw_data.get("order_id", ""),
+            ref_no=order_id,
         )
         
-        order_date = raw_data.get("order_date", datetime.now().strftime("%Y-%m-%d"))
+        # 订单日期：兼容 created_at（带时区 ISO 格式）
+        raw_date = raw_data.get("order_date") or raw_data.get("created_at", "")
+        if raw_date and "T" in str(raw_date):
+            raw_date = str(raw_date).split("T")[0]
+        order_date = raw_date or datetime.now().strftime("%Y-%m-%d")
         try:
-            order_dt = datetime.strptime(order_date, "%Y-%m-%d")
+            order_dt = datetime.strptime(str(order_date)[:10], "%Y-%m-%d")
             ship_dt = order_dt + timedelta(days=2)
             ship_date = ship_dt.strftime("%Y-%m-%d")
         except:
             ship_date = order_date
         
         return OrderData(
-            order_id=raw_data.get("order_id", ""),
+            order_id=order_id,
             customer_name=raw_data.get("customer_name", ""),
             order_date=order_date,
             ship_date=ship_date,
@@ -174,7 +226,7 @@ class ShippingService:
             size=product_trans["size_cn"],
             size_en=product_trans["size_en"],
             front_text=raw_data.get("front_text", ""),
-            front_font=raw_data.get("font", "F-01"),
+            front_font=front_font,
             back_text=raw_data.get("back_text", ""),
             shipping=shipping,
             width_mm=product_trans["width_mm"],

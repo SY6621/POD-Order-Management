@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from src.services.effect_image_service import effect_image_service
 from src.services.email_service import email_service
+from src.services.database_service import db
 
 
 # 创建 FastAPI 应用
@@ -64,7 +65,10 @@ class SendEmailRequest(BaseModel):
     effect_image_path: Optional[str] = None
 
 
-# ============ API 端点 ============
+class GenerateAllRequest(BaseModel):
+    """一键生成效果图+PDF请求"""
+    order_id: str  # Supabase UUID
+
 
 @app.get("/")
 async def root():
@@ -193,7 +197,78 @@ async def send_confirmation_email(request: SendEmailRequest):
         raise HTTPException(status_code=500, detail=f"发送邮件失败: {str(e)}")
 
 
-# ============ 启动入口 ============
+@app.post("/api/effect-image/generate-and-upload")
+async def generate_and_upload_effect(request: GenerateAllRequest):
+    """
+    一键生成效果图并上传到 Supabase Storage
+    将正面和背面 SVG 所有 URL 写入 orders 表
+    """
+    try:
+        order = db.select_one("orders", {"id": request.order_id})
+        if not order:
+            raise HTTPException(status_code=404, detail="订单不存在")
+        result = effect_image_service.generate_and_upload(order)
+        if not result:
+            raise HTTPException(status_code=500, detail="效果图生成失败")
+        return {
+            "success": True,
+            "order_id": request.order_id,
+            "effect_image_url": result.get("effect_image_url"),
+            "effect_image_back_url": result.get("effect_image_back_url")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成效果图出错: {str(e)}")
+
+
+@app.post("/api/pdf/generate-and-upload")
+async def generate_and_upload_pdf(request: GenerateAllRequest):
+    """
+    一键生成生产文档 PDF 并上传到 Supabase Storage
+    将 PDF URL 写入 orders.production_pdf_url
+    """
+    try:
+        from src.services.svg_pdf_service import svg_pdf_service
+
+        order_data = db.select_one("orders", {"id": request.order_id})
+        if not order_data:
+            raise HTTPException(status_code=404, detail="订单不存在")
+
+        # 关联查询 logistics 表获取收件人地址信息
+        logistics_list = db.select("logistics", {"order_id": request.order_id})
+        if logistics_list:
+            logistics = logistics_list[0]
+            # 将 logistics 字段平铺到 order_data 字典中
+            order_data.update({
+                "recipient_name": logistics.get("recipient_name", ""),
+                "street_address": logistics.get("street_address", ""),
+                "city": logistics.get("city", ""),
+                "state_code": logistics.get("state_code", ""),
+                "postal_code": logistics.get("postal_code", ""),
+                "country": logistics.get("country", ""),
+                "tracking_number": logistics.get("tracking_number", ""),
+            })
+
+        # 直接用字典数据生成 PDF，避免触发 SQLAlchemy Database 类初始化
+        pdf_path = svg_pdf_service.generate_from_raw_data(order_data)
+        if not pdf_path:
+            raise HTTPException(status_code=500, detail="PDF 生成失败")
+
+        dest_name = f"{order_data.get('etsy_order_id') or request.order_id}.pdf"
+        pdf_url = db.upload_file("production-docs", pdf_path, dest_name)
+        if pdf_url:
+            db.update("orders", {"id": request.order_id}, {"production_pdf_url": pdf_url})
+
+        return {
+            "success": True,
+            "order_id": request.order_id,
+            "production_pdf_url": pdf_url
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF 生成出错: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

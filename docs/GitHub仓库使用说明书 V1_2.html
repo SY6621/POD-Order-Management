@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETSY订单自动化系统 - GitHub仓库使用说明书</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #64748b transparent;
+        }
+        *::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 3px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .code-block {
+            max-height: 200px;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .code-block.expanded {
+            max-height: 2000px;
+        }
+        
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            border-radius: 2px;
+            transition: height 0.3s ease;
+        }
+        
+        .nav-item.active::before {
+            height: 70%;
+        }
+        
+        .nav-item.active {
+            color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.1);
+        }
+        
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(30px, -30px) rotate(90deg); }
+            50% { transform: translate(-20px, 20px) rotate(180deg); }
+            75% { transform: translate(20px, 30px) rotate(270deg); }
+        }
+        
+        .section-card {
+            transition: all 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table-row {
+            transition: background 0.2s ease;
+        }
+        
+        .table-row:hover {
+            background: rgba(14, 165, 233, 0.05);
+        }
+        
+        .back-to-top {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 min-h-screen">
+    <!-- Background Decorations -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="floating-shape w-96 h-96 bg-blue-300 top-0 right-0"></div>
+        <div class="floating-shape w-80 h-80 bg-cyan-300 bottom-0 left-1/3" style="animation-delay: -5s;"></div>
+        <div class="floating-shape w-64 h-64 bg-purple-300 top-1/2 right-1/4" style="animation-delay: -10s;"></div>
+    </div>
+
+    <div class="flex min-h-screen relative">
+        <!-- Mobile Menu Button -->
+        <button id="menuToggle" class="lg:hidden fixed top-4 left-4 z-50 w-12 h-12 rounded-xl bg-white shadow-lg flex items-center justify-center text-dark-600 hover:text-primary-500 transition-colors">
+            <i class="fas fa-bars text-lg"></i>
+        </button>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar w-72 lg:w-80 h-screen sticky top-0 glass border-r border-white/20 overflow-hidden flex flex-col">
+            <!-- Logo & Title -->
+            <div class="p-6 border-b border-dark-200/30">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                        <i class="fab fa-github text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-dark-800 text-sm">ETSY订单自动化系统</h1>
+                        <span class="text-xs text-dark-400">v1.0</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-dark-500">
+                    <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
+                    <span>更新于 2026-02-05</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3">
+                <div class="text-xs font-semibold text-dark-400 uppercase tracking-wider px-3 mb-2">目录导航</div>
+                
+                <div class="space-y-1">
+                    <a href="#overview" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-project-diagram w-5 text-center mr-2 text-primary-500"></i>
+                        项目概述与仓库配置
+                    </a>
+                    <a href="#wiki" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-book w-5 text-center mr-2 text-cyan-500"></i>
+                        GitHub Wiki部署文档
+                    </a>
+                    <a href="#skills" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-cogs w-5 text-center mr-2 text-purple-500"></i>
+                        Skills模块配置
+                    </a>
+                    <a href="#rules" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-gavel w-5 text-center mr-2 text-orange-500"></i>
+                        Rules模块配置
+                    </a>
+                    <a href="#deployment" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-rocket w-5 text-center mr-2 text-green-500"></i>
+                        上线部署流程
+                    </a>
+                    <a href="#faq" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-circle-question w-5 text-center mr-2 text-red-400"></i>
+                        常见问题与故障排除
+                    </a>
+                </div>
+
+                <div class="text-xs font-semibold text-dark-400 uppercase tracking-wider px-3 mb-2 mt-6">附录</div>
+                <div class="space-y-1">
+                    <a href="#git-commands" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-terminal w-5 text-center mr-2 text-dark-400"></i>
+                        Git命令速查
+                    </a>
+                    <a href="#structure" class="nav-item block px-4 py-2.5 rounded-lg text-sm text-dark-600 hover:bg-dark-100/50 pl-4">
+                        <i class="fas fa-folder-open w-5 text-center mr-2 text-dark-400"></i>
+                        项目目录结构
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-dark-200/30">
+                <a href="https://github.com/SY6621/POD-Order-Management" target="_blank" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-dark-800 to-dark-700 text-white text-sm font-medium hover:from-dark-700 hover:to-dark-600 transition-all shadow-lg">
+                    <i class="fab fa-github"></i>
+                    <span>访问仓库</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 min-w-0">
+            <!-- Header -->
+            <header class="sticky top-0 z-40 glass border-b border-white/20 px-6 lg:px-10 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4 ml-12 lg:ml-0">
+                        <div>
+                            <h2 class="text-xl font-bold text-dark-800">GitHub仓库使用说明书</h2>
+                            <p class="text-sm text-dark-500">Vue3 + Python + Supabase</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="w-10 h-10 rounded-xl bg-white/50 hover:bg-white flex items-center justify-center text-dark-500 hover:text-primary-500 transition-colors shadow-sm">
+                            <i class="fas fa-magnifying-glass"></i>
+                        </button>
+                        <button class="w-10 h-10 rounded-xl bg-white/50 hover:bg-white flex items-center justify-center text-dark-500 hover:text-primary-500 transition-colors shadow-sm">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="px-6 lg:px-10 py-8 max-w-5xl">
+                
+                <!-- Section 1: Overview -->
+                <section id="overview" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-project-diagram text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">一、项目概述与仓库配置</h3>
+                                <p class="text-sm text-dark-500">Project Overview & Repository Configuration</p>
+                            </div>
+                        </div>
+
+                        <!-- Tech Stack -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-layer-group text-primary-500"></i>
+                                1.1 项目技术栈
+                            </h4>
+                            <div class="overflow-x-auto rounded-xl border border-dark-200/50">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-gradient-to-r from-dark-800 to-dark-700 text-white">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left font-semibold">层级</th>
+                                            <th class="px-4 py-3 text-left font-semibold">技术选型</th>
+                                            <th class="px-4 py-3 text-left font-semibold">版本</th>
+                                            <th class="px-4 py-3 text-left font-semibold">用途</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-dark-200/50">
+                                        <tr class="table-row bg-white/50">
+                                            <td class="px-4 py-3 font-medium text-dark-700" rowspan="4">前端</td>
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-medium">Vue 3</span></td>
+                                            <td class="px-4 py-3 text-dark-500">^3.3.0</td>
+                                            <td class="px-4 py-3 text-dark-600">用户界面</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/30">
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">Vite</span></td>
+                                            <td class="px-4 py-3 text-dark-500">^4.4.0</td>
+                                            <td class="px-4 py-3 text-dark-600">构建工具</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/50">
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">Element Plus</span></td>
+                                            <td class="px-4 py-3 text-dark-500">^2.3.0</td>
+                                            <td class="px-4 py-3 text-dark-600">UI组件库</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/30">
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md text-xs font-medium">Pinia</span></td>
+                                            <td class="px-4 py-3 text-dark-500">^2.1.0</td>
+                                            <td class="px-4 py-3 text-dark-600">状态管理</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/50">
+                                            <td class="px-4 py-3 font-medium text-dark-700" rowspan="4">后端</td>
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-medium">Python</span></td>
+                                            <td class="px-4 py-3 text-dark-500">3.10+</td>
+                                            <td class="px-4 py-3 text-dark-600">业务逻辑</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/30">
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-md text-xs font-medium">FastAPI</span></td>
+                                            <td class="px-4 py-3 text-dark-500">^0.100.0</td>
+                                            <td class="px-4 py-3 text-dark-600">Web框架</td>
+                                        </tr>
+                                        <tr class="table-row bg-white/50">
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-medium">Supabase</span></td>
+                                            <td class="px-4 py-3 text-dark-500">-</td>
+                                            <td class="px-4 py-3 text-dark-600">PostgreSQL托管</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Repository Config -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-gear text-primary-500"></i>
+                                1.2 仓库基础配置
+                            </h4>
+                            
+                            <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-xl p-4 mb-4">
+                                <div class="flex items-start gap-3">
+                                    <i class="fas fa-circle-info text-amber-500 mt-0.5"></i>
+                                    <div>
+                                        <p class="text-sm text-amber-800 font-medium">操作路径</p>
+                                        <p class="text-sm text-amber-700">GitHub仓库页面 → Settings → General</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto rounded-xl border border-dark-200/50 mb-6">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-dark-100">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left font-semibold text-dark-700">配置项</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-dark-700">推荐值</th>
+                                            <th class="px-4 py-3 text-left font-semibold text-dark-700">作用</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-dark-200/50 bg-white/50">
+                                        <tr class="table-row">
+                                            <td class="px-4 py-3 font-medium text-dark-700">Repository name</td>
+                                            <td class="px-4 py-3"><code class="px-2 py-1 bg-dark-100 rounded text-xs">POD-Order-Management</code></td>
+                                            <td class="px-4 py-3 text-dark-600">仓库名称</td>
+                                        </tr>
+                                        <tr class="table-row">
+                                            <td class="px-4 py-3 font-medium text-dark-700">Visibility</td>
+                                            <td class="px-4 py-3"><span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Public</span></td>
+                                            <td class="px-4 py-3 text-dark-600">公开仓库（免费）</td>
+                                        </tr>
+                                        <tr class="table-row">
+                                            <td class="px-4 py-3 font-medium text-dark-700">Topics</td>
+                                            <td class="px-4 py-3">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">vue3</span>
+                                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">python</span>
+                                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">supabase</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3 text-dark-600">标签，便于搜索</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Branch Protection -->
+                            <div class="bg-dark-50 rounded-xl p-5 mb-6">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-shield-halved text-green-500"></i>
+                                    分支保护规则
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.github/branch-protection.yml</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>规则名称: main分支保护
+适用范围: main
+保护设置:
+  - ✅ Require a pull request before merging
+    - Require approvals: 1
+  - ✅ Require status checks to pass
+  - ✅ Require conversation resolution before merging
+  - ✅ Include administrators
+
+作用: 防止误操作直接推送到main分支，确保代码质量</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gitignore -->
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-file-code text-purple-500"></i>
+                                    Git忽略文件配置
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.gitignore</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code># 依赖
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# 环境变量（敏感信息）
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# 日志
+logs/
+*.log
+
+# 输出文件
+backend/output/
+*.pdf
+*.svg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo</code></pre>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex flex-wrap gap-3">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <span class="w-5 h-5 rounded bg-red-100 flex items-center justify-center">
+                                            <i class="fas fa-triangle-exclamation text-red-500 text-xs"></i>
+                                        </span>
+                                        <span class="text-dark-600">.env文件绝对不能提交到GitHub</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <span class="w-5 h-5 rounded bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-check text-green-500 text-xs"></i>
+                                        </span>
+                                        <span class="text-dark-600">.env.example可以提交</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Wiki -->
+                <section id="wiki" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-book text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">二、GitHub Wiki部署文档</h3>
+                                <p class="text-sm text-dark-500">Wiki Documentation Deployment</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-toggle-on text-cyan-500"></i>
+                                2.1 启用Wiki功能
+                            </h4>
+                            <div class="bg-blue-50 border-l-4 border-blue-400 rounded-r-xl p-4 mb-4">
+                                <div class="flex items-start gap-3">
+                                    <i class="fas fa-route text-blue-500 mt-0.5"></i>
+                                    <div>
+                                        <p class="text-sm text-blue-800 font-medium">操作路径</p>
+                                        <p class="text-sm text-blue-700">Settings → Features → Wiki → ✅ Enable</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-sitemap text-cyan-500"></i>
+                                2.2 Wiki文档结构
+                            </h4>
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <div class="font-mono text-sm text-dark-700">
+                                    <div class="flex items-center gap-2 py-1">
+                                        <i class="fas fa-folder text-yellow-500"></i>
+                                        <span class="font-semibold">Wiki主页</span>
+                                    </div>
+                                    <div class="ml-4 border-l-2 border-dark-200 pl-4">
+                                        <div class="flex items-center gap-2 py-1">
+                                            <i class="fas fa-folder text-blue-400"></i>
+                                            <span>📖 用户文档</span>
+                                        </div>
+                                        <div class="ml-4 text-dark-500">
+                                            <div class="py-0.5">├── 快速开始指南</div>
+                                            <div class="py-0.5">├── 功能使用手册</div>
+                                            <div class="py-0.5">└── 常见问题FAQ</div>
+                                        </div>
+                                        <div class="flex items-center gap-2 py-1 mt-2">
+                                            <i class="fas fa-folder text-green-400"></i>
+                                            <span>🔧 开发文档</span>
+                                        </div>
+                                        <div class="ml-4 text-dark-500">
+                                            <div class="py-0.5">├── 架构设计说明</div>
+                                            <div class="py-0.5">├── API接口文档</div>
+                                            <div class="py-0.5">├── 数据库设计</div>
+                                            <div class="py-0.5">└── 部署运维指南</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-terminal text-cyan-500"></i>
+                                2.3 Wiki页面创建方法
+                            </h4>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white font-bold text-sm">1</span>
+                                        <span class="font-semibold text-purple-800">网页编辑</span>
+                                    </div>
+                                    <p class="text-sm text-purple-700 mb-3">适合简单文档</p>
+                                    <ol class="text-sm text-purple-600 space-y-2">
+                                        <li class="flex items-start gap-2">
+                                            <span class="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-medium shrink-0">1</span>
+                                            <span>访问 Wiki 页面</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-medium shrink-0">2</span>
+                                            <span>点击 "Create the first page"</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <span class="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs font-medium shrink-0">3</span>
+                                            <span>使用Markdown编辑器编写</span>
+                                        </li>
+                                    </ol>
+                                </div>
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center text-white font-bold text-sm">2</span>
+                                        <span class="font-semibold text-green-800">本地编辑</span>
+                                    </div>
+                                    <p class="text-sm text-green-700 mb-3">适合批量文档</p>
+                                    <div class="code-block-container">
+                                        <div class="flex items-center justify-between bg-dark-800 rounded-t-lg px-3 py-1.5">
+                                            <span class="text-xs text-dark-300 font-mono">Terminal</span>
+                                            <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                                <i class="fas fa-expand"></i>
+                                                <span>展开</span>
+                                            </button>
+                                        </div>
+                                        <div class="code-block bg-dark-900 rounded-b-lg overflow-hidden">
+                                            <pre class="p-3 text-xs font-mono text-green-400 overflow-x-auto"><code># 克隆Wiki仓库
+git clone https://github.com/SY6621/POD-Order-Management.wiki.git
+
+# 创建文档
+echo "# 快速开始指南" > 快速开始.md
+
+# 提交并推送
+git add . && git commit -m "添加文档"
+git push origin master</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- API Documentation Example -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-code text-cyan-500"></i>
+                                2.4 API接口文档示例
+                            </h4>
+                            <div class="code-block-container">
+                                <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-dark-300 font-mono">API Documentation</span>
+                                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">GET</span>
+                                    </div>
+                                    <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                        <i class="fas fa-expand"></i>
+                                        <span>展开</span>
+                                    </button>
+                                </div>
+                                <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                    <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code># 获取订单列表
+GET /api/orders
+
+参数:
+- status: string (可选) - 订单状态筛选
+  - pending: 待确认
+  - producing: 生产中
+  - delivered: 已完成
+
+响应示例:
+{
+  "code": 200,
+  "data": [
+    {
+      "id": "uuid",
+      "order_number": "ETSY-001",
+      "status": "pending",
+      "created_at": "2026-02-05T10:00:00Z"
+    }
+  ]
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Skills -->
+                <section id="skills" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-cogs text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">三、Skills模块配置</h3>
+                                <p class="text-sm text-dark-500">GitHub Copilot Skills Configuration</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-purple-50 border-l-4 border-purple-400 rounded-r-xl p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-lightbulb text-purple-500 mt-0.5"></i>
+                                <div>
+                                    <p class="text-sm text-purple-800 font-medium">Skills 是什么？</p>
+                                    <p class="text-sm text-purple-700">GitHub Copilot的功能扩展，可以为AI助手添加特定领域的知识和能力。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-file-code text-purple-500"></i>
+                                3.1 Skills配置文件
+                            </h4>
+                            <div class="code-block-container">
+                                <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                    <span class="text-xs text-dark-300 font-mono">.github/copilot/skills/etsy-order-management.yml</span>
+                                    <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                        <i class="fas fa-expand"></i>
+                                        <span>展开</span>
+                                    </button>
+                                </div>
+                                <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                    <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>name: ETSY订单管理系统开发
+description: 为ETSY订单自动化系统提供开发指导
+version: 1.0.0
+
+# 上下文信息
+context:
+  project_type: fullstack
+  frontend: Vue3 + Element Plus
+  backend: Python + FastAPI
+  database: Supabase
+
+# 代码规范
+code_standards:
+  frontend:
+    - 使用Composition API风格
+    - Pinia Store按功能模块划分
+    - 组件名使用PascalCase
+    - 方法名使用camelCase
+    
+  backend:
+    - 遵循PEP8规范
+    - 使用Google Style注释
+    - 数据库模型使用SQLAlchemy
+    - 服务类使用单例模式</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-comments text-purple-500"></i>
+                                3.2 使用方式
+                            </h4>
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <p class="text-sm text-dark-600 mb-3">在GitHub Copilot Chat中使用：</p>
+                                <div class="bg-dark-800 rounded-lg p-4">
+                                    <code class="text-sm text-cyan-400">@etsy-order-management 如何创建一个新的订单服务？</code>
+                                </div>
+                                <p class="text-sm text-dark-500 mt-3">
+                                    <i class="fas fa-arrow-right text-purple-500 mr-1"></i>
+                                    Copilot会基于Skills中定义的规范，生成符合项目标准的代码。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 4: Rules -->
+                <section id="rules" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-gavel text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">四、Rules模块配置</h3>
+                                <p class="text-sm text-dark-500">GitHub Automation Rules</p>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                <div class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center mb-3">
+                                    <i class="fas fa-tag text-white"></i>
+                                </div>
+                                <h5 class="font-semibold text-blue-800 mb-1">自动标记</h5>
+                                <p class="text-xs text-blue-600">自动标记Issue和PR</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                <div class="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center mb-3">
+                                    <i class="fas fa-play text-white"></i>
+                                </div>
+                                <h5 class="font-semibold text-green-800 mb-1">触发工作流</h5>
+                                <p class="text-xs text-green-600">自动化CI/CD流程</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                <div class="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center mb-3">
+                                    <i class="fas fa-clipboard-check text-white"></i>
+                                </div>
+                                <h5 class="font-semibold text-purple-800 mb-1">代码审查</h5>
+                                <p class="text-xs text-purple-600">自动执行代码检查</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Rule 1 -->
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">1</span>
+                                    自动标记Bug报告
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.github/rules/bug-labeler.yml</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>name: 自动标记Bug
+description: 当Issue包含特定关键词时自动添加bug标签
+
+on:
+  issues:
+    types: [opened, edited]
+
+if: |
+  issue.body contains 'bug' ||
+  issue.body contains '错误' ||
+  issue.body contains '崩溃'
+
+then:
+  - addLabel: 'bug'
+  - addComment: |
+      感谢报告Bug！我们会尽快处理。</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rule 2 -->
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">2</span>
+                                    PR自动审查
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.github/rules/pr-checks.yml</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>name: PR自动检查
+description: 对Pull Request进行自动化检查
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  check_description:
+    if: pull_request.body == ''
+    then:
+      - addComment: |
+          ⚠️ 请填写PR描述，说明本次修改的内容和目的。
+      - addLabel: 'needs-description'
+  
+  check_large_files:
+    if: any(pull_request.files, f.size > 1048576)
+    then:
+      - addComment: ⚠️ 检测到大于1MB的文件
+      - addLabel: 'large-files'</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rule 3 -->
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">!</span>
+                                    代码安全检查
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.github/rules/code-quality.yml</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>name: 代码质量检查
+
+jobs:
+  check_env_files:
+    if: |
+      any(pull_request.files, f.filename contains '.env' 
+          && !f.filename contains '.example')
+    then:
+      - addComment: |
+          🚫 **禁止提交.env文件！**
+          这些文件包含敏感信息。
+      - addLabel: 'security-issue'
+      - requestChanges: true</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Deployment -->
+                <section id="deployment" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-rocket text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">五、上线部署流程</h3>
+                                <p class="text-sm text-dark-500">Deployment Pipeline</p>
+                            </div>
+                        </div>
+
+                        <!-- Architecture Diagram -->
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold text-dark-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-sitemap text-green-500"></i>
+                                5.1 部署架构
+                            </h4>
+                            <div class="bg-gradient-to-br from-dark-800 to-dark-900 rounded-xl p-6 overflow-x-auto">
+                                <div class="min-w-[500px] font-mono text-sm">
+                                    <div class="flex justify-center mb-4">
+                                        <div class="bg-blue-500/20 border border-blue-400/30 rounded-lg px-6 py-3 text-blue-300">
+                                            <i class="fas fa-user mr-2"></i>用户浏览器
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-center mb-2">
+                                        <i class="fas fa-arrow-down text-dark-500"></i>
+                                    </div>
+                                    <div class="flex justify-center mb-4">
+                                        <div class="bg-green-500/20 border border-green-400/30 rounded-lg px-6 py-4 text-green-300 text-center">
+                                            <div class="font-semibold mb-2"><i class="fas fa-cloud mr-2"></i>GitHub Pages</div>
+                                            <div class="text-xs text-green-400/70">Vue3 SPA + Element UI + Pinia</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-center mb-2">
+                                        <i class="fas fa-arrow-down text-dark-500"></i>
+                                        <span class="text-dark-400 text-xs ml-2">API请求</span>
+                                    </div>
+                                    <div class="flex justify-center">
+                                        <div class="bg-purple-500/20 border border-purple-400/30 rounded-lg px-6 py-4 text-purple-300 text-center">
+                                            <div class="font-semibold mb-2"><i class="fas fa-database mr-2"></i>Supabase</div>
+                                            <div class="text-xs text-purple-400/70">PostgreSQL + Auth + Storage</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deployment Steps -->
+                        <div class="space-y-4">
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">1</span>
+                                    前端部署到GitHub Pages
+                                </h5>
+                                <div class="code-block-container">
+                                    <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                        <span class="text-xs text-dark-300 font-mono">.github/workflows/deploy-frontend.yml</span>
+                                        <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                            <i class="fas fa-expand"></i>
+                                            <span>展开</span>
+                                        </button>
+                                    </div>
+                                    <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                        <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>name: 部署前端到GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install & Build
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">2</span>
+                                    环境变量管理
+                                </h5>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-dark-600 mb-2 font-medium">GitHub Secrets配置：</p>
+                                        <div class="bg-white rounded-lg border border-dark-200 overflow-hidden">
+                                            <table class="w-full text-xs">
+                                                <thead class="bg-dark-100">
+                                                    <tr>
+                                                        <th class="px-3 py-2 text-left">Secret名称</th>
+                                                        <th class="px-3 py-2 text-left">用途</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-dark-100">
+                                                    <tr class="table-row">
+                                                        <td class="px-3 py-2 font-mono text-primary-600">SUPABASE_URL</td>
+                                                        <td class="px-3 py-2 text-dark-600">项目URL</td>
+                                                    </tr>
+                                                    <tr class="table-row">
+                                                        <td class="px-3 py-2 font-mono text-primary-600">SUPABASE_ANON_KEY</td>
+                                                        <td class="px-3 py-2 text-dark-600">匿名密钥</td>
+                                                    </tr>
+                                                    <tr class="table-row">
+                                                        <td class="px-3 py-2 font-mono text-primary-600">EMAIL_PASSWORD</td>
+                                                        <td class="px-3 py-2 text-dark-600">邮箱密码</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-dark-600 mb-2 font-medium">注意事项：</p>
+                                        <div class="space-y-2">
+                                            <div class="flex items-start gap-2 text-sm">
+                                                <i class="fas fa-circle-exclamation text-red-500 mt-0.5"></i>
+                                                <span class="text-dark-600">不要将service_role密钥放入前端</span>
+                                            </div>
+                                            <div class="flex items-start gap-2 text-sm">
+                                                <i class="fas fa-circle-check text-green-500 mt-0.5"></i>
+                                                <span class="text-dark-600">只放置非敏感的公开配置</span>
+                                            </div>
+                                            <div class="flex items-start gap-2 text-sm">
+                                                <i class="fas fa-circle-info text-blue-500 mt-0.5"></i>
+                                                <span class="text-dark-600">变量在构建时嵌入代码中</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-dark-50 rounded-xl p-5">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">3</span>
+                                    部署验证清单
+                                </h5>
+                                <div class="grid md:grid-cols-2 gap-3">
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">首页加载正常</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">样式正确显示</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">Supabase连接正常</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">路由跳转正常</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">响应式布局正常</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 border border-dark-100">
+                                        <input type="checkbox" class="w-5 h-5 rounded border-dark-300 text-green-500 focus:ring-green-500">
+                                        <span class="text-sm text-dark-700">API接口响应正常</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 6: FAQ -->
+                <section id="faq" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-circle-question text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">六、常见问题与故障排除</h3>
+                                <p class="text-sm text-dark-500">FAQ & Troubleshooting</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Q1 -->
+                            <div class="bg-dark-50 rounded-xl overflow-hidden">
+                                <button onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-4 text-left hover:bg-dark-100/50 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                                            <i class="fas fa-key text-red-500 text-sm"></i>
+                                        </span>
+                                        <span class="font-medium text-dark-700">Q1: 推送代码时提示权限不足</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-dark-400 transition-transform"></i>
+                                </button>
+                                <div class="faq-content hidden px-4 pb-4">
+                                    <div class="bg-red-50 rounded-lg p-4 mb-3">
+                                        <code class="text-sm text-red-700">remote: Permission to SY6621/POD-Order-Management.git denied</code>
+                                    </div>
+                                    <div class="space-y-2 text-sm text-dark-600">
+                                        <p class="font-medium">解决方案：</p>
+                                        <ol class="list-decimal list-inside space-y-1 ml-2">
+                                            <li>检查Token是否过期</li>
+                                            <li>确认Token有 <code class="px-1 bg-dark-100 rounded text-xs">contents:write</code> 权限</li>
+                                            <li>更新remote URL</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Q2 -->
+                            <div class="bg-dark-50 rounded-xl overflow-hidden">
+                                <button onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-4 text-left hover:bg-dark-100/50 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                                            <i class="fas fa-code-branch text-orange-500 text-sm"></i>
+                                        </span>
+                                        <span class="font-medium text-dark-700">Q2: 合并冲突如何解决</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-dark-400 transition-transform"></i>
+                                </button>
+                                <div class="faq-content hidden px-4 pb-4">
+                                    <div class="code-block-container">
+                                        <div class="flex items-center justify-between bg-dark-800 rounded-t-lg px-4 py-2">
+                                            <span class="text-xs text-dark-300 font-mono">Terminal</span>
+                                            <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                                <i class="fas fa-expand"></i>
+                                                <span>展开</span>
+                                            </button>
+                                        </div>
+                                        <div class="code-block bg-dark-900 rounded-b-lg overflow-hidden">
+                                            <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code># 查看冲突文件
+git status
+
+# 手动编辑冲突文件，解决冲突后
+git add .
+git commit -m "解决合并冲突"
+git push</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Q3 -->
+                            <div class="bg-dark-50 rounded-xl overflow-hidden">
+                                <button onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-4 text-left hover:bg-dark-100/50 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                            <i class="fas fa-triangle-exclamation text-blue-500 text-sm"></i>
+                                        </span>
+                                        <span class="font-medium text-dark-700">Q3: 页面显示404</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-dark-400 transition-transform"></i>
+                                </button>
+                                <div class="faq-content hidden px-4 pb-4">
+                                    <p class="text-sm text-dark-600 mb-3">可能原因：</p>
+                                    <ul class="list-disc list-inside space-y-1 text-sm text-dark-600 mb-3">
+                                        <li>仓库未公开</li>
+                                        <li>vite.config.js中的base路径配置错误</li>
+                                        <li>构建产物未正确生成</li>
+                                    </ul>
+                                    <div class="bg-green-50 rounded-lg p-3">
+                                        <p class="text-sm text-green-700">
+                                            <i class="fas fa-circle-check mr-1"></i>
+                                            确保 <code class="px-1 bg-green-100 rounded text-xs">base: '/POD-Order-Management/'</code> 配置正确
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Q4 -->
+                            <div class="bg-dark-50 rounded-xl overflow-hidden">
+                                <button onclick="toggleFaq(this)" class="w-full flex items-center justify-between p-4 text-left hover:bg-dark-100/50 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                                            <i class="fas fa-database text-purple-500 text-sm"></i>
+                                        </span>
+                                        <span class="font-medium text-dark-700">Q4: 生产环境无法连接Supabase</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-dark-400 transition-transform"></i>
+                                </button>
+                                <div class="faq-content hidden px-4 pb-4">
+                                    <p class="text-sm text-dark-600 mb-3">解决方案：</p>
+                                    <ol class="list-decimal list-inside space-y-2 text-sm text-dark-600">
+                                        <li>检查GitHub Secrets是否正确设置</li>
+                                        <li>确认使用的是anon密钥，不是service_role密钥</li>
+                                        <li>检查Supabase的Row Level Security (RLS)策略</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Support -->
+                        <div class="mt-6 bg-gradient-to-r from-primary-500 to-cyan-500 rounded-xl p-5 text-white">
+                            <h5 class="font-semibold mb-3 flex items-center gap-2">
+                                <i class="fas fa-headset"></i>
+                                联系支持
+                            </h5>
+                            <div class="grid md:grid-cols-3 gap-3 text-sm">
+                                <a href="https://support.github.com" target="_blank" class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2 hover:bg-white/30 transition-colors">
+                                    <i class="fab fa-github"></i>
+                                    <span>GitHub支持</span>
+                                </a>
+                                <a href="https://supabase.com/support" target="_blank" class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2 hover:bg-white/30 transition-colors">
+                                    <i class="fas fa-database"></i>
+                                    <span>Supabase支持</span>
+                                </a>
+                                <a href="#" class="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2 hover:bg-white/30 transition-colors">
+                                    <i class="fas fa-bug"></i>
+                                    <span>提交Issue</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Appendix: Git Commands -->
+                <section id="git-commands" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-terminal text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">附录A：Git命令速查</h3>
+                                <p class="text-sm text-dark-500">Git Commands Cheat Sheet</p>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-dark-50 rounded-xl p-4">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-code text-green-500"></i>
+                                    日常开发
+                                </h5>
+                                <div class="space-y-2 text-sm font-mono">
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-24 shrink-0">git status</span>
+                                        <span class="text-dark-600 text-xs">查看状态</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-24 shrink-0">git add .</span>
+                                        <span class="text-dark-600 text-xs">添加所有变更</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-24 shrink-0">git commit</span>
+                                        <span class="text-dark-600 text-xs">提交变更</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-24 shrink-0">git push</span>
+                                        <span class="text-dark-600 text-xs">推送到远程</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-dark-50 rounded-xl p-4">
+                                <h5 class="font-semibold text-dark-700 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-code-branch text-blue-500"></i>
+                                    分支管理
+                                </h5>
+                                <div class="space-y-2 text-sm font-mono">
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-32 shrink-0 truncate">git branch</span>
+                                        <span class="text-dark-600 text-xs">查看分支</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-32 shrink-0 truncate">git checkout -b</span>
+                                        <span class="text-dark-600 text-xs">创建分支</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-32 shrink-0 truncate">git merge</span>
+                                        <span class="text-dark-600 text-xs">合并分支</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 bg-white rounded-lg p-2">
+                                        <span class="text-dark-400 w-32 shrink-0 truncate">git branch -d</span>
+                                        <span class="text-dark-600 text-xs">删除分支</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Appendix: Project Structure -->
+                <section id="structure" class="mb-12 scroll-mt-24">
+                    <div class="section-card bg-white/70 backdrop-blur-sm rounded-2xl p-6 lg:p-8 shadow-xl border border-white/50">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-folder-open text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-dark-800">附录B：项目目录结构</h3>
+                                <p class="text-sm text-dark-500">Project Directory Structure</p>
+                            </div>
+                        </div>
+
+                        <div class="code-block-container">
+                            <div class="flex items-center justify-between bg-dark-800 rounded-t-xl px-4 py-2">
+                                <span class="text-xs text-dark-300 font-mono">POD-Order-Management/</span>
+                                <button onclick="toggleCode(this)" class="text-xs text-dark-400 hover:text-white transition-colors flex items-center gap-1">
+                                    <i class="fas fa-expand"></i>
+                                    <span>展开</span>
+                                </button>
+                            </div>
+                            <div class="code-block bg-dark-900 rounded-b-xl overflow-hidden">
+                                <pre class="p-4 text-sm font-mono text-dark-100 overflow-x-auto"><code>POD-Order-Management/
+├── .github/
+│   ├── workflows/           # GitHub Actions工作流
+│   │   ├── deploy-frontend.yml
+│   │   └── deploy-production.yml
+│   ├── copilot/
+│   │   └── skills/          # Copilot Skills配置
+│   └── rules/               # GitHub Rules配置
+├── .qoder/                  # Qoder开发规范
+│   ├── rules/
+│   ├── skills/
+│   └── repowiki/
+├── backend/                 # Python后端
+│   ├── src/
+│   ├── tests/
+│   └── pyproject.toml
+├── frontend/                # Vue3前端
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── docs/                    # 项目文档
+├── .gitignore
+└── README.md</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="text-center py-8 border-t border-dark-200/30">
+                    <div class="flex items-center justify-center gap-4 mb-4">
+                        <span class="text-sm text-dark-500">文档版本: v1.0</span>
+                        <span class="text-dark-300">|</span>
+                        <span class="text-sm text-dark-500">最后更新: 2026-02-05</span>
+                        <span class="text-dark-300">|</span>
+                        <span class="text-sm text-dark-500">维护者: SY6621</span>
+                    </div>
+                    <p class="text-xs text-dark-400">
+                        Made with <i class="fas fa-heart text-red-400"></i> for ETSY Order Automation System
+                    </p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="backToTop" onclick="scrollToTop()" class="back-to-top fixed bottom-6 right-6 w-12 h-12 rounded-xl bg-gradient-to-r from-primary-500 to-cyan-500 text-white shadow-lg flex items-center justify-center hover:shadow-xl hover:scale-105 transition-all z-40">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+
+    <script>
+        // Toggle code block expansion
+        function toggleCode(button) {
+            const container = button.closest('.code-block-container');
+            const codeBlock = container.querySelector('.code-block');
+            const icon = button.querySelector('i');
+            const text = button.querySelector('span');
+            
+            codeBlock.classList.toggle('expanded');
+            
+            if (codeBlock.classList.contains('expanded')) {
+                icon.className = 'fas fa-compress';
+                text.textContent = '收起';
+            } else {
+                icon.className = 'fas fa-expand';
+                text.textContent = '展开';
+            }
+        }
+
+        // Toggle FAQ
+        function toggleFaq(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('.fa-chevron-down');
+            
+            content.classList.toggle('hidden');
+            icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        });
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        }
+
+        // Active navigation on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-item');
+
+        function updateActiveNav() {
+            const scrollPos = window.scrollY + 150;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.offsetHeight;
+                const sectionId = section.getAttribute('id');
+
+                if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + sectionId) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }
+
+        // Back to top visibility
+        const backToTop = document.getElementById('backToTop');
+
+        function updateBackToTop() {
+            if (window.scrollY > 500) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        }
+
+        // Scroll event listener
+        window.addEventListener('scroll', () => {
+            updateActiveNav();
+            updateBackToTop();
+        });
+
+        // Smooth scroll for nav links
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (window.innerWidth < 1024) {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Initialize
+        updateActiveNav();
+    </script>
+</body>
+</html>

@@ -5,6 +5,8 @@ Pixel-perfect PDF generation using SVG template
 """
 
 import re
+import base64
+import requests
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -19,48 +21,84 @@ from reportlab.pdfbase.ttfonts import TTFont
 from src.config.settings import settings, BASE_DIR
 
 
+# ============================================================
+# 效果图形状 Path 数据（从模板 SVG 提取）
+# ============================================================
+
+# 正面效果图的位置偏移（相对于原始模板）
+FRONT_OFFSET = (225.4, 255.0)  # x, y offset for front effect image
+BACK_OFFSET = (360.0, 255.0)   # x, y offset for back effect image
+
+# 形状 Path 数据（原始坐标，需要平移到效果图位置）
+SHAPE_PATHS = {
+    # 心形 (Heart) - G 系列
+    "Heart": {
+        "d": "M69.8686 14.0786C68.5094 14.8158 64.5094 17.3092 62.1553 18.8983 47.5075 28.7844 36.1069 40.7415 30.2145 52.3956 25.9707 60.7907 24.5971 68.7719 26.1031 76.3129 26.9495 80.555 28.7402 84.437 31.4827 87.963 32.3107 89.0291 34.2221 91.0242 35.3058 91.9573 38.7692 94.9346 42.7311 96.8275 46.8524 97.4693 48.0892 97.6603 50.9553 97.6586 52.6629 97.4662 55.98 97.0889 58.8903 96.243 61.4594 94.8977 64.0329 97.8106 67.2554 99.5443 70.7536 99.5443 74.2912 99.5443 77.5477 97.772 80.1351 94.7988 82.5721 96.0979 85.3194 96.9633 88.3412 97.3706 89.6519 97.5475 90.8787 97.6374 92.0486 97.6385 94.134 97.6408 96.0392 97.3613 97.9174 96.7924 103.7109 95.0369 109.3989 90.2472 112.7044 84.3412 114.5509 81.0442 115.5943 77.7268 116.1085 73.5415 116.2627 72.21 116.2627 68.1591 116.0768 66.6978 115.638 63.1244 114.8357 60.035 113.4584 56.552 107.6851 41.9811 92.8831 26.5946 73.489 14.9995L71.905 14.0522C71.4226 13.752 70.4282 13.7837 69.8686 14.0786ZM71.0152 95.0488C73.5985 95.0488 75.6924 92.9548 75.6924 90.3716 75.6924 87.7884 73.5985 85.6945 71.0152 85.6945 68.432 85.6945 66.3381 87.7884 66.3381 90.3716 66.3381 92.9548 68.432 95.0488 71.0152 95.0488",
+    },
+    # 圆形 (Circle) - C 系列
+    "Circle": {
+        "d": "M70.8656 86.5749C68.2826 86.5749 66.1887 88.6689 66.1887 91.2521 66.1887 93.835 68.2826 95.9298 70.8656 95.9298 73.4488 95.9298 75.5427 93.835 75.5427 91.2521 75.5427 88.6689 73.4488 86.5749 70.8656 86.5749ZM70.8656 102.331C45.6608 102.331 25.2286 81.898 25.2286 56.6923 25.2286 31.4872 45.6608 11.0551 70.8656 11.0551 96.0707 11.0551 116.5037 31.4872 116.5037 56.6923 116.5037 81.898 96.0707 102.331 70.8656 102.331",
+    },
+    # 骨头形 (Bone) - E 系列
+    "Bone": {
+        "d": "M276.3,369.9c0.9-0.8,0.9-2.1,0-2.9c-4.2-3.8-6.6-9.2-6.5-15.1c0.2-10.9,9.4-19.8,20.9-20.1c9.2-0.2,16.3,4,19.1,9.9c0.3,0.9,1.2,1.5,2.2,1.5h6.9c1.1,0,2.2-0.7,2.8-1.7c2.8-4.9,7-8.1,11.8-8.1c4.7,0,9,3.1,11.8,8.1c0.6,1,1.6,1.7,2.8,1.7h6.9c1,0,1.9-0.6,2.2-1.5c2.9-5.8,9.9-10.1,19.1-9.9c11.4,0.2,20.7,9.2,20.9,20.1c0.1,6-2.5,11.4-6.5,15.1c-0.9,0.8-0.9,2.1,0,2.9c4.2,3.8,6.6,9.1,6.5,15.1c-0.2,10.9-9.6,19.8-20.9,20.1c-6,0.2-17.2-4.5-20.1-11.2c-0.3-0.9-1.2-1.5-2.2-1.5h-19.6h-4.3h-17c-1,0-1.9,0.6-2.2,1.5c-2.9,6.9-14.2,11.5-20.1,11.2c-11.4-0.3-20.7-9.2-20.9-20.1C269.7,379,272.3,373.8,276.3,369.9z M333.6,337.7c2.8,0,4.9,2.6,4.4,5.5c-0.3,1.7-1.6,3-3.3,3.4c-3,0.8-5.7-1.5-5.7-4.4C329.1,339.7,331.1,337.7,333.6,337.7",
+        "is_absolute": True,  # 骨头形 path 已经是绝对坐标
+    },
+}
+
+# 颜色映射（英文 -> 填充色）
+COLOR_FILLS = {
+    "Silver": "#9f9fa0",
+    "Gold": "#ebcd7b",
+    "RoseGold": "#dabf9b",
+    "Black": "#231916",
+    # 中文映射
+    "银色": "#9f9fa0",
+    "钢本色": "#9f9fa0",
+    "金色": "#ebcd7b",
+    "玫瑰金": "#dabf9b",
+    "黑色": "#231916",
+}
+
+
 class SVGPDFService:
     """Generate PDF by filling SVG template with order data"""
     
-    # Placeholder mappings: SVG text -> data field
+    # Placeholder mappings: {{PLACEHOLDER}} -> data field
     PLACEHOLDERS = {
-        # Order Info
-        "3891559803": "order_id",
-        "John Smith": "customer_name",
-        "2026-02-01": "order_date",
-        "2026-02-03": "ship_date",
+        # 订单信息
+        "{{ORDER_ID}}": "order_id",
+        "{{ORDER_DATE}}": "order_date",
+        "{{SHIP_DATE}}": "ship_date",
         
-        # Product Info
-        "骨头形": "shape",
-        "骨头形": "shape",
-        "金色": "color",
-        "大": "size",
-        "抛光": "craft",
+        # 产品规格
+        "{{SHAPE}}": "shape",
+        "{{COLOR}}": "color",
+        "{{SIZE}}": "size",
+        "{{CRAFT}}": "craft",
+        "{{SKU}}": "sku",
         
-        # Customization
-        "ALice": "front_text",
-        "F-04": "front_font",
-        "0412345678": "back_text",
+        # 定制内容
+        "{{FRONT_TEXT}}": "front_text",
+        "{{FRONT_FONT}}": "front_font",
+        "{{BACK_TEXT}}": "back_text",
         
-        # SKU
-        "B-E01A": "sku",
+        # 效果图
+        "{{EFFECT_FRONT_TEXT}}": "front_text",
+        "{{EFFECT_BACK_TEXT}}": "back_text",
         
-        # Shipping
-        "04123456780412345678": "tracking_number",
-        "Demi Brooker": "recipient_name",
-        "3/1A Salisbury Rd": "recipient_address",
-        "2029;Rose Bay": "postal_city",
-        "AU": "country_code",
-        "Australia": "country",
-        "Trish Weeden": "recipient_name_info",
-        "TAS": "state",
-        "YOUNGTOWN": "city",
-        "7249": "postal_code",
-        "36 Jubilee Rd": "address",
+        # 物流信息
+        "{{TRACKING_NUMBER}}": "tracking_number",
+        "{{COUNTRY}}": "country",
+        "{{RECIPIENT_NAME}}": "recipient_name",
+        "{{STATE}}": "state",
+        "{{CITY}}": "city",
+        "{{POSTAL_CODE}}": "postal_code",
+        "{{ADDRESS}}": "address",
         
-        # Dimensions
-        "45 mm": "width_label",
-        "26 mm": "height_label",
+        # 尺寸
+        "{{WIDTH_MM}}": "width_mm",
+        "{{HEIGHT_MM}}": "height_mm",
     }
     
     def __init__(self):
@@ -166,6 +204,101 @@ class SVGPDFService:
         with open(self.template_path, 'r', encoding='utf-8') as f:
             return f.read()
     
+    def _get_effect_shape_svg(self, shape: str, color: str, position: str = "front") -> str:
+        """
+        生成效果图形状的 SVG 元素
+        
+        Args:
+            shape: 形状名称 (Heart/Circle/Bone 或 心形/圆形/骨头形)
+            color: 颜色名称 (Silver/Gold/RoseGold/Black 或中文)
+            position: front 或 back
+        
+        Returns:
+            SVG <g> 元素字符串
+        """
+        # 标准化形状名称
+        shape_map = {
+            "心形": "Heart", "Heart": "Heart",
+            "圆形": "Circle", "Circle": "Circle",
+            "骨头形": "Bone", "Bone": "Bone",
+        }
+        shape_key = shape_map.get(shape, "Bone")
+        
+        # 获取颜色填充
+        fill_color = COLOR_FILLS.get(color, "#E5C87A")
+        
+        # 获取形状 path 数据
+        shape_data = SHAPE_PATHS.get(shape_key, SHAPE_PATHS["Bone"])
+        path_d = shape_data["d"]
+        is_absolute = shape_data.get("is_absolute", False)
+        
+        # 根据位置确定偏移
+        if position == "front":
+            offset_x, offset_y = 225.4, 255.0
+        else:
+            offset_x, offset_y = 360.0, 255.0
+        
+        # 生成 SVG 元素
+        if is_absolute:
+            # 骨头形已经是绝对坐标，直接使用
+            if position == "back":
+                # 背面需要调整 x 坐标（向右移动 134.7）
+                path_d = self._adjust_path_x(path_d, 134.7)
+            svg_element = f'<g><path fill-rule="evenodd" fill="{fill_color}" d="{path_d}"/></g>'
+        else:
+            # 心形和圆形需要添加变换
+            svg_element = f'<g><path fill-rule="evenodd" fill="{fill_color}" d="{path_d}" transform="translate({offset_x}, {offset_y})"/></g>'
+        
+        return svg_element
+    
+    def _adjust_path_x(self, path_d: str, offset: float) -> str:
+        """调整 path 的 x 坐标"""
+        # 简单的正则替换 M 后的第一个数字
+        def adjust_coords(match):
+            x = float(match.group(1))
+            return f"M{x + offset},"
+        return re.sub(r'M(\d+\.?\d*),', adjust_coords, path_d)
+    
+    def _get_product_photo_base64(self, sku: str, size: str = "L") -> str:
+        """
+        从 Supabase Storage 获取产品实拍图并转为 base64
+        
+        Args:
+            sku: SKU 编码 (如 B-G01B)
+            size: 尺寸 L/S
+        
+        Returns:
+            base64 编码的图片数据（含 data:image/jpeg;base64, 前缀）
+        """
+        try:
+            # 确定目录
+            size_dir = "large" if size.upper() in ["L", "大"] else "small"
+            
+            # 构建 Supabase Storage URL
+            photo_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/photos/{size_dir}/{sku}.jpg"
+            
+            print(f"[INFO] Loading product photo: {photo_url}")
+            
+            # 下载图片
+            response = requests.get(photo_url, timeout=10)
+            if response.status_code == 200:
+                # 转为 base64
+                photo_base64 = base64.b64encode(response.content).decode('utf-8')
+                print(f"[OK] Product photo loaded: {sku}.jpg ({len(response.content) / 1024:.1f} KB)")
+                return f"data:image/jpeg;base64,{photo_base64}"
+            else:
+                print(f"[WARN] Failed to load photo: {response.status_code}")
+                return self._get_placeholder_image()
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to load product photo: {e}")
+            return self._get_placeholder_image()
+    
+    def _get_placeholder_image(self) -> str:
+        """返回占位图片（灰色方块）"""
+        # 1x1 灰色 JPEG 的 base64
+        return "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AVN//2Q=="
+    
     def _apply_font_styles(self, svg_content: str) -> str:
         """
         Apply Alibaba PuHuiTi font styles to all text elements.
@@ -241,54 +374,73 @@ class SVGPDFService:
         # Step 1: Apply font style modifications
         svg_content = self._apply_font_styles(svg_content)
         
-        # Step 2: Build replacement map
+        # Step 2: 生成效果图形状
+        shape = data.get("shape", "骨头形")
+        color = data.get("color", "金色")
+        front_shape_svg = self._get_effect_shape_svg(shape, color, "front")
+        back_shape_svg = self._get_effect_shape_svg(shape, color, "back")
+        
+        # Step 3: 获取产品实拍图
+        sku = data.get("sku", "B-E01A")
+        size = data.get("size", "L")
+        # 从 SKU 提取基础编码（去掉尺寸后缀）
+        sku_base = sku[:6] if len(sku) >= 6 else sku
+        photo_base64 = self._get_product_photo_base64(sku_base, size)
+        
+        # Step 4: Build replacement map using {{PLACEHOLDER}} format
         replacements = {
-            # Order Info
-            "3891559803": str(data.get("order_id", "3891559803")),
-            "John Smith": str(data.get("customer_name", "John Smith")),
-            "2026-02-01": str(data.get("order_date", "2026-02-01")),
-            "2026-02-03": str(data.get("ship_date", "2026-02-03")),
+            # 效果图形状
+            "{{EFFECT_FRONT_SHAPE}}": front_shape_svg,
+            "{{EFFECT_BACK_SHAPE}}": back_shape_svg,
             
-            # Product Info (Chinese)
-            ">骨头形<": f">{data.get('shape', '骨头形')}<",
-            ">骨头型<": f">{data.get('shape', '骨头形')}<",
-            ">金色<": f">{data.get('color', '金色')}<",
-            ">大<": f">{data.get('size', '大')}<",
-            ">抛光<": f">{data.get('craft', '抛光')}<",
+            # 实拍图
+            "{{PRODUCT_PHOTO_BASE64}}": photo_base64,
             
-            # Customization
-            ">ALice<": f">{data.get('front_text', 'ALice')}<",
-            ">F-04<": f">{data.get('front_font', 'F-04')}<",
-            ">0412345678<": f">{data.get('back_text', '0412345678')}<",
+            # 订单信息
+            "{{ORDER_ID}}": str(data.get("order_id", "")),
+            "{{ORDER_DATE}}": str(data.get("order_date", "")),
+            "{{SHIP_DATE}}": str(data.get("ship_date", "")),
+            "{{CUSTOMER_NAME}}": str(data.get("customer_name", "")),
             
-            # SKU (with color preserved)
-            ">B-E01A<": f">{data.get('sku', 'B-E01A')}<",
+            # 产品规格（中文）
+            "{{SHAPE}}": str(data.get("shape", "")),
+            "{{COLOR}}": str(data.get("color", "")),
+            "{{SIZE}}": str(data.get("size", "")),
+            "{{CRAFT}}": str(data.get("craft", "抛光")),
             
-            # Shipping Label - tracking number
-            ">04123456780412345678<": f">{data.get('tracking_number', data.get('order_id', '')[:20])}<",
+            # SKU
+            "{{SKU}}": str(data.get("sku", "")),
             
-            # Shipping info section
-            ">Australia<": f">{data.get('country', 'Australia')}<",
-            ">Trish Weeden<": f">{data.get('recipient_name', 'Trish Weeden')}<",
-            ">TAS<": f">{data.get('state', 'TAS')}<",
-            ">YOUNGTOWN<": f">{data.get('city', 'YOUNGTOWN')}<",
-            ">7249<": f">{data.get('postal_code', '7249')}<",
-            ">36 Jubilee Rd<": f">{data.get('address', '36 Jubilee Rd')}<",
+            # 定制内容
+            "{{FRONT_TEXT}}": str(data.get("front_text", "")),
+            "{{FRONT_FONT}}": str(data.get("front_font", "")),
+            "{{BACK_TEXT}}": str(data.get("back_text", "")),
             
-            # Postlink label
-            ">Demi Brooker<": f">{data.get('recipient_name', 'Demi Brooker')}<",
-            ">3/1A Salisbury Rd<": f">{data.get('recipient_address', '3/1A Salisbury Rd')}<",
-            ">2029;Rose Bay<": f">{data.get('postal_city', '2029;Rose Bay')}<",
-            ">AU<": f">{data.get('country_code', 'AU')}<",
+            # 效果图区域
+            "{{EFFECT_FRONT_TEXT}}": str(data.get("front_text", "")),
+            "{{EFFECT_BACK_TEXT}}": str(data.get("back_text", "")),
             
-            # Dimensions
-            ">45 mm<": f">{data.get('width_mm', 45)} mm<",
-            ">26 mm<": f">{data.get('height_mm', 26)} mm<",
+            # 物流信息
+            "{{TRACKING_NUMBER}}": str(data.get("tracking_number", "")),
+            "{{COUNTRY}}": str(data.get("country", "")),
+            "{{RECIPIENT_NAME}}": str(data.get("recipient_name", "")),
+            "{{STATE}}": str(data.get("state", "")),
+            "{{CITY}}": str(data.get("city", "")),
+            "{{POSTAL_CODE}}": str(data.get("postal_code", "")),
+            "{{ADDRESS}}": str(data.get("address", "")),
+            
+            # 尺寸标注
+            "{{WIDTH_MM}}": f"{data.get('width_mm', 45)} mm",
+            "{{HEIGHT_MM}}": f"{data.get('height_mm', 26)} mm",
         }
         
         result = svg_content
-        for old, new in replacements.items():
-            result = result.replace(old, new)
+        for placeholder, value in replacements.items():
+            if placeholder in result:
+                result = result.replace(placeholder, value)
+                # 对于长值只显示前30个字符
+                display_value = value[:50] + "..." if len(str(value)) > 50 else value
+                print(f"[OK] Replaced {placeholder} → {display_value}")
         
         return result
     

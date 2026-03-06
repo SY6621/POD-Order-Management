@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生产订单管理系统 - 已完成订单</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-200 min-h-screen flex items-center justify-center p-8">
+
+    <div class="flex h-[900px] w-[1480px] bg-white shadow-2xl rounded-2xl overflow-hidden shrink-0">
+
+        <!-- Sidebar -->
+        <div class="w-64 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto shrink-0">
+            <div class="p-6">
+                <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-blue-600 rounded-full"></span>
+                    仪表盘总览
+                </h1>
+            </div>
+
+            <nav class="px-4 space-y-1">
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                        <span class="font-medium">仪表盘总览</span>
+                    </div>
+                </button>
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                        <span class="font-medium">待确认订单</span>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">32</span>
+                </button>
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V7.86c0-.55-.45-1-1-1H14.5c-.85 0-1.65-.33-2.25-.93L11 4.71"/><path d="M5.8 5.81a2.2 2.2 0 0 1 3.1 0l1.3 1.3"/></svg>
+                        <span class="font-medium">生产中订单</span>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">18</span>
+                </button>
+
+                <!-- 已完成订单 Active -->
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors bg-green-50 text-green-700">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                        <span class="font-medium">已完成订单</span>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-200 text-green-700">64</span>
+                </button>
+
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                        <span class="font-medium">物流追踪</span>
+                    </div>
+                </button>
+                <button class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        <span class="font-medium">邮件模板</span>
+                    </div>
+                </button>
+            </nav>
+
+            <!-- Stat Cards -->
+            <div class="p-4 mt-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                            <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                                <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                                <circle cx="40" cy="40" r="28" stroke="#3b82f6" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="43.98" stroke-linecap="round" />
+                            </svg>
+                            <span class="text-lg font-bold z-10 text-blue-600">128</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600">总订单</span>
+                        <span class="text-[10px] text-slate-400">本月累计</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                            <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                                <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                                <circle cx="40" cy="40" r="28" stroke="#f97316" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="131.95" stroke-linecap="round" />
+                            </svg>
+                            <span class="text-lg font-bold z-10 text-orange-600">5</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600">新订单</span>
+                        <span class="text-[10px] text-slate-400">须24h回复</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                            <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                                <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                                <circle cx="40" cy="40" r="28" stroke="#a855f7" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="144.26" stroke-linecap="round" />
+                            </svg>
+                            <span class="text-lg font-bold z-10 text-purple-600">18</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600">生产作业</span>
+                        <span class="text-[10px] text-slate-400">进行中</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                            <svg width="80" height="80" viewBox="0 0 80 80" class="absolute transform -rotate-90">
+                                <circle cx="40" cy="40" r="28" stroke="#e2e8f0" stroke-width="5" fill="transparent" />
+                                <circle cx="40" cy="40" r="28" stroke="#22c55e" stroke-width="5" fill="transparent" stroke-dasharray="175.93" stroke-dashoffset="87.96" stroke-linecap="round" />
+                            </svg>
+                            <span class="text-lg font-bold z-10 text-green-600">50%</span>
+                        </div>
+                        <span class="text-xs font-medium text-slate-600">已交付</span>
+                        <span class="text-[10px] text-slate-400">物流送达</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom recent completed list -->
+            <div class="p-4 mt-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-700">最近完成</h3>
+                    <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">本月64</span>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-800">#PO-2602-001</span>
+                            <span class="text-[10px] text-green-600 font-medium">已签收</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-600">Maura McHale</span>
+                            <span class="text-[10px] text-slate-400">B-E01A</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-800">#PO-2602-002</span>
+                            <span class="text-[10px] text-green-600 font-medium">已签收</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-600">Kim Alison</span>
+                            <span class="text-[10px] text-slate-400">B-G01B</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-800">#PO-2601-058</span>
+                            <span class="text-[10px] text-blue-500 font-medium">运输中</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-600">Alice Cooper</span>
+                            <span class="text-[10px] text-slate-400">B-E01C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 bg-slate-50 p-6 overflow-y-auto h-full">
+            <!-- Header -->
+            <div class="mb-5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-800">已完成订单</h2>
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">本月 64 单</span>
+                </div>
+                <!-- Stats Row -->
+                <div class="flex items-center gap-4">
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-green-600">64</div>
+                        <div class="text-[10px] text-slate-400">本月完成</div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-blue-600">58</div>
+                        <div class="text-[10px] text-slate-400">已签收</div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-orange-500">6</div>
+                        <div class="text-[10px] text-slate-400">运输中</div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-200"></div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-slate-600">3.2天</div>
+                        <div class="text-[10px] text-slate-400">平均交货</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                            <tr class="h-[32px]">
+                                <th class="px-3 whitespace-nowrap font-medium">订单ID</th>
+                                <th class="px-3 whitespace-nowrap font-medium">客户名称</th>
+                                <th class="px-3 whitespace-nowrap font-medium">产品</th>
+                                <th class="px-3 whitespace-nowrap font-medium">数量</th>
+                                <th class="px-3 whitespace-nowrap font-medium">完成日期</th>
+                                <th class="px-3 whitespace-nowrap font-medium">快递公司</th>
+                                <th class="px-3 whitespace-nowrap font-medium">运单号</th>
+                                <th class="px-3 whitespace-nowrap font-medium">物流状态</th>
+                                <th class="px-3 whitespace-nowrap font-medium">已交货天数</th>
+                                <th class="px-3 whitespace-nowrap font-medium">生产文档</th>
+                                <th class="px-3 whitespace-nowrap font-medium">邮件追评</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-001</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Maura McHale</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">1</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-02-05</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">USPS</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">9400111899223456789</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold">已签收</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-600 font-medium">3 天</td>
+                                <td class="px-3 whitespace-nowrap">
+                                    <a href="../output/POD_3891559803_20260217_222758.pdf" target="_blank" class="flex items-center gap-1 text-blue-600 hover:underline text-[10px]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        查看
+                                    </a>
+                                </td>
+                                <td class="px-3 whitespace-nowrap">
+                                    <select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white">
+                                        <option>准备发送</option><option>无须发送</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-002</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Kim Alison</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-G01B</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">2</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-02-06</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">UPS</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">1Z999AA1012345678</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold">已签收</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-600 font-medium">5 天</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>准备发送</option><option>无须发送</option></select></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-003</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Alice Cooper</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">50</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-02-07</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">FedEx</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">7489876543210</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-bold">运输中</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-400 text-[10px]">—</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>准备发送</option><option>无须发送</option></select></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-004</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">John Doe</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01C</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">5</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-02-08</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">USPS</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">9400111899223456780</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold">已签收</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-600 font-medium">4 天</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>无须发送</option><option>准备发送</option></select></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-005</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Sarah Brooks</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-G01A</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">3</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-02-08</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">DHL</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">1234567890</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-bold">运输中</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-400 text-[10px]">—</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>准备发送</option><option>无须发送</option></select></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2601-058</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Mark Johnson</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">1</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-01-30</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">USPS</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">9400111899223456781</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold">已签收</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-600 font-medium">6 天</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>无须发送</option><option>准备发送</option></select></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2601-057</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">Rachel Green</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-G01B</td>
+                                <td class="px-3 whitespace-nowrap text-slate-600">2</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">2026-01-28</td>
+                                <td class="px-3 whitespace-nowrap text-slate-500">UPS</td>
+                                <td class="px-3 whitespace-nowrap font-mono text-blue-600">1Z999AA1012345679</td>
+                                <td class="px-3 whitespace-nowrap"><span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-bold">已签收</span></td>
+                                <td class="px-3 whitespace-nowrap text-slate-600 font-medium">5 天</td>
+                                <td class="px-3 whitespace-nowrap"><span class="text-[10px] text-slate-400">—</span></td>
+                                <td class="px-3 whitespace-nowrap"><select class="text-[10px] border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 bg-white"><option>无须发送</option><option>准备发送</option></select></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Order Detail Preview -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex gap-4">
+                        <div class="w-24 h-24 bg-green-50 rounded-lg overflow-hidden border border-green-200 shrink-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                                订单详情 · #PO-2602-001
+                            </h3>
+                            <div class="text-xs text-slate-400 mb-3 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                完成时间 2026-02-05
+                            </div>
+                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-slate-600">
+                                <div class="flex"><span class="text-slate-400 w-16">客户:</span> Maura McHale</div>
+                                <div class="flex"><span class="text-slate-400 w-16">产品:</span> B-E01A · 圆形金色</div>
+                                <div class="flex"><span class="text-slate-400 w-16">定制:</span> Love You · F-04</div>
+                                <div class="flex"><span class="text-slate-400 w-16">数量:</span> 1 件</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">已签收</span>
+                        <div class="text-right text-sm text-slate-500">
+                            <div class="flex justify-end"><span class="text-slate-400 mr-2">快递:</span> USPS</div>
+                            <div class="flex justify-end font-mono text-xs text-blue-600">9400111899223456789</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logistics Timeline -->
+                <div class="border border-slate-100 rounded-xl p-5 bg-slate-50">
+                    <h4 class="text-sm font-bold text-slate-700 mb-4">物流轨迹</h4>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/></svg>
+                                </div>
+                                <div class="w-px flex-1 bg-slate-200 mt-1"></div>
+                            </div>
+                            <div class="pb-4">
+                                <div class="text-sm font-semibold text-green-700">包裹已签收</div>
+                                <div class="text-xs text-slate-400 mt-0.5">2026-02-08 14:32 · 已送达收件地址</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                                </div>
+                                <div class="w-px flex-1 bg-slate-200 mt-1"></div>
+                            </div>
+                            <div class="pb-4">
+                                <div class="text-sm font-semibold text-slate-700">派送途中</div>
+                                <div class="text-xs text-slate-400 mt-0.5">2026-02-08 08:15 · 快递员正在派件</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                                </div>
+                                <div class="w-px flex-1 bg-slate-200 mt-1"></div>
+                            </div>
+                            <div class="pb-4">
+                                <div class="text-sm font-semibold text-slate-700">到达目的城市</div>
+                                <div class="text-xs text-slate-400 mt-0.5">2026-02-07 22:40 · New York, NY</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-slate-600">已揽收发出</div>
+                                <div class="text-xs text-slate-400 mt-0.5">2026-02-05 16:00 · 快递员取件</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 追评邮件正文 -->
+                <div class="border border-slate-200 rounded-xl p-5 bg-white mt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            追评邮件
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-0.5 rounded-full font-medium">准备发送</span>
+                            <span class="text-[10px] text-slate-400">已交货 3 天</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-4 text-sm text-slate-600 leading-relaxed border border-slate-100">
+                        <p class="font-semibold text-slate-700 mb-2">Hi Maura,</p>
+                        <p class="mb-2">Hope you're doing great! Just wanted to check in — it's been a few days since your order arrived, and we'd love to know how you're liking your personalized piece ✨</p>
+                        <p class="mb-2">If everything looks perfect and you're happy with it, we'd truly appreciate a quick review — it means the world to small shops like ours 🙏</p>
+                        <p class="mb-2">Just click the link below to leave a review, it only takes a moment:</p>
+                        <p class="text-blue-600 underline text-xs mb-3 cursor-pointer">https://www.etsy.com/your_shop/review</p>
+                        <p>Warm regards,<br><span class="text-slate-500">Your Shop Team</span></p>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-3">
+                        <button class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">编辑邮件</button>
+                        <button class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                            发送追评邮件
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-center gap-4">
+                    <button class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        下载生产文档
+                    </button>
+                    <button class="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        发送完成通知
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

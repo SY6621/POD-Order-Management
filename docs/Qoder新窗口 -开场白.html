@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开场白体系设计文档</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+accent: '#E91E8C',
+accentLight: '#FF4BA0',
+accentDark: '#C4157A',
+dark: '#1A1A1A',
+darker: '#0D0D0D',
+lightGray: '#F5F5F7',
+mediumGray: '#E8E8EA',
+textGray: '#6B6B70'
+},
+fontFamily: {
+sans: ['Inter', 'system-ui', 'sans-serif'],
+mono: ['SF Mono', 'Consolas', 'monospace']
+}
+}
+}
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+html { scroll-behavior: smooth; }
+body { font-family: 'Inter', sans-serif; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }
+.code-block {
+background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%);
+border-radius: 12px;
+padding: 20px 24px;
+overflow-x: auto;
+}
+.code-block code {
+color: #E8E8EA;
+font-family: 'SF Mono', Consolas, monospace;
+font-size: 13px;
+line-height: 1.7;
+white-space: pre-wrap;
+}
+.nav-item {
+position: relative;
+transition: all 0.3s ease;
+}
+.nav-item::before {
+content: '';
+position: absolute;
+left: 0;
+top: 50%;
+transform: translateY(-50%);
+width: 3px;
+height: 0;
+background: #E91E8C;
+border-radius: 2px;
+transition: height 0.3s ease;
+}
+.nav-item:hover::before,
+.nav-item.active::before {
+height: 100%;
+}
+.nav-item.active {
+color: #E91E8C;
+background: rgba(233, 30, 140, 0.05);
+}
+.sub-nav-item {
+position: relative;
+padding-left: 32px;
+}
+.sub-nav-item::after {
+content: '';
+position: absolute;
+left: 16px;
+top: 50%;
+transform: translateY(-50%);
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: #3A3A3A;
+transition: all 0.3s ease;
+}
+.sub-nav-item:hover::after,
+.sub-nav-item.active::after {
+background: #E91E8C;
+box-shadow: 0 0 8px rgba(233, 30, 140, 0.5);
+}
+.checkmark {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 18px;
+height: 18px;
+border-radius: 4px;
+border: 2px solid #E91E8C;
+color: #E91E8C;
+font-size: 10px;
+transition: all 0.2s ease;
+}
+.checkmark.checked {
+background: #E91E8C;
+color: white;
+}
+.table-row {
+transition: background 0.2s ease;
+}
+.table-row:hover {
+background: rgba(233, 30, 140, 0.03);
+}
+.fade-in {
+animation: fadeIn 0.6s ease forwards;
+opacity: 0;
+}
+@keyframes fadeIn {
+to { opacity: 1; transform: translateY(0); }
+}
+.section-card {
+opacity: 0;
+transform: translateY(20px);
+transition: all 0.5s ease;
+}
+.section-card.visible {
+opacity: 1;
+transform: translateY(0);
+}
+</style>
+</head>
+<body class="bg-lightGray min-h-screen">
+<!-- 主容器 -->
+<div class="max-w-[1480px] mx-auto flex min-h-screen">
+<!-- 左侧目录 -->
+<aside class="w-72 bg-darker text-white flex-shrink-0 sticky top-0 h-screen overflow-y-auto">
+<div class="p-6 border-b border-gray-800">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+<i class="fas fa-file-code text-white"></i>
+</div>
+<div>
+<h1 class="text-lg font-semibold">开场白体系</h1>
+<p class="text-xs text-gray-500">设计文档 v1.0</p>
+</div>
+</div>
+</div>
+
+<nav class="py-6" id="mainNav">
+<!-- 主目录项 -->
+<div class="mb-2">
+<a href="#section1" class="nav-item active flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section1">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">1</span>
+<span>问题解答</span>
+</a>
+<!-- 子目录 -->
+<div class="mt-1 space-y-1">
+<a href="#section1-1" class="sub-nav-item block py-2 px-6 text-xs text-gray-400 hover:text-white cursor-pointer">业务背景如何解决</a>
+<a href="#section1-2" class="sub-nav-item block py-2 px-6 text-xs text-gray-400 hover:text-white cursor-pointer">三大阶段框架</a>
+<a href="#section1-3" class="sub-nav-item block py-2 px-6 text-xs text-gray-400 hover:text-white cursor-pointer">开场白结构标准</a>
+</div>
+</div>
+
+<div class="mb-2">
+<a href="#section2" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section2">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">2</span>
+<span>通用开场白模板</span>
+</a>
+</div>
+
+<div class="mb-2">
+<a href="#section3" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section3">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">3</span>
+<span>Skills补充方案</span>
+</a>
+</div>
+
+<div class="mb-2">
+<a href="#section4" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section4">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">4</span>
+<span>场景适应对照表</span>
+</a>
+</div>
+
+<div class="mb-2">
+<a href="#section5" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section5">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">5</span>
+<span>新对话标准流程</span>
+</a>
+</div>
+
+<div class="mb-2">
+<a href="#section6" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section6">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">6</span>
+<span>实战示例</span>
+</a>
+</div>
+
+<div class="mb-2">
+<a href="#section7" class="nav-item flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-white/5 cursor-pointer" data-section="section7">
+<span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold">7</span>
+<span>总结</span>
+</a>
+</div>
+</nav>
+
+<!-- 底部信息 -->
+<div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-800">
+<div class="flex items-center gap-2 text-xs text-gray-500">
+<i class="fas fa-clock"></i>
+<span>最后更新: 2024-01-15</span>
+</div>
+</div>
+</aside>
+
+<!-- 右侧正文 -->
+<main class="flex-1 p-10 overflow-y-auto">
+<!-- 标题区域 -->
+<header class="mb-12 fade-in" style="animation-delay: 0.1s;">
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent rounded-full text-sm font-medium mb-4">
+<i class="fas fa-lightbulb"></i>
+<span>核心目标</span>
+</div>
+<h1 class="text-4xl font-bold text-dark mb-4">设计一套完整的开场白体系</h1>
+<p class="text-lg text-textGray max-w-2xl">解决业务背景传递和场景适应问题，让AI开发协作更加高效规范。</p>
+</header>
+
+<!-- Section 1: 问题解答 -->
+<section id="section1" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">1</div>
+<h2 class="text-2xl font-bold text-dark">问题解答</h2>
+</div>
+
+<!-- 1.1 业务背景 -->
+<div id="section1-1" class="bg-white rounded-3xl p-8 shadow-sm mb-6">
+<div class="flex items-start gap-4 mb-6">
+<div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold flex-shrink-0">1</div>
+<div>
+<h3 class="text-xl font-semibold text-dark mb-2">业务背景如何解决？</h3>
+<p class="text-textGray">通过文档化和标准化引用流程解决业务背景传递问题</p>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b-2 border-mediumGray">
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">方案</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">实现方式</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">位置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2">
+<i class="fas fa-file-alt text-accent"></i>
+<span class="font-medium">业务背景文档化</span>
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">已存在 .qoder/repowiki/zh/content/项目概述.md</td>
+<td class="py-4 px-4"><span class="px-3 py-1 bg-accent/10 text-accent text-xs rounded-full">每次新对话附加</span></td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2">
+<i class="fas fa-cogs text-accent"></i>
+<span class="font-medium">Skills补充</span>
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">创建 .qoder/skills/项目背景说明.md</td>
+<td class="py-4 px-4"><span class="px-3 py-1 bg-gray-100 text-textGray text-xs rounded-full">AI自动加载</span></td>
+</tr>
+<tr class="table-row">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2">
+<i class="fas fa-book text-accent"></i>
+<span class="font-medium">Repo Wiki</span>
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">已存在 .qoder/repowiki/ 目录</td>
+<td class="py-4 px-4"><span class="px-3 py-1 bg-gray-100 text-textGray text-xs rounded-full">随时查阅</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="mt-6 p-4 bg-gradient-to-r from-accent/5 to-transparent rounded-xl border-l-4 border-accent">
+<p class="text-sm"><span class="font-semibold text-accent">结论：</span><span class="text-textGray">不需要重写，只需标准化引用流程</span></p>
+</div>
+</div>
+
+<!-- 1.2 三大阶段 -->
+<div id="section1-2" class="bg-white rounded-3xl p-8 shadow-sm mb-6">
+<div class="flex items-start gap-4 mb-6">
+<div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold flex-shrink-0">2</div>
+<div>
+<h3 class="text-xl font-semibold text-dark mb-2">三大阶段框架何时陈述？</h3>
+<p class="text-textGray">根据不同场景选择合适的陈述方式</p>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b-2 border-mediumGray">
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">场景</th>
+<th class="text-center py-4 px-4 text-sm font-semibold text-dark">是否陈述</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">方式</th>
+</tr>
+</thead>
+<tbody>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="font-medium">日常开发（修bug/小功能）</span>
+</td>
+<td class="py-4 px-4 text-center">
+<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-500"><i class="fas fa-times"></i></span>
+</td>
+<td class="py-4 px-4 text-textGray">开场白只写当前状态</td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="font-medium">新功能开发</span>
+</td>
+<td class="py-4 px-4 text-center">
+<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-500"><i class="fas fa-check"></i></span>
+</td>
+<td class="py-4 px-4 text-textGray">附加项目概述.md</td>
+</tr>
+<tr class="table-row">
+<td class="py-4 px-4">
+<span class="font-medium">架构讨论/代码审查</span>
+</td>
+<td class="py-4 px-4 text-center">
+<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-50 text-green-500"><i class="fas fa-check"></i></span>
+</td>
+<td class="py-4 px-4 text-textGray">开场白简述+附加文档</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- 1.3 开场白结构 -->
+<div id="section1-3" class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="flex items-start gap-4 mb-6">
+<div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold flex-shrink-0">3</div>
+<div>
+<h3 class="text-xl font-semibold text-dark mb-2">开场白结构标准</h3>
+<p class="text-textGray">统一的开场白格式，确保信息完整传递</p>
+</div>
+</div>
+
+<div class="code-block">
+<code>【项目标识】+【当前状态】+【下一步任务】+【开发规范】+【附加文件】</code>
+</div>
+</div>
+</section>
+
+<!-- Section 2: 通用开场白模板 -->
+<section id="section2" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">2</div>
+<h2 class="text-2xl font-bold text-dark">通用开场白模板（标准版）</h2>
+</div>
+
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="code-block mb-6">
+<code>【ETSY订单自动化系统】
+
+📊 当前状态（Git Commit: 40d792b）
+✅ Dashboard页面完成（Material Design风格）
+✅ Orders页面完成（三个Tab，连接Supabase真实数据）
+✅ PDF生成服务完成（已修复中文字体）
+✅ GitHub仓库配置完成
+
+📋 下一步任务
+[在此填写具体任务]
+
+⚠️ 开发规范
+- 修改核心文件前必须先read_file完整内容
+- 使用search_replace前明确说明修改位置和原因
+- 每次修改后提醒我用git diff检查改动
+- 核心文件需明确授权才能修改
+
+📎 附加文件（根据任务复杂度选择）
+□ README.md（必选）
+□ .qoder/AI开发安全检查清单.md（必选）
+□ .qoder/repowiki/zh/content/项目概述.md（新功能/复杂任务）
+□ 具体代码文件（相关任务）</code>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-lightGray rounded-xl">
+<div class="flex items-center gap-2 mb-2">
+<i class="fas fa-info-circle text-accent"></i>
+<span class="font-medium text-dark">使用提示</span>
+</div>
+<p class="text-sm text-textGray">复制模板后，根据实际任务填写【下一步任务】部分</p>
+</div>
+<div class="p-4 bg-lightGray rounded-xl">
+<div class="flex items-center gap-2 mb-2">
+<i class="fas fa-copy text-accent"></i>
+<span class="font-medium text-dark">复制按钮</span>
+</div>
+<button onclick="copyTemplate()" class="text-sm text-accent hover:text-accentDark transition-colors">点击复制模板到剪贴板</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Section 3: Skills补充方案 -->
+<section id="section3" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">3</div>
+<h2 class="text-2xl font-bold text-dark">Skills补充方案</h2>
+</div>
+
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<i class="fas fa-file-code text-accent text-xl"></i>
+<h3 class="text-lg font-semibold text-dark">创建 .qoder/skills/业务背景快速加载.md</h3>
+</div>
+
+<div class="code-block mb-6">
+<code># 业务背景快速加载
+
+## 何时触发
+当用户说"需要业务背景"、"新功能开发"、"不了解项目"时自动加载
+
+## 项目核心信息
+
+### 系统目标
+ETSY平台订单流自动化后台管理系统，实现从订单获取到发货的全流程自动化
+
+### 6大任务流程
+1. 订单获取：抓取QQ邮件 → 清洗数据 → 提取订单信息
+2. 生成效果图：反推产品编号 → 调取模版 → 生成JPG/SVG → 发送确认
+3. 获取物流面单：API对接物流系统 → 获取单号和面单
+4. 生成生产文档：整合信息 → 生成A4打印PDF
+5. 物流状态查询：8天后查询 → 处理异常
+6. 追评：客户收货后发送追评邮件
+
+### 技术栈
+- 前端：Vue 3 + Vite + Element Plus + Pinia
+- 后端：Python + Poetry + ReportLab
+- 数据库：Supabase
+
+### 当前进度
+详见用户提供的【当前状态】部分
+
+## 下一步操作建议
+根据用户提供的【下一步任务】，先读取相关文档，再执行开发</code>
+</div>
+
+<div class="flex items-center gap-2 p-4 bg-accent/5 rounded-xl">
+<i class="fas fa-magic text-accent"></i>
+<span class="text-sm text-textGray">AI将根据触发条件自动加载此文件，无需手动附加</span>
+</div>
+</div>
+</section>
+
+<!-- Section 4: 场景适应对照表 -->
+<section id="section4" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">4</div>
+<h2 class="text-2xl font-bold text-dark">场景适应对照表</h2>
+</div>
+
+<div class="bg-white rounded-3xl p-8 shadow-sm overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b-2 border-mediumGray">
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">任务类型</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">示例</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">开场白内容</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">附加文件</th>
+</tr>
+</thead>
+<tbody>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-full text-sm font-medium">
+<i class="fas fa-leaf"></i>
+简单任务
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">修复按钮样式、改文字</td>
+<td class="py-4 px-4 text-textGray">当前状态+具体任务+规范</td>
+<td class="py-4 px-4 text-textGray">检查清单+相关代码文件</td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full text-sm font-medium">
+<i class="fas fa-cog"></i>
+中等任务
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">新增表格列、改API接口</td>
+<td class="py-4 px-4 text-textGray">当前状态+任务详情+规范</td>
+<td class="py-4 px-4 text-textGray">检查清单+相关代码+数据库文档</td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-600 rounded-full text-sm font-medium">
+<i class="fas fa-fire"></i>
+复杂任务
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">开发生产页面、效果图功能</td>
+<td class="py-4 px-4 text-textGray">当前状态+任务详情+规范+业务背景提示</td>
+<td class="py-4 px-4 text-textGray">检查清单+项目概述+设计文档+相关代码</td>
+</tr>
+<tr class="table-row">
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-sm font-medium">
+<i class="fas fa-sitemap"></i>
+架构讨论
+</span>
+</td>
+<td class="py-4 px-4 text-textGray">重构代码、技术选型</td>
+<td class="py-4 px-4 text-textGray">当前状态+问题描述+规范</td>
+<td class="py-4 px-4 text-textGray">检查清单+项目概述+完整代码</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- Section 5: 新对话标准流程 -->
+<section id="section5" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">5</div>
+<h2 class="text-2xl font-bold text-dark">新对话标准流程</h2>
+</div>
+
+<div class="grid grid-cols-2 gap-6">
+<!-- 步骤1 -->
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold">步骤1</div>
+<h3 class="text-lg font-semibold text-dark">用户操作</h3>
+</div>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+<span class="text-sm text-textGray">打开新窗口（D:\ETSY_Order_Automation）</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+<span class="text-sm text-textGray">复制通用开场白</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+<span class="text-sm text-textGray">填写【下一步任务】</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+<span class="text-sm text-textGray">根据任务类型勾选附加文件</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
+<span class="text-sm text-textGray">粘贴发送</span>
+</div>
+</div>
+</div>
+
+<!-- 步骤2 -->
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-xl bg-dark flex items-center justify-center text-white font-bold">步骤2</div>
+<h3 class="text-lg font-semibold text-dark">AI响应流程</h3>
+</div>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-dark/10 text-dark flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+<span class="text-sm text-textGray">读取附加文件（按勾选顺序）</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-dark/10 text-dark flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+<span class="text-sm text-textGray">理解当前状态和下一步任务</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-dark/10 text-dark flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+<span class="text-sm text-textGray">如需业务背景，自动读取项目概述.md</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-lightGray rounded-xl">
+<span class="w-6 h-6 rounded-full bg-dark/10 text-dark flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+<span class="text-sm text-textGray">确认开发规范</span>
+</div>
+<div class="flex items-start gap-3 p-3 bg-accent/5 rounded-xl border border-accent/20">
+<span class="w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
+<span class="text-sm text-accent font-medium">开始执行任务</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Section 6: 实战示例 -->
+<section id="section6" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">6</div>
+<h2 class="text-2xl font-bold text-dark">实战示例：开发生产页面</h2>
+</div>
+
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="code-block">
+<code>【ETSY订单自动化系统】
+
+📊 当前状态（Git Commit: 40d792b）
+✅ Dashboard页面完成（Material Design风格）
+✅ Orders页面完成（三个Tab，连接Supabase真实数据）
+✅ PDF生成服务完成（已修复中文字体）
+✅ GitHub仓库配置完成
+
+📋 下一步任务
+开发生产页面：
+- 实现订单生产流程管理界面
+- 集成PDF生产文档生成功能
+- 添加生产进度条显示
+- 连接Supabase production数据表
+- 参考设计：backend/tests/谷歌设计-生产订单管理系统OK.html
+
+⚠️ 开发规范
+- 修改核心文件前必须先read_file完整内容
+- 使用search_replace前明确说明修改位置和原因
+- 每次修改后提醒我用git diff检查改动
+- 核心文件（pdf_service.py、orderStore.js等）需明确授权才能修改
+
+📎 附加文件（已勾选）
+✅ README.md
+✅ .qoder/AI开发安全检查清单.md
+✅ .qoder/repowiki/zh/content/项目概述.md（查看任务4：生成生产信息）
+✅ backend/tests/谷歌设计-生产订单管理系统OK.html
+✅ frontend/src/views/Production/Production.vue（如存在）</code>
+</div>
+</div>
+</section>
+
+<!-- Section 7: 总结 -->
+<section id="section7" class="section-card mb-16">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accentLight flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-accent/30">7</div>
+<h2 class="text-2xl font-bold text-dark">总结：你需要做的</h2>
+</div>
+
+<div class="bg-white rounded-3xl p-8 shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b-2 border-mediumGray">
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark w-16">序号</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">操作</th>
+<th class="text-left py-4 px-4 text-sm font-semibold text-dark">状态</th>
+</tr>
+</thead>
+<tbody>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold">1</span>
+</td>
+<td class="py-4 px-4 font-medium text-dark">保存通用开场白模板到记事本</td>
+<td class="py-4 px-4">
+<span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">用户操作</span>
+</td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold">2</span>
+</td>
+<td class="py-4 px-4 font-medium text-dark">新对话时根据任务类型选择附加文件</td>
+<td class="py-4 px-4">
+<span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">用户操作</span>
+</td>
+</tr>
+<tr class="table-row border-b border-mediumGray/50">
+<td class="py-4 px-4">
+<span class="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold">3</span>
+</td>
+<td class="py-4 px-4 font-medium text-dark">我已更新 .qoder/新对话开场白模板.md</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 text-xs rounded-full">
+<i class="fas fa-check"></i>
+已完成
+</span>
+</td>
+</tr>
+<tr class="table-row">
+<td class="py-4 px-4">
+<span class="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold">4</span>
+</td>
+<td class="py-4 px-4 font-medium text-dark">创建Skills文件（可选）</td>
+<td class="py-4 px-4">
+<span class="px-3 py-1 bg-gray-100 text-textGray text-xs rounded-full">如需创建请告知</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 页脚 -->
+<footer class="text-center py-8 border-t border-mediumGray">
+<p class="text-sm text-textGray">开场白体系设计文档 · 让AI开发协作更高效</p>
+</footer>
+</main>
+</div>
+
+<script>
+// 导航高亮和滚动监听
+const navItems = document.querySelectorAll('.nav-item');
+const subNavItems = document.querySelectorAll('.sub-nav-item');
+const sections = document.querySelectorAll('.section-card');
+
+// Intersection Observer for sections
+const sectionObserver = new IntersectionObserver((entries) => {
+entries.forEach(entry => {
+if (entry.isIntersecting) {
+entry.target.classList.add('visible');
+}
+});
+}, { threshold: 0.1 });
+
+sections.forEach(section => {
+sectionObserver.observe(section);
+});
+
+// Scroll spy for navigation
+const scrollSpy = () => {
+const scrollPosition = window.scrollY + 150;
+
+sections.forEach(section => {
+const sectionTop = section.offsetTop;
+const sectionHeight = section.offsetHeight;
+const sectionId = section.getAttribute('id');
+
+if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+navItems.forEach(item => {
+item.classList.remove('active');
+if (item.getAttribute('data-section') === sectionId) {
+item.classList.add('active');
+}
+});
+}
+});
+};
+
+window.addEventListener('scroll', scrollSpy);
+
+// Smooth scroll for navigation
+navItems.forEach(item => {
+item.addEventListener('click', (e) => {
+e.preventDefault();
+const targetId = item.getAttribute('href').substring(1);
+const targetElement = document.getElementById(targetId);
+if (targetElement) {
+window.scrollTo({
+top: targetElement.offsetTop - 40,
+behavior: 'smooth'
+});
+}
+});
+});
+
+subNavItems.forEach(item => {
+item.addEventListener('click', (e) => {
+e.preventDefault();
+const targetId = item.getAttribute('href').substring(1);
+const targetElement = document.getElementById(targetId);
+if (targetElement) {
+window.scrollTo({
+top: targetElement.offsetTop - 40,
+behavior: 'smooth'
+});
+}
+});
+});
+
+// Copy template function
+function copyTemplate() {
+const template = `【ETSY订单自动化系统】
+
+📊 当前状态（Git Commit: 40d792b）
+✅ Dashboard页面完成（Material Design风格）
+✅ Orders页面完成（三个Tab，连接Supabase真实数据）
+✅ PDF生成服务完成（已修复中文字体）
+✅ GitHub仓库配置完成
+
+📋 下一步任务
+[在此填写具体任务]
+
+⚠️ 开发规范
+- 修改核心文件前必须先read_file完整内容
+- 使用search_replace前明确说明修改位置和原因
+- 每次修改后提醒我用git diff检查改动
+- 核心文件需明确授权才能修改
+
+📎 附加文件（根据任务复杂度选择）
+□ README.md（必选）
+□ .qoder/AI开发安全检查清单.md（必选）
+□ .qoder/repowiki/zh/content/项目概述.md（新功能/复杂任务）
+□ 具体代码文件（相关任务）`;
+
+navigator.clipboard.writeText(template).then(() => {
+// Show toast notification
+showToast('模板已复制到剪贴板');
+});
+}
+
+// Toast notification
+function showToast(message) {
+const toast = document.createElement('div');
+toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-dark text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2';
+toast.innerHTML = `<i class="fas fa-check-circle text-accent"></i><span>${message}</span>`;
+document.body.appendChild(toast);
+
+setTimeout(() => {
+toast.style.opacity = '0';
+toast.style.transition = 'opacity 0.3s ease';
+setTimeout(() => toast.remove(), 300);
+}, 2000);
+}
+
+// Initial animation
+document.addEventListener('DOMContentLoaded', () => {
+const fadeElements = document.querySelectorAll('.fade-in');
+fadeElements.forEach((el, index) => {
+el.style.animationDelay = `${index * 0.1}s`;
+});
+});
+</script>
+</body>
+</html>

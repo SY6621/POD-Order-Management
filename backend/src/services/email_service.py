@@ -63,6 +63,7 @@ class EmailService:
                 self.client = None
     
     def search_today_unread_etsy_orders(self) -> List[int]:
+        """搜索当天未读 Etsy 邮件（原始方法，保留兼容）"""
         if not self.client:
             print("[ERROR] Not connected")
             return []
@@ -79,6 +80,87 @@ class EmailService:
             
             print(f"[INFO] Found {len(messages)} unread Etsy emails today")
             return list(messages)
+        except Exception as e:
+            print(f"[ERROR] Search failed: {e}")
+            return []
+
+    def search_all_unread_etsy_orders(self) -> List[int]:
+        """
+        搜索最近 7 天的 Etsy 订单邮件（不限是否已读）
+        
+        业务逻辑：
+          - Etsy 订单邮件原始发件人是 transaction@etsy.com
+          - 邮件主题包含 "Etsy Transactions"
+          - 邮件正文包含 "transaction@etsy.com" 或 "Your order number is"
+        
+        使用方式：直接运行，会自动搜索最近 7 天的所有 Etsy 订单邮件
+        """
+        if not self.client:
+            print("[ERROR] Not connected")
+            return []
+        
+        try:
+            self.client.select_folder("INBOX")
+            
+            # 第一步：搜索最近 7 天主题包含 "Etsy" 或 "转发" 的所有邮件
+            since_date = datetime.now() - timedelta(days=7)
+            
+            # 搜索主题含 "Etsy" 的邮件
+            all_etsy = self.client.search([
+                "SINCE", since_date.strftime("%d-%b-%Y"),
+                "SUBJECT", "Etsy"
+            ])
+            
+            # 同时搜索主题含 "Fwd" 或 "Forward" 的邮件（手动转发的订单）
+            forwarded_fwd = self.client.search([
+                "SINCE", since_date.strftime("%d-%b-%Y"),
+                "SUBJECT", "Fwd"
+            ])
+            forwarded_forward = self.client.search([
+                "SINCE", since_date.strftime("%d-%b-%Y"),
+                "SUBJECT", "Forward"
+            ])
+            
+            # 合并去重
+            all_msgs = list(set(all_etsy + forwarded_fwd + forwarded_forward))
+            print(f"[INFO] 最近 7 天主题含 'Etsy' 或 '转发' 的邮件: {len(all_msgs)} 封，开始过滤订单邮件...")            
+            
+            etsy_msg_ids = []
+            for msg_id in all_msgs:
+                try:
+                    # 获取邮件内容（同时获取 TEXT 和 HTML）
+                    raw = self.client.fetch([msg_id], ["BODY[TEXT]", "BODY[HTML]"])
+                    body_text = raw.get(msg_id, {}).get(b"BODY[TEXT]", b"").decode("utf-8", errors="ignore")[:3000]
+                    body_html = raw.get(msg_id, {}).get(b"BODY[HTML]", b"").decode("utf-8", errors="ignore")[:3000]
+                    
+                    # 合并文本和HTML内容进行检查
+                    full_content = body_text + body_html
+                    
+                    # 检查是否是 Etsy Transactions 订单邮件
+                    # 规则：
+                    # 1. 发件人是 yangqingssheng@gmail.com（转发邮件）
+                    # 2. 或内容包含 transaction@etsy.com
+                    # 3. 或内容包含 Your order number is
+                    is_from_forwarder = "yangqingssheng@gmail.com" in full_content
+                    has_etsy_transaction = "transaction@etsy.com" in full_content
+                    has_order_number = "Your order number is" in full_content
+                    
+                    is_etsy_transaction = is_from_forwarder or has_etsy_transaction or has_order_number
+                    
+                    # 调试输出
+                    if not is_etsy_transaction:
+                        print(f"    [DEBUG] 未匹配到关键词，内容预览: {full_content[:200]}")
+                    
+                    if is_etsy_transaction:
+                        etsy_msg_ids.append(msg_id)
+                        print(f"  [OK] ID={msg_id} 是 Etsy 订单邮件")
+                    else:
+                        print(f"  [SKIP] ID={msg_id} 不是 Etsy 订单邮件")
+                except Exception as e:
+                    print(f"  [WARN] ID={msg_id} 读取失败: {e}")
+            
+            print(f"[INFO] 共找到 {len(etsy_msg_ids)} 封 Etsy 订单邮件")
+            return etsy_msg_ids
         except Exception as e:
             print(f"[ERROR] Search failed: {e}")
             return []

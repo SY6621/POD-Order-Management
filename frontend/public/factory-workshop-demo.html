@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工厂生产协作平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .checkbox-wrapper input:checked + div {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        .checkbox-wrapper input:checked + div svg {
+            display: block;
+        }
+        .step-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .step-completed {
+            border-color: #10b981;
+            background-color: #f0fdf4;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-slate-900 text-white px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">工厂生产协作平台</h1>
+                    <p class="text-sm text-slate-400">2026年3月10日 星期二</p>
+                </div>
+            </div>
+            <div class="flex gap-6 text-sm">
+                <div class="text-center">
+                    <p class="text-slate-400">今日待生产</p>
+                    <p class="text-2xl font-bold text-blue-400">12单</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-slate-400">生产中</p>
+                    <p class="text-2xl font-bold text-orange-400">5单</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-slate-400">待揽件</p>
+                    <p class="text-2xl font-bold text-purple-400">4单</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-slate-400">已完成</p>
+                    <p class="text-2xl font-bold text-green-400">3单</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+        <!-- STEP 1: 生产文档下载区 -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
+                    <h2 class="text-lg font-bold text-slate-800">生产文档下载</h2>
+                    <span class="text-sm text-slate-500">下载PDF → 打印 → 跟随生产</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-600">日期:</label>
+                    <input type="date" value="2026-03-10" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm">
+                    <button class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200">今天</button>
+                    <button class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200">昨天</button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">订单号</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">产品信息</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">定制内容</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">状态</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">生产文档</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- 生产中订单 -->
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-4 px-4">
+                                    <p class="font-mono font-semibold text-slate-800">3986891868</p>
+                                    <p class="text-xs text-slate-400">10:23 创建</p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+                                        <span class="text-sm">心形 - 金色 - L</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">抛光工艺</p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <p class="text-sm"><span class="text-slate-500">正面:</span> <span class="font-medium">Luna</span></p>
+                                    <p class="text-sm"><span class="text-slate-500">字体:</span> <span class="font-medium">F-04</span></p>
+                                    <p class="text-sm"><span class="text-slate-500">背面:</span> <span class="font-medium">416.456.3524</span></p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">生产中</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex gap-2">
+                                        <button class="px-3 py-1.5 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                            PDF
+                                        </button>
+                                        <button class="px-3 py-1.5 bg-slate-50 text-slate-600 text-sm rounded-lg hover:bg-slate-100 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                            打印
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <button onclick="startProduction('3986891868')" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                                        开始生产
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- 待揽件订单 -->
+                            <tr class="hover:bg-slate-50 bg-purple-50/30">
+                                <td class="py-4 px-4">
+                                    <p class="font-mono font-semibold text-slate-800">3986891869</p>
+                                    <p class="text-xs text-slate-400">09:15 创建</p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-gray-300"></span>
+                                        <span class="text-sm">圆形 - 银色 - M</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">抛光工艺</p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <p class="text-sm"><span class="text-slate-500">正面:</span> <span class="font-medium">Bella</span></p>
+                                    <p class="text-sm"><span class="text-slate-500">字体:</span> <span class="font-medium">F-02</span></p>
+                                    <p class="text-sm"><span class="text-slate-500">背面:</span> <span class="font-medium">647.123.4567</span></p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">待揽件确认</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex gap-2">
+                                        <button class="px-3 py-1.5 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100">
+                                            PDF
+                                        </button>
+                                        <span class="px-2 py-1.5 bg-green-50 text-green-600 text-xs rounded-lg">已打印</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <button onclick="loadOrderForConfirm('3986891869')" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+                                        确认揽件
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- 已完成订单 -->
+                            <tr class="hover:bg-slate-50 opacity-60">
+                                <td class="py-4 px-4">
+                                    <p class="font-mono font-semibold text-slate-800">3986891860</p>
+                                    <p class="text-xs text-slate-400">08:30 创建</p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-amber-700"></span>
+                                        <span class="text-sm">骨头形 - 玫瑰金 - S</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <p class="text-sm"><span class="text-slate-500">正面:</span> <span class="font-medium">Max</span></p>
+                                    <p class="text-sm"><span class="text-slate-500">背面:</span> <span class="font-medium">416.789.0123</span></p>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">已完成</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="text-sm text-slate-400">-</span>
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="text-sm text-slate-400">14:20 确认</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 2: 揽件确认区（强制视觉校验） -->
+        <section id="confirm-section" class="bg-white rounded-xl shadow-sm border-2 border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
+                    <h2 class="text-lg font-bold text-slate-800">揽件确认</h2>
+                    <span class="text-sm text-slate-500">必须完成视觉校验后才能确认发货</span>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <!-- 搜索区 -->
+                <div class="mb-6 flex gap-4">
+                    <div class="flex-1 relative">
+                        <input type="text" id="order-search" placeholder="输入订单号或扫描条码..." 
+                            class="w-full px-4 py-3 pl-12 border border-slate-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </div>
+                    <button onclick="searchOrder()" class="px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        加载订单
+                    </button>
+                </div>
+
+                <!-- 订单校验区（默认隐藏，搜索后显示） -->
+                <div id="order-verify-area" class="hidden">
+                    <div class="grid grid-cols-12 gap-6">
+                        <!-- 左侧：图片对比 -->
+                        <div class="col-span-7 space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- 实拍图 -->
+                                <div class="bg-slate-50 rounded-xl border-2 border-slate-200 p-4">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        <h3 class="font-semibold text-slate-700">产品实拍图</h3>
+                                        <span class="text-xs text-slate-400">工厂拍摄</span>
+                                    </div>
+                                    <div class="aspect-square bg-white rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
+                                        <div class="text-center text-slate-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                            <p class="text-sm">请上传实拍图</p>
+                                            <button class="mt-2 px-3 py-1.5 bg-blue-50 text-blue-600 text-xs rounded-lg">点击上传</button>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-2 text-center">实际生产完成的产品照片</p>
+                                </div>
+
+                                <!-- 效果图 -->
+                                <div class="bg-slate-50 rounded-xl border-2 border-slate-200 p-4">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <h3 class="font-semibold text-slate-700">设计效果图</h3>
+                                        <span class="text-xs text-slate-400">系统生成</span>
+                                    </div>
+                                    <div class="aspect-square bg-white rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
+                                        <div class="text-center p-4">
+                                            <div class="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center shadow-lg">
+                                                <span class="text-white font-bold text-lg">Luna</span>
+                                            </div>
+                                            <p class="text-sm font-medium text-slate-700">心形 - 金色</p>
+                                            <p class="text-xs text-slate-500">F-04 字体</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-2 text-center">客户确认的设计效果</p>
+                                </div>
+                            </div>
+
+                            <!-- 定制信息 -->
+                            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                                <h3 class="font-semibold text-slate-700 mb-3">定制信息核对</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                                        <p class="text-xs text-slate-500 mb-1">正面刻字</p>
+                                        <p class="text-xl font-bold text-slate-800">Luna</p>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                                        <p class="text-xs text-slate-500 mb-1">字体编号</p>
+                                        <p class="text-xl font-bold text-slate-800">F-04</p>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                                        <p class="text-xs text-slate-500 mb-1">背面刻字</p>
+                                        <p class="text-xl font-bold text-slate-800">416.456.3524</p>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-3 border border-slate-200">
+                                        <p class="text-xs text-slate-500 mb-1">产品规格</p>
+                                        <p class="text-lg font-bold text-slate-800">心形-金色-L</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：强制校验清单 -->
+                        <div class="col-span-5">
+                            <div class="bg-amber-50 rounded-xl border-2 border-amber-200 p-5 h-full">
+                                <div class="flex items-center gap-2 mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                                    <h3 class="font-bold text-amber-800">强制核对清单</h3>
+                                </div>
+                                <p class="text-sm text-amber-700 mb-4">必须全部勾选后才能确认揽件</p>
+
+                                <div class="space-y-3">
+                                    <label class="checkbox-wrapper flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" class="peer hidden" onchange="updateConfirmButton()">
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded bg-white flex items-center justify-center transition-colors peer-checked:bg-green-500 peer-checked:border-green-500">
+                                            <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-800 group-hover:text-slate-600">产品形状正确</p>
+                                            <p class="text-xs text-slate-500">确认是心形，不是圆形或骨头形</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-wrapper flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" class="peer hidden" onchange="updateConfirmButton()">
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded bg-white flex items-center justify-center transition-colors peer-checked:bg-green-500 peer-checked:border-green-500">
+                                            <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-800 group-hover:text-slate-600">产品颜色正确</p>
+                                            <p class="text-xs text-slate-500">确认是金色，不是银色或玫瑰金</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-wrapper flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" class="peer hidden" onchange="updateConfirmButton()">
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded bg-white flex items-center justify-center transition-colors peer-checked:bg-green-500 peer-checked:border-green-500">
+                                            <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-800 group-hover:text-slate-600">正面刻字正确</p>
+                                            <p class="text-xs text-slate-500">确认刻字是 "Luna"，无错别字</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-wrapper flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" class="peer hidden" onchange="updateConfirmButton()">
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded bg-white flex items-center justify-center transition-colors peer-checked:bg-green-500 peer-checked:border-green-500">
+                                            <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-800 group-hover:text-slate-600">背面刻字正确</p>
+                                            <p class="text-xs text-slate-500">确认电话号码 "416.456.3524" 正确</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-wrapper flex items-start gap-3 cursor-pointer group">
+                                        <input type="checkbox" class="peer hidden" onchange="updateConfirmButton()">
+                                        <div class="w-6 h-6 border-2 border-slate-300 rounded bg-white flex items-center justify-center transition-colors peer-checked:bg-green-500 peer-checked:border-green-500">
+                                            <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-800 group-hover:text-slate-600">物流面单已贴</p>
+                                            <p class="text-xs text-slate-500">确认包装已贴上正确地址的面单</p>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- 收货地址预览 -->
+                                <div class="mt-4 p-3 bg-white rounded-lg border border-amber-200">
+                                    <p class="text-xs text-slate-500 mb-1">收货地址</p>
+                                    <p class="text-sm font-medium text-slate-800">John Smith</p>
+                                    <p class="text-sm text-slate-600">123 Main Street, Apt 4B</p>
+                                    <p class="text-sm text-slate-600">New York, NY 10001</p>
+                                    <p class="text-sm text-slate-600">United States</p>
+                                </div>
+
+                                <!-- 确认按钮 -->
+                                <button id="confirm-btn" onclick="confirmPickup()" disabled 
+                                    class="w-full mt-4 py-3 rounded-xl font-bold text-lg transition-all bg-slate-200 text-slate-400 cursor-not-allowed">
+                                    请完成全部核对
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 空状态 -->
+                <div id="empty-state" class="text-center py-12">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/><circle cx="18.5" cy="15.5" r="2.5"/><path d="M20.27 17.27 22 19"/></svg>
+                    </div>
+                    <p class="text-slate-500">请输入订单号或扫描条码加载订单</p>
+                    <p class="text-sm text-slate-400 mt-1">系统将显示订单详情供您核对</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 成功弹窗 -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">揽件确认成功</h3>
+            <p class="text-slate-500 mb-6">订单 <span class="font-mono font-semibold">3986891869</span> 已完成生产并发货</p>
+            <button onclick="closeModal()" class="w-full py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700">
+                确认下一个订单
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 加载订单到确认区
+        function loadOrderForConfirm(orderId) {
+            document.getElementById('order-search').value = orderId;
+            searchOrder();
+            // 滚动到确认区
+            document.getElementById('confirm-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 搜索订单
+        function searchOrder() {
+            const orderId = document.getElementById('order-search').value;
+            if (!orderId) {
+                alert('请输入订单号');
+                return;
+            }
+            // 显示订单校验区，隐藏空状态
+            document.getElementById('order-verify-area').classList.remove('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            // 重置勾选状态
+            document.querySelectorAll('.checkbox-wrapper input').forEach(cb => cb.checked = false);
+            updateConfirmButton();
+        }
+
+        // 更新确认按钮状态
+        function updateConfirmButton() {
+            const checkboxes = document.querySelectorAll('.checkbox-wrapper input');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            const btn = document.getElementById('confirm-btn');
+            
+            if (allChecked) {
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700', 'shadow-lg', 'shadow-green-200');
+                btn.textContent = '✓ 确认揽件发货';
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700', 'shadow-lg', 'shadow-green-200');
+                const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                btn.textContent = `请完成全部核对 (${checkedCount}/5)`;
+            }
+        }
+
+        // 确认揽件
+        function confirmPickup() {
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+            // 重置页面
+            document.getElementById('order-verify-area').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('order-search').value = '';
+            document.querySelectorAll('.checkbox-wrapper input').forEach(cb => cb.checked = false);
+            updateConfirmButton();
+        }
+
+        // 开始生产
+        function startProduction(orderId) {
+            alert(`订单 ${orderId} 开始生产，请下载并打印生产文档`);
+        }
+    </script>
+</body>
+</html>

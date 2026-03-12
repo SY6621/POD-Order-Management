@@ -93,6 +93,7 @@ class EmailService:
           - 邮件主题包含 "Etsy Transactions"
           - 邮件正文包含 "transaction@etsy.com" 或 "Your order number is"
         
+        优化：在 IMAP 服务器端直接过滤 FROM transaction@etsy.com，减少本地内容读取量
         使用方式：直接运行，会自动搜索最近 7 天的所有 Etsy 订单邮件
         """
         if not self.client:
@@ -105,25 +106,35 @@ class EmailService:
             # 第一步：搜索最近 7 天主题包含 "Etsy" 或 "转发" 的所有邮件
             since_date = datetime.now() - timedelta(days=7)
             
-            # 搜索主题含 "Etsy" 的邮件
+            # 优先搜索直接来自 transaction@etsy.com 的订单邮件（服务器端过滤，最准确高效）
+            direct_etsy = self.client.search([
+                "UNSEEN",
+                "SINCE", since_date.strftime("%d-%b-%Y"),
+                "FROM", "transaction@etsy.com"
+            ])
+            
+            # 备用：搜索主题含 "Etsy" 的邮件（展容转发场景）
             all_etsy = self.client.search([
+                "UNSEEN",
                 "SINCE", since_date.strftime("%d-%b-%Y"),
                 "SUBJECT", "Etsy"
             ])
             
             # 同时搜索主题含 "Fwd" 或 "Forward" 的邮件（手动转发的订单）
             forwarded_fwd = self.client.search([
+                "UNSEEN",
                 "SINCE", since_date.strftime("%d-%b-%Y"),
                 "SUBJECT", "Fwd"
             ])
             forwarded_forward = self.client.search([
+                "UNSEEN",
                 "SINCE", since_date.strftime("%d-%b-%Y"),
                 "SUBJECT", "Forward"
             ])
             
-            # 合并去重
-            all_msgs = list(set(all_etsy + forwarded_fwd + forwarded_forward))
-            print(f"[INFO] 最近 7 天主题含 'Etsy' 或 '转发' 的邮件: {len(all_msgs)} 封，开始过滤订单邮件...")            
+            # 合并去重（direct_etsy 结果优先，其它为备用兼容）
+            all_msgs = list(set(direct_etsy + all_etsy + forwarded_fwd + forwarded_forward))
+            print(f"[INFO] 最近 7 天主题含 'Etsy' 或 '转发' 的邮件: {len(all_msgs)} 封（其中直接来自 transaction@etsy.com: {len(direct_etsy)} 封），开始过滤订单邮件...")            
             
             etsy_msg_ids = []
             for msg_id in all_msgs:

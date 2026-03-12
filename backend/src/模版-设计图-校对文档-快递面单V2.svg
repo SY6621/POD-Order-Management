@@ -749,13 +749,12 @@ lW2ba5aC+vJFLvI8EsimKR5BgzOqxrid/d//AHxf/9k=" transform="matrix(0.4324 0 0 0.438
 	</g>
 	<g>
 		{{EFFECT_FRONT_SHAPE}}
-		<text transform="matrix(1.0382 0 0 1 296.568 379.0635)" fill="#333333" font-family="'RetroAngela'" font-size="39.637px">{{EFFECT_FRONT_TEXT}}</text>
+		{{EFFECT_FRONT_TEXT}}
 	</g>
 	<g>
 		<rect x="397.3" y="311.8" fill="#FFFFFF" width="141.7" height="113.4"/>
 		{{EFFECT_BACK_SHAPE}}
-		
-			<text transform="matrix(0.8081 0 0 1 421.3923 376.2733)" fill="#333333" font-family="'GenJyuuGothic-P-Heavy'" font-size="17.9641px">{{EFFECT_BACK_TEXT}}</text>
+		{{EFFECT_BACK_TEXT}}
 	</g>
 	
 		<rect x="225.5" y="265.9" fill-rule="evenodd" fill="none" stroke="#000000" stroke-miterlimit="10" width="331.7" height="212.6"/>
@@ -805,25 +804,9 @@ lW2ba5aC+vJFLvI8EsimKR5BgzOqxrid/d//AHxf/9k=" transform="matrix(0.4324 0 0 0.438
 	<text transform="matrix(1 0 0 1 443.5391 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">6</text>
 	<text transform="matrix(1 0 0 1 449.9902 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">7</text>
 	<text transform="matrix(1 0 0 1 456.4414 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">8</text>
-	<g>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="269.8" y1="324.8" x2="397.3" y2="324.8"/>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="397.3" y1="327.8" x2="397.3" y2="321.8"/>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="269.8" y1="327.8" x2="269.8" y2="321.8"/>
-		
-			<text transform="matrix(1 0 0 1 310.4653 317.4788)" fill="#E71F19" font-family="'AdobeSongStd-Light-GBpc-EUC-H'" font-size="17.0079px">45 mm</text>
-	</g>
-	<g>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="262.8" y1="331.8" x2="262.8" y2="405.2"/>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="265.8" y1="405.2" x2="259.8" y2="405.2"/>
-		
-			<line fill-rule="evenodd" fill="none" stroke="#E71F19" stroke-width="0.5" stroke-miterlimit="10" x1="265.8" y1="331.8" x2="259.8" y2="331.8"/>
-		
-			<text transform="matrix(0 -1 1 0 255.4722 391.583)" fill="#E71F19" font-family="'AdobeSongStd-Light-GBpc-EUC-H'" font-size="17.0079px">26 mm</text>
-	</g>
+	<!-- 宽度标注线占位符 -->
+	{{WIDTH_DIMENSION_LINES}}
+	<!-- 高度标注线占位符 -->
+	{{HEIGHT_DIMENSION_LINES}}
 </g>
 </svg>

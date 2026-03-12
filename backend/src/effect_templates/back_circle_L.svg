@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- back_circle_L 效果图模板 -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg"
+	 x="0px" y="0px" viewBox="0 0 141.7323 113.3858"
+	 enable-background="new 0 0 141.7323 113.3858" xml:space="preserve">
+
+<!-- 形状路径（Y轴翻转，小孔在上） -->
+<path transform="matrix(1,0,0,-1,0,113.3858)" fill="{{COLOR_FILL}}" fill-rule="evenodd" d="M70.8656 86.5749C68.2826 86.5749 66.1887 88.6689 66.1887 91.2521 66.1887 93.835 68.2826 95.9298 70.8656 95.9298 73.4488 95.9298 75.5427 93.835 75.5427 91.2521 75.5427 88.6689 73.4488 86.5749 70.8656 86.5749ZM70.8656 102.331C45.6608 102.331 25.2286 81.898 25.2286 56.6923 25.2286 31.4872 45.6608 11.0551 70.8656 11.0551 96.0707 11.0551 116.5037 31.4872 116.5037 56.6923 116.5037 81.898 96.0707 102.331 70.8656 102.331"/>
+
+<!-- 背面文字（如 If Lost） -->
+<text
+	 x="70.87"
+	 y="{{TEXT_Y}}"
+	 font-family="'back_standard', sans-serif"
+	 font-size="{{TEXT_FONT_SIZE}}px"
+	 fill="#333333"
+	 text-anchor="middle"
+	 dominant-baseline="middle">{{TEXT_CONTENT}}</text>
+
+<!-- 背面电话号码 -->
+<text
+	 x="70.87"
+	 y="{{PHONE_Y}}"
+	 font-family="'back_standard', sans-serif"
+	 font-size="{{PHONE_FONT_SIZE}}px"
+	 fill="#333333"
+	 text-anchor="middle"
+	 dominant-baseline="middle">{{PHONE_NUMBER}}</text>
+
+</svg>

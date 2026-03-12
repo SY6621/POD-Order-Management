@@ -344,6 +344,89 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  // 根据订单号搜索订单（支持 Etsy 订单号模糊搜索）
+  const searchOrderById = async (query) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          sku_mapping (*),
+          logistics (*),
+          production_documents (*)
+        `)
+        .ilike('etsy_order_id', `%${query}%`)
+        .limit(1)
+      
+      if (fetchError) throw fetchError
+      
+      if (data && data.length > 0) {
+        console.log('✅ 订单搜索成功:', data[0].etsy_order_id)
+        return data[0]
+      }
+      
+      // 如果没找到，尝试用 id 搜索
+      const { data: dataById, error: idError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          sku_mapping (*),
+          logistics (*),
+          production_documents (*)
+        `)
+        .eq('id', query)
+        .single()
+      
+      if (idError && idError.code !== 'PGRST116') throw idError
+      
+      if (dataById) {
+        console.log('✅ 订单搜索成功(ID):', dataById.etsy_order_id)
+        return dataById
+      }
+      
+      return null
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 订单搜索失败:', err)
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 获取订单完整信息（包含关联表数据）
+  const getOrderWithDetails = async (orderId) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          sku_mapping (*),
+          logistics (*),
+          production_documents (*)
+        `)
+        .eq('id', orderId)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      console.log('✅ 订单详情加载成功:', data?.etsy_order_id)
+      return data
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 订单详情加载失败:', err)
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // 状态
     orders,
@@ -369,6 +452,8 @@ export const useOrderStore = defineStore('order', () => {
     getOrderDocuments,
     getOrderEmailLogs,
     generateEffectImage,
-    generateProductionPdf
+    generateProductionPdf,
+    searchOrderById,
+    getOrderWithDetails
   }
 })

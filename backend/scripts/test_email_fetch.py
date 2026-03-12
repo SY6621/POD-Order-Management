@@ -23,6 +23,8 @@ from src.config.settings import settings
 from src.services.email_service import EmailService
 from src.services.email_parser import email_parser
 from src.services.order_service import order_service
+from src.services.database_service import db
+from src.services.effect_template_service import generate_effect_image_for_order
 
 
 def test_email_fetch():
@@ -93,6 +95,15 @@ def test_email_fetch():
             result = order_service.process_parsed_order(parsed)
             if result:
                 success_count += 1
+                # 新订单自动生成效果图
+                print(f"  [效果图] 开始生成...")
+                url = generate_effect_image_for_order(result, upload=True)
+                if url:
+                    # 回写 effect_image_url 到数据库
+                    db.update('orders', {'id': result['id']}, {'effect_image_url': url})
+                    print(f"  [效果图] 已保存并回写 URL")
+                else:
+                    print(f"  [效果图] 生成失败，可手动重试")
             else:
                 # process_parsed_order 返回 None 表示订单已存在被跳过
                 skip_count += 1

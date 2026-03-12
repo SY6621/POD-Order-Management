@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 Shipping label service for logistics integration
-Supports Postlink and other carriers
+Supports Postlink and 4PX carriers
 """
 
+import hashlib
+import json
+import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+
+import requests
 
 from src.config.settings import settings
 
@@ -243,6 +248,128 @@ class ShippingService:
         order_data.shipping.ref_no = order_data.order_id
         print(f"[OK] Shipping label created: {order_data.shipping.tracking_number}")
         return order_data.shipping
+
+
+class FourPXClient:
+    """4PX 物流 API 客户端"""
+    
+    def __init__(self, app_key: str = None, app_secret: str = None, sandbox: bool = True):
+        self.app_key = app_key or settings.FOURPX_APP_KEY
+        self.app_secret = app_secret or settings.FOURPX_APP_SECRET
+        self.sandbox = sandbox
+        self.base_url = (
+            "https://open-test.4px.com/router/api/service" if sandbox
+            else "https://open.4px.com/router/api/service"
+        )
+    
+    def generate_sign(self, method: str, v: str, body: Dict[Any, Any], timestamp: str = None) -> tuple:
+        """
+        生成 4PX API 签名
+        
+        签名规则：
+        sign = app_key{AppKey}formatjsonmethod{method}timestamp{timestamp}v{v}{body}{AppSecret}
+        MD5 加密（32位小写）
+        """
+        if timestamp is None:
+            timestamp = str(int(time.time() * 1000))
+        
+        # 压缩 JSON body（无空格、无换行）
+        body_str = json.dumps(body, ensure_ascii=False, separators=(',', ':'))
+        
+        # 拼接签名字符串
+        sign_string = f"app_key{self.app_key}formatjsonmethod{method}timestamp{timestamp}v{v}{body_str}{self.app_secret}"
+        
+        # MD5 加密（32位小写）
+        md5_sign = hashlib.md5(sign_string.encode('utf-8')).hexdigest().lower()
+        
+        return sign_string, md5_sign, timestamp
+    
+    def call_api(self, method: str, v: str, body: Dict[Any, Any]) -> Dict[Any, Any]:
+        """调用 4PX API"""
+        sign_string, sign, timestamp = self.generate_sign(method, v, body)
+        
+        url = f"{self.base_url}?method={method}&app_key={self.app_key}&v={v}&timestamp={timestamp}&format=json&sign={sign}"
+        body_str = json.dumps(body, ensure_ascii=False, separators=(',', ':'))
+        
+        try:
+            response = requests.post(
+                url,
+                data=body_str,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            return {"error": str(e), "result": "0"}
+    
+    def create_order(self, order_data: Dict[Any, Any]) -> Dict[Any, Any]:
+        """
+        创建直发委托单
+        API: ds.xms.order.create v1.1.0
+        """
+        method = "ds.xms.order.create"
+        v = "1.1.0"
+        return self.call_api(method, v, order_data)
+    
+    def get_label(self, request_no: str, label_type: str = "1", label_size: str = "10x10") -> Dict[Any, Any]:
+        """
+        获取标签
+        API: ds.xms.label.get v1.1.0
+        
+        Args:
+            request_no: 4PX 请求单号（不是 ETSY order_no）
+            label_type: 标签类型，1-地址标签
+            label_size: 标签尺寸，如 "10x10"
+        """
+        method = "ds.xms.label.get"
+        v = "1.1.0"
+        body = {
+            "request_no": request_no,  # 4PX API 要求用 request_no
+            "label_type": label_type,
+            "label_size": label_size
+        }
+        return self.call_api(method, v, body)
+    
+    def cancel_order(self, request_no: str, cancel_reason: str = "") -> Dict[Any, Any]:
+        """
+        取消直发委托单
+        API: ds.xms.order.cancel v1.0.0
+        
+        Args:
+            request_no: 4PX 请求单号
+            cancel_reason: 取消原因
+        """
+        method = "ds.xms.order.cancel"
+        v = "1.0.0"
+        body = {
+            "request_no": request_no,
+            "cancel_reason": cancel_reason or "客户取消订单"
+        }
+        return self.call_api(method, v, body)
+    
+    def get_logistics_products(self, country_code: str, postcode: str = "") -> Dict[Any, Any]:
+        """
+        查询物流产品
+        API: ds.xms.logistics_product.getlist v1.0.0
+        """
+        method = "ds.xms.logistics_product.getlist"
+        v = "1.0.0"
+        body = {
+            "country_code": country_code,
+            "postcode": postcode,
+            "transport_mode": "A"
+        }
+        return self.call_api(method, v, body)
+    
+    def query_order(self, order_no: str) -> Dict[Any, Any]:
+        """
+        查询直发委托单
+        API: ds.xms.order.get v1.1.0
+        """
+        method = "ds.xms.order.get"
+        v = "1.1.0"
+        body = {"order_no": order_no}
+        return self.call_api(method, v, body)
 
 
 shipping_service = ShippingService()

@@ -18,6 +18,11 @@ class Settings:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
     
+    # 4PX 物流 API 配置
+    FOURPX_APP_KEY: str = os.getenv("FOURPX_APP_KEY", "")
+    FOURPX_APP_SECRET: str = os.getenv("FOURPX_APP_SECRET", "")
+    FOURPX_SANDBOX: bool = os.getenv("FOURPX_SANDBOX", "true").lower() == "true"
+    
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     ASSETS_DIR: Path = BASE_DIR / "assets"

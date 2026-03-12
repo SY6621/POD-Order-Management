@@ -22,27 +22,85 @@ from src.config.settings import settings, BASE_DIR
 
 
 # ============================================================
+# 效果图区域定义（黑色框内的坐标）
+# ============================================================
+
+# 黑色框的位置和尺寸
+BLACK_BOX = {
+    "x": 225.5,
+    "y": 265.9,
+    "width": 331.7,
+    "height": 212.6,
+}
+
+# 正面效果图区域（黑色框左半部分）
+FRONT_AREA = {
+    "x": 225.5,
+    "y": 265.9,
+    "width": 171.8,  # 到中间 x=397.3
+    "height": 150,   # 上半部分，偏上
+}
+
+# 背面效果图区域（黑色框右半部分）
+BACK_AREA = {
+    "x": 397.3,
+    "y": 265.9,
+    "width": 160,
+    "height": 150,
+}
+
+
+# ============================================================
+# 各形状的尺寸数据（毫米 -> 像素换算：1mm ≈ 2.83px）
+# ============================================================
+
+# 形状尺寸配置（像素值，按照实际显示效果调整）
+SHAPE_SIZES = {
+    # 圆形
+    "Circle": {
+        "L": {"width_mm": 32, "height_mm": 32, "scale": 1.4},   # 大号
+        "S": {"width_mm": 23, "height_mm": 23, "scale": 1.0},   # 小号
+    },
+    # 心形
+    "Heart": {
+        "L": {"width_mm": 32, "height_mm": 30, "scale": 1.4},
+        "S": {"width_mm": 23, "height_mm": 21, "scale": 1.0},
+    },
+    # 骨头形
+    "Bone": {
+        "L": {"width_mm": 45, "height_mm": 26, "scale": 1.0},
+        "S": {"width_mm": 28, "height_mm": 16, "scale": 0.62},
+    },
+}
+
+
+# ============================================================
 # 效果图形状 Path 数据（从模板 SVG 提取）
 # ============================================================
 
-# 正面效果图的位置偏移（相对于原始模板）
-FRONT_OFFSET = (225.4, 255.0)  # x, y offset for front effect image
-BACK_OFFSET = (360.0, 255.0)   # x, y offset for back effect image
-
-# 形状 Path 数据（原始坐标，需要平移到效果图位置）
+# 形状 Path 数据
 SHAPE_PATHS = {
     # 心形 (Heart) - G 系列
     "Heart": {
         "d": "M69.8686 14.0786C68.5094 14.8158 64.5094 17.3092 62.1553 18.8983 47.5075 28.7844 36.1069 40.7415 30.2145 52.3956 25.9707 60.7907 24.5971 68.7719 26.1031 76.3129 26.9495 80.555 28.7402 84.437 31.4827 87.963 32.3107 89.0291 34.2221 91.0242 35.3058 91.9573 38.7692 94.9346 42.7311 96.8275 46.8524 97.4693 48.0892 97.6603 50.9553 97.6586 52.6629 97.4662 55.98 97.0889 58.8903 96.243 61.4594 94.8977 64.0329 97.8106 67.2554 99.5443 70.7536 99.5443 74.2912 99.5443 77.5477 97.772 80.1351 94.7988 82.5721 96.0979 85.3194 96.9633 88.3412 97.3706 89.6519 97.5475 90.8787 97.6374 92.0486 97.6385 94.134 97.6408 96.0392 97.3613 97.9174 96.7924 103.7109 95.0369 109.3989 90.2472 112.7044 84.3412 114.5509 81.0442 115.5943 77.7268 116.1085 73.5415 116.2627 72.21 116.2627 68.1591 116.0768 66.6978 115.638 63.1244 114.8357 60.035 113.4584 56.552 107.6851 41.9811 92.8831 26.5946 73.489 14.9995L71.905 14.0522C71.4226 13.752 70.4282 13.7837 69.8686 14.0786ZM71.0152 95.0488C73.5985 95.0488 75.6924 92.9548 75.6924 90.3716 75.6924 87.7884 73.5985 85.6945 71.0152 85.6945 68.432 85.6945 66.3381 87.7884 66.3381 90.3716 66.3381 92.9548 68.432 95.0488 71.0152 95.0488",
+        "viewbox_width": 142,
+        "viewbox_height": 113,
+        "text_y_offset": 75,  # 文字相对于形状中心的 Y 偏移
     },
     # 圆形 (Circle) - C 系列
     "Circle": {
         "d": "M70.8656 86.5749C68.2826 86.5749 66.1887 88.6689 66.1887 91.2521 66.1887 93.835 68.2826 95.9298 70.8656 95.9298 73.4488 95.9298 75.5427 93.835 75.5427 91.2521 75.5427 88.6689 73.4488 86.5749 70.8656 86.5749ZM70.8656 102.331C45.6608 102.331 25.2286 81.898 25.2286 56.6923 25.2286 31.4872 45.6608 11.0551 70.8656 11.0551 96.0707 11.0551 116.5037 31.4872 116.5037 56.6923 116.5037 81.898 96.0707 102.331 70.8656 102.331",
+        "viewbox_width": 142,
+        "viewbox_height": 113,
+        "text_y_offset": 60,
     },
-    # 骨头形 (Bone) - E 系列
+    # 骨头形 (Bone) - E 系列 - 使用绝对坐标
     "Bone": {
         "d": "M276.3,369.9c0.9-0.8,0.9-2.1,0-2.9c-4.2-3.8-6.6-9.2-6.5-15.1c0.2-10.9,9.4-19.8,20.9-20.1c9.2-0.2,16.3,4,19.1,9.9c0.3,0.9,1.2,1.5,2.2,1.5h6.9c1.1,0,2.2-0.7,2.8-1.7c2.8-4.9,7-8.1,11.8-8.1c4.7,0,9,3.1,11.8,8.1c0.6,1,1.6,1.7,2.8,1.7h6.9c1,0,1.9-0.6,2.2-1.5c2.9-5.8,9.9-10.1,19.1-9.9c11.4,0.2,20.7,9.2,20.9,20.1c0.1,6-2.5,11.4-6.5,15.1c-0.9,0.8-0.9,2.1,0,2.9c4.2,3.8,6.6,9.1,6.5,15.1c-0.2,10.9-9.6,19.8-20.9,20.1c-6,0.2-17.2-4.5-20.1-11.2c-0.3-0.9-1.2-1.5-2.2-1.5h-19.6h-4.3h-17c-1,0-1.9,0.6-2.2,1.5c-2.9,6.9-14.2,11.5-20.1,11.2c-11.4-0.3-20.7-9.2-20.9-20.1C269.7,379,272.3,373.8,276.3,369.9z M333.6,337.7c2.8,0,4.9,2.6,4.4,5.5c-0.3,1.7-1.6,3-3.3,3.4c-3,0.8-5.7-1.5-5.7-4.4C329.1,339.7,331.1,337.7,333.6,337.7",
-        "is_absolute": True,  # 骨头形 path 已经是绝对坐标
+        "is_absolute": True,
+        "viewbox_width": 128,
+        "viewbox_height": 75,
+        "text_y_offset": 45,
     },
 }
 
@@ -204,25 +262,29 @@ class SVGPDFService:
         with open(self.template_path, 'r', encoding='utf-8') as f:
             return f.read()
     
-    def _get_effect_shape_svg(self, shape: str, color: str, position: str = "front") -> str:
+    def _get_effect_shape_svg(self, shape: str, color: str, position: str = "front", size: str = "L") -> Dict[str, Any]:
         """
-        生成效果图形状的 SVG 元素
+        生成效果图形状的 SVG 元素，自动居中在指定区域
         
         Args:
             shape: 形状名称 (Heart/Circle/Bone 或 心形/圆形/骨头形)
             color: 颜色名称 (Silver/Gold/RoseGold/Black 或中文)
             position: front 或 back
+            size: L 或 S
         
         Returns:
-            SVG <g> 元素字符串
+            包含 SVG 元素和边界框信息的字典
         """
         # 标准化形状名称
         shape_map = {
             "心形": "Heart", "Heart": "Heart",
             "圆形": "Circle", "Circle": "Circle",
-            "骨头形": "Bone", "Bone": "Bone",
+            "骨头形": "Bone", "Bone": "Bone", "骨形": "Bone",
         }
         shape_key = shape_map.get(shape, "Bone")
+        
+        # 标准化尺寸
+        size_key = "L" if size.upper() in ["L", "大"] else "S"
         
         # 获取颜色填充
         fill_color = COLOR_FILLS.get(color, "#E5C87A")
@@ -232,24 +294,76 @@ class SVGPDFService:
         path_d = shape_data["d"]
         is_absolute = shape_data.get("is_absolute", False)
         
-        # 根据位置确定偏移
-        if position == "front":
-            offset_x, offset_y = 225.4, 255.0
+        # 获取形状的视口尺寸
+        viewbox_width = shape_data.get("viewbox_width", 142)
+        viewbox_height = shape_data.get("viewbox_height", 113)
+        text_y_offset = shape_data.get("text_y_offset", 60)
+        
+        # 获取缩放比例 - 统一使用更大的比例使所有形状大小相近
+        # 骨头形作为基准 (scale=1.0)，圆形和心形需要放大到相似视觉大小
+        shape_size = SHAPE_SIZES.get(shape_key, SHAPE_SIZES["Bone"]).get(size_key, {})
+        base_scale = shape_size.get("scale", 1.0)
+        
+        # 统一视觉大小：圆形和心形需要额外放大
+        if shape_key in ["Circle", "Heart"]:
+            scale = base_scale * 1.6  # 额外放大 1.6 倍
         else:
-            offset_x, offset_y = 360.0, 255.0
+            scale = base_scale
+        
+        # 确定目标区域
+        if position == "front":
+            area = FRONT_AREA
+        else:
+            area = BACK_AREA
+        
+        # 计算居中位置（在区域内水平居中、垂直居中偏上）
+        area_center_x = area["x"] + area["width"] / 2
+        area_center_y = area["y"] + area["height"] / 2 - 10  # 稍微偏上
+        
+        # 计算缩放后的尺寸
+        scaled_width = viewbox_width * scale
+        scaled_height = viewbox_height * scale
+        
+        # 计算平移量使形状居中
+        translate_x = area_center_x - scaled_width / 2
+        translate_y = area_center_y - scaled_height / 2
         
         # 生成 SVG 元素
         if is_absolute:
-            # 骨头形已经是绝对坐标，直接使用
+            # 骨头形已经是绝对坐标，保持原有逻辑
             if position == "back":
                 # 背面需要调整 x 坐标（向右移动 134.7）
                 path_d = self._adjust_path_x(path_d, 134.7)
             svg_element = f'<g><path fill-rule="evenodd" fill="{fill_color}" d="{path_d}"/></g>'
+            # 骨头形的边界框（基于原始坐标）
+            bbox = {
+                "x": 276.3 if position == "front" else 276.3 + 134.7,
+                "y": 337.7,
+                "width": 128,
+                "height": 75,
+            }
         else:
-            # 心形和圆形需要添加变换
-            svg_element = f'<g><path fill-rule="evenodd" fill="{fill_color}" d="{path_d}" transform="translate({offset_x}, {offset_y})"/></g>'
+            # 心形和圆形需要计算居中位置
+            svg_element = f'<g transform="translate({translate_x}, {translate_y}) scale({scale})"><path fill-rule="evenodd" fill="{fill_color}" d="{path_d}"/></g>'
+            # 计算边界框（用于尺寸标注）
+            bbox = {
+                "x": translate_x,
+                "y": translate_y,
+                "width": scaled_width,
+                "height": scaled_height,
+            }
         
-        return svg_element
+        # 计算文字居中位置
+        text_x = area_center_x
+        text_y = translate_y + (scaled_height / 2) + (text_y_offset * scale / viewbox_height * scaled_height * 0.3)
+        
+        return {
+            "svg": svg_element,
+            "bbox": bbox,
+            "text_x": text_x,
+            "text_y": text_y,
+            "scale": scale,
+        }
     
     def _adjust_path_x(self, path_d: str, offset: float) -> str:
         """调整 path 的 x 坐标"""
@@ -258,6 +372,50 @@ class SVGPDFService:
             x = float(match.group(1))
             return f"M{x + offset},"
         return re.sub(r'M(\d+\.?\d*),', adjust_coords, path_d)
+    
+    def _generate_dimension_lines(self, bbox: Dict[str, float], width_mm: int, height_mm: int) -> tuple:
+        """
+        生成尺寸标注线 SVG
+        
+        Args:
+            bbox: 形状的边界框 {"x", "y", "width", "height"}
+            width_mm: 宽度毫米值
+            height_mm: 高度毫米值
+        
+        Returns:
+            (宽度标注线 SVG, 高度标注线 SVG)
+        """
+        x, y, w, h = bbox["x"], bbox["y"], bbox["width"], bbox["height"]
+        
+        # 标注线偏移量
+        offset = 15
+        tick = 3
+        
+        # 宽度标注线（水平，在形状上方）
+        width_y = y - offset
+        width_text_x = x + w / 2 - 15  # 文字居中
+        width_text_y = width_y - 5
+        
+        width_svg = f'''<g>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{x}" y1="{width_y}" x2="{x + w}" y2="{width_y}"/>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{x}" y1="{width_y - tick}" x2="{x}" y2="{width_y + tick}"/>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{x + w}" y1="{width_y - tick}" x2="{x + w}" y2="{width_y + tick}"/>
+            <text transform="matrix(1 0 0 1 {width_text_x} {width_text_y})" fill="#E71F19" font-family="'AlibabaPuHuiTi-Regular'" font-size="14px">{width_mm} mm</text>
+        </g>'''
+        
+        # 高度标注线（垂直，在形状左侧）
+        height_x = x - offset
+        height_text_x = height_x - 20
+        height_text_y = y + h / 2 + 5  # 文字居中
+        
+        height_svg = f'''<g>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{height_x}" y1="{y}" x2="{height_x}" y2="{y + h}"/>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{height_x - tick}" y1="{y}" x2="{height_x + tick}" y2="{y}"/>
+            <line fill="none" stroke="#E71F19" stroke-width="0.5" x1="{height_x - tick}" y1="{y + h}" x2="{height_x + tick}" y2="{y + h}"/>
+            <text transform="matrix(0 -1 1 0 {height_text_x} {height_text_y})" fill="#E71F19" font-family="'AlibabaPuHuiTi-Regular'" font-size="14px">{height_mm} mm</text>
+        </g>'''
+        
+        return width_svg, height_svg
     
     def _get_product_photo_base64(self, sku: str, size: str = "L") -> str:
         """
@@ -271,6 +429,8 @@ class SVGPDFService:
             base64 编码的图片数据（含 data:image/jpeg;base64, 前缀）
         """
         try:
+            from PIL import Image
+            
             # 确定目录
             size_dir = "large" if size.upper() in ["L", "大"] else "small"
             
@@ -280,11 +440,31 @@ class SVGPDFService:
             print(f"[INFO] Loading product photo: {photo_url}")
             
             # 下载图片
-            response = requests.get(photo_url, timeout=10)
+            response = requests.get(photo_url, timeout=15)
             if response.status_code == 200:
+                # 检查是否是 JPEG 2000 格式（文件头以 \x00\x00\x00 或 jP 开始）
+                content = response.content
+                is_jp2 = content[:4] == b'\x00\x00\x00\x0c' or content[:2] == b'jP'
+                
+                if is_jp2:
+                    print(f"[INFO] Converting JPEG 2000 to standard JPEG...")
+                    # 使用 Pillow 转换格式
+                    img = Image.open(BytesIO(content))
+                    # 转换为 RGB 模式（如果需要）
+                    if img.mode in ('RGBA', 'P', 'LA'):
+                        img = img.convert('RGB')
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    # 保存为标准 JPEG
+                    buffer = BytesIO()
+                    img.save(buffer, format='JPEG', quality=90)
+                    content = buffer.getvalue()
+                    print(f"[OK] Converted to JPEG: {len(content) / 1024:.1f} KB")
+                
                 # 转为 base64
-                photo_base64 = base64.b64encode(response.content).decode('utf-8')
-                print(f"[OK] Product photo loaded: {sku}.jpg ({len(response.content) / 1024:.1f} KB)")
+                photo_base64 = base64.b64encode(content).decode('utf-8')
+                print(f"[OK] Product photo loaded: {sku}.jpg ({len(content) / 1024:.1f} KB)")
                 return f"data:image/jpeg;base64,{photo_base64}"
             else:
                 print(f"[WARN] Failed to load photo: {response.status_code}")
@@ -292,6 +472,8 @@ class SVGPDFService:
                 
         except Exception as e:
             print(f"[ERROR] Failed to load product photo: {e}")
+            import traceback
+            traceback.print_exc()
             return self._get_placeholder_image()
     
     def _get_placeholder_image(self) -> str:
@@ -374,24 +556,64 @@ class SVGPDFService:
         # Step 1: Apply font style modifications
         svg_content = self._apply_font_styles(svg_content)
         
-        # Step 2: 生成效果图形状
+        # Step 2: 获取形状和尺寸信息
         shape = data.get("shape", "骨头形")
         color = data.get("color", "金色")
-        front_shape_svg = self._get_effect_shape_svg(shape, color, "front")
-        back_shape_svg = self._get_effect_shape_svg(shape, color, "back")
-        
-        # Step 3: 获取产品实拍图
-        sku = data.get("sku", "B-E01A")
         size = data.get("size", "L")
-        # 从 SKU 提取基础编码（去掉尺寸后缀）
+        
+        # 标准化形状和尺寸
+        shape_map = {
+            "心形": "Heart", "Heart": "Heart",
+            "圆形": "Circle", "Circle": "Circle",
+            "骨头形": "Bone", "Bone": "Bone", "骨形": "Bone",
+        }
+        shape_key = shape_map.get(shape, "Bone")
+        size_key = "L" if str(size).upper() in ["L", "大"] else "S"
+        
+        # 获取形状的尺寸数据
+        shape_size = SHAPE_SIZES.get(shape_key, SHAPE_SIZES["Bone"]).get(size_key, {})
+        width_mm = data.get("width_mm") or shape_size.get("width_mm", 45)
+        height_mm = data.get("height_mm") or shape_size.get("height_mm", 26)
+        
+        # Step 3: 生成效果图形状（传递 size 参数）
+        front_shape_data = self._get_effect_shape_svg(shape, color, "front", size)
+        back_shape_data = self._get_effect_shape_svg(shape, color, "back", size)
+        
+        # 生成尺寸标注线（仅正面需要）
+        width_lines, height_lines = self._generate_dimension_lines(
+            front_shape_data["bbox"], width_mm, height_mm
+        )
+        
+        # Step 4: 获取产品实拍图
+        sku = data.get("sku", "B-E01A")
+        # 从 SKU 提取基础编码（去掉颜色后缀取前6位，如 B-E01A -> B-E01A）
+        # 实际上需要根据形状和颜色组合来确定实拍图
         sku_base = sku[:6] if len(sku) >= 6 else sku
         photo_base64 = self._get_product_photo_base64(sku_base, size)
         
-        # Step 4: Build replacement map using {{PLACEHOLDER}} format
+        # 生成居中的效果图文字
+        front_text = str(data.get("front_text", ""))
+        back_text = str(data.get("back_text", ""))
+        
+        # 正面文字 - 居中在形状内
+        front_text_svg = f'<text x="{front_shape_data["text_x"]}" y="{front_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'RetroAngela\'" font-size="39.637px">{front_text}</text>'
+        
+        # 背面文字 - 居中在形状内
+        back_text_svg = f'<text x="{back_shape_data["text_x"]}" y="{back_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'GenJyuuGothic-P-Heavy\'" font-size="17.9641px">{back_text}</text>'
+        
+        # Step 5: Build replacement map using {{PLACEHOLDER}} format
         replacements = {
             # 效果图形状
-            "{{EFFECT_FRONT_SHAPE}}": front_shape_svg,
-            "{{EFFECT_BACK_SHAPE}}": back_shape_svg,
+            "{{EFFECT_FRONT_SHAPE}}": front_shape_data["svg"],
+            "{{EFFECT_BACK_SHAPE}}": back_shape_data["svg"],
+            
+            # 效果图文字（居中）
+            "{{EFFECT_FRONT_TEXT}}": front_text_svg,
+            "{{EFFECT_BACK_TEXT}}": back_text_svg,
+            
+            # 尺寸标注线
+            "{{WIDTH_DIMENSION_LINES}}": width_lines,
+            "{{HEIGHT_DIMENSION_LINES}}": height_lines,
             
             # 实拍图
             "{{PRODUCT_PHOTO_BASE64}}": photo_base64,
@@ -412,13 +634,9 @@ class SVGPDFService:
             "{{SKU}}": str(data.get("sku", "")),
             
             # 定制内容
-            "{{FRONT_TEXT}}": str(data.get("front_text", "")),
+            "{{FRONT_TEXT}}": front_text,
             "{{FRONT_FONT}}": str(data.get("front_font", "")),
-            "{{BACK_TEXT}}": str(data.get("back_text", "")),
-            
-            # 效果图区域
-            "{{EFFECT_FRONT_TEXT}}": str(data.get("front_text", "")),
-            "{{EFFECT_BACK_TEXT}}": str(data.get("back_text", "")),
+            "{{BACK_TEXT}}": back_text,
             
             # 物流信息
             "{{TRACKING_NUMBER}}": str(data.get("tracking_number", "")),
@@ -428,10 +646,6 @@ class SVGPDFService:
             "{{CITY}}": str(data.get("city", "")),
             "{{POSTAL_CODE}}": str(data.get("postal_code", "")),
             "{{ADDRESS}}": str(data.get("address", "")),
-            
-            # 尺寸标注
-            "{{WIDTH_MM}}": f"{data.get('width_mm', 45)} mm",
-            "{{HEIGHT_MM}}": f"{data.get('height_mm', 26)} mm",
         }
         
         result = svg_content

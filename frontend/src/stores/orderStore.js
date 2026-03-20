@@ -41,37 +41,68 @@ export const useOrderStore = defineStore('order', () => {
     urgent: '紧急'
   }
 
-  // 获取所有订单（关联 sku_mapping 获取 shape/color/size）
+  // 获取所有订单（关联 sku_mapping 获取 shape/color/size，关联 shops 获取店铺信息）
   const fetchOrders = async () => {
     loading.value = true
     error.value = null
     
     try {
+      // 简化查询：不使用关联查询，避免权限问题
       const { data, error: fetchError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          sku_mapping (*)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
       
       if (fetchError) throw fetchError
       
       orders.value = data || []
       console.log('✅ 订单数据加载成功:', data?.length, '条')
-      // debug: 检查第一条订单是否有sku_mapping数据
+      
+      // 如果有订单，单独加载 SKU 信息 + 产品实拍图
       if (data?.length > 0) {
-        const first = data[0]
+        const skuIds = data.map(o => o.sku_id).filter(Boolean)
+        if (skuIds.length > 0) {
+          // 并行查询 sku_mapping 和 product_photos
+          const [skuResult, photoResult] = await Promise.all([
+            supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds),
+            supabase.from('product_photos').select('sku_id, photo_url, photo_type').in('sku_id', skuIds).eq('is_active', true).order('sort_order', { ascending: true })
+          ])
+          
+          // 构建 SKU Map
+          const skuMap = skuResult.data
+            ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+            : {}
+          
+          // 构建产品实拍图 Map（每个 sku_id 取第一张）
+          const photoMap = {}
+          if (photoResult.data) {
+            photoResult.data.forEach(p => {
+              if (!photoMap[p.sku_id]) {
+                // 正确的 Supabase Storage URL: photos bucket，不是 assets
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+                photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+                console.log('🖼️ 实拍图 URL:', photoMap[p.sku_id])
+              }
+            })
+          }
+          
+          orders.value = data.map(order => ({
+            ...order,
+            sku_mapping: skuMap[order.sku_id] || null,
+            product_image: photoMap[order.sku_id] || null
+          }))
+        }
+        
+        const first = orders.value[0]
         console.log('🔍 第一条订单字段检查:', {
           id: first.etsy_order_id,
           sku: first.sku_mapping?.sku_code || '无',
           shape: first.sku_mapping?.shape || '无',
           color: first.sku_mapping?.color || '无',
-          front: first.effect_image_url ? '有' : '无',
-          back: first.effect_image_back_url ? '有' : '无'
+          product_image: first.product_image ? '有' : '无'
         })
       }
-      return data
+      return orders.value
     } catch (err) {
       error.value = err.message
       console.error('❌ 订单数据加载失败:', err)
@@ -462,6 +493,104 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  // 保存效果图（从设计器获取SVG数据并上传到存储）
+  const saveEffectImage = async (orderId, svgData) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      // 1. 将SVG转换为Blob
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml' })
+      const fileName = `effect_${orderId}_${Date.now()}.svg`
+      
+      // 2. 上传到Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('effect-images')
+        .upload(fileName, svgBlob, {
+          contentType: 'image/svg+xml',
+          upsert: true
+        })
+      
+      if (uploadError) throw uploadError
+      
+      // 3. 获取公开URL
+      const { data: urlData } = supabase
+        .storage
+        .from('effect-images')
+        .getPublicUrl(fileName)
+      
+      const publicUrl = urlData.publicUrl
+      
+      // 4. 更新订单记录
+      const { data, error: updateError } = await supabase
+        .from('orders')
+        .update({ 
+          effect_image_url: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+      
+      if (updateError) throw updateError
+      
+      // 5. 【新增】同步保存到 production_documents 表（生产文档PDF依赖此表）
+      const { data: existingDoc } = await supabase
+        .from('production_documents')
+        .select('id')
+        .eq('order_id', orderId)
+        .single()
+      
+      if (existingDoc) {
+        // 更新已有记录
+        const { error: docUpdateError } = await supabase
+          .from('production_documents')
+          .update({ 
+            effect_svg_url: publicUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('order_id', orderId)
+        
+        if (docUpdateError) {
+          console.warn('⚠️ production_documents 更新失败:', docUpdateError)
+        } else {
+          console.log('✅ production_documents 更新成功')
+        }
+      } else {
+        // 插入新记录
+        const { error: docInsertError } = await supabase
+          .from('production_documents')
+          .insert({
+            order_id: orderId,
+            effect_svg_url: publicUrl,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        
+        if (docInsertError) {
+          console.warn('⚠️ production_documents 插入失败:', docInsertError)
+        } else {
+          console.log('✅ production_documents 插入成功')
+        }
+      }
+      
+      // 6. 更新本地缓存
+      const index = orders.value.findIndex(o => o.id === orderId)
+      if (index !== -1) {
+        orders.value[index].effect_image_url = publicUrl
+      }
+      
+      console.log('✅ 效果图保存成功:', publicUrl)
+      return { url: publicUrl, data }
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 效果图保存失败:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // 状态
     orders,
@@ -489,6 +618,7 @@ export const useOrderStore = defineStore('order', () => {
     generateEffectImage,
     generateProductionPdf,
     searchOrderById,
-    getOrderWithDetails
+    getOrderWithDetails,
+    saveEffectImage
   }
 })

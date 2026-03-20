@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>物流下单 · 管理系统原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --background: #fafafa !important;
+      --foreground: #18181b !important;
+      --card: #ffffff !important;
+      --primary: #27272a !important;
+      --primary-foreground: #fafafa !important;
+      --muted: #f4f4f5 !important;
+      --muted-foreground: #71717a !important;
+      --accent: #d97706 !important;
+      --accent-soft: #fffbeb !important;
+      --border: #e4e4e7 !important;
+      --ring: #a1a1aa !important;
+      --success: #059669 !important;
+      --danger: #dc2626 !important;
+      --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace !important;
+    }
+    body {
+      font-family: var(--font-sans) !important;
+      background-color: var(--background) !important;
+      color: var(--foreground) !important;
+      margin: 0 !important;
+      -webkit-font-smoothing: antialiased !important;
+    }
+    h1, h2, h3 {
+      font-family: var(--font-sans) !important;
+      letter-spacing: -0.02em !important;
+    }
+    .mono {
+      font-family: var(--font-mono) !important;
+    }
+    .row-active {
+      background-color: #f4f4f5 !important;
+      box-shadow: inset 3px 0 0 0 var(--accent) !important;
+    }
+    input:read-only, textarea:read-only, select:disabled {
+      background-color: #fafafa !important;
+      cursor: not-allowed !important;
+    }
+    @media (max-width: 1279px) {
+      .layout-stack { flex-direction: column !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- 原型说明：纯前端演示，无后端；数据为写死 JSON -->
+  <div class="flex min-h-screen layout-stack">
+    <!-- 左侧导航（示意，与管理系统一致） -->
+    <aside class="hidden lg:flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white">
+      <div class="p-4 border-b border-zinc-200">
+        <p class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Etsy 运营</p>
+        <p class="text-sm font-bold text-zinc-900">管理系统</p>
+        <p class="mt-1 text-xs text-zinc-500">主账号 · 预览</p>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-2 text-sm">
+        <p class="px-3 py-2 text-xs font-semibold text-zinc-400">订单工作流</p>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">仪表盘总览</a>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">待确认订单</a>
+        <a href="#" class="block rounded-lg px-3 py-2 bg-zinc-100 font-semibold text-zinc-900">物流下单</a>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">生产中订单</a>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">已完成订单</a>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">邮件模板</a>
+        <a href="#" class="block rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50">工厂生产总览</a>
+      </nav>
+    </aside>
+
+    <main class="flex min-w-0 flex-1 flex-col">
+      <header class="border-b border-zinc-200 bg-white px-4 py-4 sm:px-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 class="text-xl font-bold text-zinc-900 sm:text-2xl">物流下单</h1>
+            <p class="mt-1 max-w-2xl text-sm text-zinc-500">待下物流任务列表：选中订单后填写 4PX 渠道与包裹信息，提交后写入生产文档（本页为静态原型）。</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+              <i data-lucide="package" class="h-3.5 w-3.5"></i> 待下物流
+            </span>
+            <button type="button" id="btnDemoToast" class="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
+              <i data-lucide="info" class="h-3.5 w-3.5"></i> 演示提示
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:flex-row xl:gap-6">
+        <!-- 左：列表 + 表单 -->
+        <div class="flex min-w-0 flex-1 flex-col gap-4">
+          <!-- 订单列表 -->
+          <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3">
+              <div class="flex flex-wrap gap-2" id="subTabs" role="tablist">
+                <button type="button" data-sub="all" class="sub-tab rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white">所有订单</button>
+                <button type="button" data-sub="A" class="sub-tab rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50">子账号 A</button>
+                <button type="button" data-sub="B" class="sub-tab rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50">子账号 B</button>
+                <button type="button" data-sub="C" class="sub-tab rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50">子账号 C</button>
+              </div>
+              <p class="text-xs text-zinc-400">店铺归属 · 仅展示可下单任务</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-left text-sm text-zinc-600">
+                <thead class="border-b border-zinc-100 bg-zinc-50/80 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <tr>
+                    <th class="w-10 px-3 py-3"><span class="sr-only">选</span></th>
+                    <th class="px-3 py-3">订单ID</th>
+                    <th class="px-3 py-3">客户</th>
+                    <th class="px-3 py-3">产品</th>
+                    <th class="px-3 py-3">店铺</th>
+                    <th class="px-3 py-3">国家</th>
+                    <th class="px-3 py-3">数量</th>
+                    <th class="px-3 py-3">状态</th>
+                    <th class="px-3 py-3">渠道</th>
+                    <th class="px-3 py-3">运单号</th>
+                    <th class="px-3 py-3 whitespace-nowrap">最后操作</th>
+                  </tr>
+                </thead>
+                <tbody id="orderTableBody"></tbody>
+              </table>
+            </div>
+            <div id="emptyListHint" class="hidden px-4 py-10 text-center text-sm text-zinc-400">该筛选下暂无订单</div>
+          </section>
+
+          <!-- 物流下单主表单 -->
+          <section class="rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <div class="border-b border-zinc-100 px-4 py-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-semibold text-zinc-900">物流商</span>
+                <div class="inline-flex rounded-lg border border-zinc-200 p-0.5" role="tablist">
+                  <button type="button" id="carrier4px" class="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white">4PX</button>
+                  <button type="button" disabled class="cursor-not-allowed rounded-md px-3 py-1.5 text-xs font-medium text-zinc-400" title="备用">其它物流</button>
+                </div>
+                <span class="text-xs text-zinc-400">渠道选项对接 4PX API（原型为静态下拉）</span>
+              </div>
+            </div>
+
+            <div id="formShell" class="pointer-events-none opacity-50 p-4 transition-opacity">
+              <div class="grid gap-4 lg:grid-cols-2">
+                <div class="space-y-3">
+                  <label class="block text-xs font-semibold text-zinc-500">物流渠道</label>
+                  <select id="fieldChannel" class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200">
+                    <option value="">请选择渠道</option>
+                    <option value="USZXR">USZXR · 美国专线标准</option>
+                    <option value="THPHR">THPHR · 特惠包裹</option>
+                    <option value="UKZXR">UKZXR · 英国专线</option>
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <label class="flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
+                    <input id="fieldBattery" type="checkbox" class="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400" />
+                    带电（默认不带电，勾选表示带电）
+                  </label>
+                </div>
+              </div>
+
+              <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">收件信息（子账号只读 · 原型默认只读）</p>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label class="text-xs text-zinc-500">姓名</label>
+                  <input id="fieldName" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">电话</label>
+                  <input id="fieldPhone" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">国家</label>
+                  <input id="fieldCountry" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="text-xs text-zinc-500">地址</label>
+                  <input id="fieldAddress" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">城市</label>
+                  <input id="fieldCity" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">州/省</label>
+                  <input id="fieldState" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">邮编</label>
+                  <input id="fieldZip" type="text" readonly class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" />
+                </div>
+              </div>
+
+              <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-zinc-400">包裹信息</p>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <label class="text-xs text-zinc-500">重量 (g)</label>
+                  <input id="fieldWeight" type="number" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="120" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">长 (cm)</label>
+                  <input id="fieldL" type="number" step="0.1" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="20" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">宽 (cm)</label>
+                  <input id="fieldW" type="number" step="0.1" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="15" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">高 (cm)</label>
+                  <input id="fieldH" type="number" step="0.1" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="3" />
+                </div>
+              </div>
+
+              <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-zinc-400">申报信息（合并一行）</p>
+              <div class="mt-2 grid gap-3 lg:grid-cols-2">
+                <div>
+                  <label class="text-xs text-zinc-500">申报品名（中）</label>
+                  <input id="fieldDeclCn" type="text" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="宠物吊牌套装" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">申报品名（英）</label>
+                  <input id="fieldDeclEn" type="text" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="Pet ID tag set" />
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500">申报价值 (USD)</label>
+                  <input id="fieldDeclUsd" type="number" step="0.01" class="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="18.00" />
+                </div>
+              </div>
+
+              <div class="mt-6 flex flex-wrap gap-2 border-t border-zinc-100 pt-4">
+                <button type="button" id="btnCopyPrev" class="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                  <i data-lucide="copy" class="h-4 w-4"></i> 复制上一单申报
+                </button>
+                <button type="button" id="btnSaveDraft" class="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                  <i data-lucide="save" class="h-4 w-4"></i> 保存草稿（演示）
+                </button>
+                <button type="button" id="btnSubmit" disabled class="inline-flex items-center gap-1 rounded-lg bg-zinc-900 px-5 py-2 text-sm font-semibold text-white opacity-50 hover:bg-zinc-800 disabled:cursor-not-allowed">
+                  <i data-lucide="send" class="h-4 w-4"></i> 提交下单
+                </button>
+                <span id="submitHint" class="self-center text-xs text-zinc-400">请先选择订单并补全必填项</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- 右：订单详情 + 缺失项 -->
+        <aside class="w-full shrink-0 xl:w-[380px]">
+          <div class="sticky top-4 space-y-4">
+            <section class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <h2 class="text-sm font-bold text-zinc-900">订单详情</h2>
+              <div id="detailPlaceholder" class="mt-4 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-10 text-center text-sm text-zinc-400">
+                请在左侧选择订单
+              </div>
+              <div id="detailContent" class="mt-4 hidden space-y-3 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-zinc-500">订单ID</span>
+                  <span id="dId" class="mono font-medium text-zinc-900"></span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-zinc-500">店铺</span>
+                  <span id="dShop" class="font-medium text-zinc-900"></span>
+                </div>
+                <div>
+                  <p class="text-zinc-500">产品（单包裹多品）</p>
+                  <ul id="dProducts" class="mt-1 space-y-2 text-zinc-800"></ul>
+                </div>
+                <div class="rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
+                  <p class="font-semibold text-zinc-800">效果图</p>
+                  <p class="mt-1">已关联 SVG · 生产文档将引用设计稿区块（原型文案）</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <h2 class="text-sm font-bold text-zinc-900">校验 / 缺失项</h2>
+              <p class="mt-1 text-xs text-zinc-500">缺必填则禁用提交；对接期可与 4PX 字段映射表对齐。</p>
+              <ul id="missingList" class="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-800"></ul>
+              <div id="missingOk" class="mt-3 hidden text-sm font-medium text-emerald-700">当前选中订单表单必填项已齐（原型）</div>
+            </section>
+
+            <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-900">
+              <p class="font-semibold">生产文档闸门（业务提示）</p>
+              <p class="mt-1 leading-relaxed">面单 PNG 写入失败时展示告警与「重试写入」；文档不完整则不可进入「生产中」作为依据——本页仅 UI 占位。</p>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- 批量浮动栏 -->
+  <div id="batchBar" class="fixed bottom-6 left-1/2 z-40 hidden w-[min(96vw,42rem)] -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-zinc-700">已选 <strong id="batchCount">0</strong> 单</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="btnBatchOpen" class="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800">批量下单（演示）</button>
+        <button type="button" id="btnBatchClear" class="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50">清除选择</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量结果弹层 -->
+  <div id="modalBatch" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-900/40 p-4">
+    <div class="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+        <h3 class="text-sm font-bold text-zinc-900">批量提交结果（演示）</h3>
+        <button type="button" id="modalBatchClose" class="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      <div class="max-h-60 overflow-y-auto p-4 text-sm" id="modalBatchBody"></div>
+      <div class="border-t border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-500">实装时需对接物流后台复检，避免空单。</div>
+    </div>
+  </div>
+
+  <script>
+    const MOCK_ORDERS = [
+      {
+        id: "ET-2025-03189",
+        sub: "A",
+        shop: "PawTag Studio",
+        customer: "Sarah M.",
+        product: "心形吊牌 ×2 + 圆牌",
+        country: "US",
+        qty: 3,
+        status: "待下物流",
+        channel: "—",
+        tracking: "—",
+        updatedAt: "2025-03-20 10:22",
+        recipient: { name: "Sarah Miller", phone: "+1 3105550199", country: "United States", address: "1200 Sunset Blvd Apt 4B", city: "Los Angeles", state: "CA", zip: "90026" },
+        products: [
+          { name: "心形吊牌", shape: "心形", size: "32×28mm", color: "玫瑰金", front: "Lucky", font: "Montserrat SemiBold", back: "If lost call +1…" },
+          { name: "心形吊牌", shape: "心形", size: "32×28mm", color: "银色", front: "Milo", font: "Inter Medium", back: "—" },
+          { name: "圆牌", shape: "圆形", size: "25mm", color: "黑色", front: "Chloe", font: "DM Sans", back: "仅背面电话" },
+        ],
+        defaults: { weight: 118, l: 20, w: 14, h: 2.5, declCn: "宠物身份牌套装", declEn: "Pet ID tags", usd: 16.5 },
+      },
+      {
+        id: "ET-2025-03190",
+        sub: "B",
+        shop: "MetalPets US",
+        customer: "James K.",
+        product: "军牌 ×1",
+        country: "CA",
+        qty: 1,
+        status: "待下物流",
+        channel: "—",
+        tracking: "—",
+        updatedAt: "2025-03-20 09:05",
+        recipient: { name: "James Kim", phone: "+1 4165550142", country: "Canada", address: "88 Spadina Ave", city: "Toronto", state: "ON", zip: "M5V 2H8" },
+        products: [
+          { name: "军牌", shape: "长方形", size: "50×28mm", color: "做旧钢", front: "BARK", font: "Oswald Bold", back: "地址简写" },
+        ],
+        defaults: { weight: 95, l: 18, w: 12, h: 2, declCn: "金属宠物牌", declEn: "Metal pet tag", usd: 12 },
+      },
+      {
+        id: "ET-2025-03172",
+        sub: "A",
+        shop: "PawTag Studio",
+        customer: "Elena R.",
+        product: "吊牌 ×2",
+        country: "UK",
+        qty: 2,
+        status: "下单失败",
+        channel: "—",
+        tracking: "—",
+        updatedAt: "2025-03-19 16:40",
+        recipient: { name: "Elena Rossi", phone: "+44 7700900123", country: "United Kingdom", address: "221B Baker Street", city: "London", state: "—", zip: "NW1 6XE" },
+        products: [
+          { name: "吊牌", shape: "骨头形", size: "38mm", color: "蓝色", front: "BUDDY", font: "Poppins", back: "Please call…" },
+          { name: "吊牌", shape: "骨头形", size: "38mm", color: "蓝色", front: "COCO", font: "Poppins", back: "同上" },
+        ],
+        defaults: { weight: 102, l: 19, w: 13, h: 2.2, declCn: "宠物饰品", declEn: "Pet accessory", usd: 14 },
+        failReason: "渠道临时限重",
+      },
+    ];
+
+    let currentSub = "all";
+    let selectedId = null;
+    let selectedSet = new Set();
+    let lastDeclaration = { cn: "宠物吊牌套装", en: "Pet ID tag set", usd: 18 };
+
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+    function statusPill(status) {
+      if (status === "待下物流") return '<span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">待下物流</span>';
+      if (status === "下单失败") return '<span class="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-200">下单失败</span>';
+      return `<span class="text-xs text-zinc-500">${status}</span>`;
+    }
+
+    function filteredOrders() {
+      if (currentSub === "all") return MOCK_ORDERS;
+      return MOCK_ORDERS.filter((o) => o.sub === currentSub);
+    }
+
+    function renderTable() {
+      const tbody = $("#orderTableBody");
+      const rows = filteredOrders();
+      tbody.innerHTML = "";
+      $("#emptyListHint").classList.toggle("hidden", rows.length > 0);
+      rows.forEach((o) => {
+        const tr = document.createElement("tr");
+        tr.className = "cursor-pointer border-b border-zinc-50 hover:bg-zinc-50/80";
+        tr.dataset.id = o.id;
+        if (selectedId === o.id) tr.classList.add("row-active");
+        tr.innerHTML = `
+          <td class="px-3 py-3" onclick="event.stopPropagation()">
+            <input type="checkbox" class="rounded border-zinc-300 chk-row" data-id="${o.id}" ${selectedSet.has(o.id) ? "checked" : ""} />
+          </td>
+          <td class="mono px-3 py-3 font-medium text-zinc-900">${o.id}</td>
+          <td class="px-3 py-3">${o.customer}</td>
+          <td class="max-w-[140px] truncate px-3 py-3" title="${o.product}">${o.product}</td>
+          <td class="px-3 py-3">${o.shop}</td>
+          <td class="px-3 py-3">${o.country}</td>
+          <td class="px-3 py-3">${o.qty}</td>
+          <td class="px-3 py-3">${statusPill(o.status)}</td>
+          <td class="mono px-3 py-3 text-xs">${o.channel}</td>
+          <td class="mono px-3 py-3 text-xs">${o.tracking}</td>
+          <td class="whitespace-nowrap px-3 py-3 text-xs text-zinc-500">${o.updatedAt}</td>
+        `;
+        tr.addEventListener("click", () => selectOrder(o.id));
+        tbody.appendChild(tr);
+      });
+      $$(".chk-row").forEach((el) => {
+        el.addEventListener("change", () => {
+          const id = el.dataset.id;
+          if (el.checked) selectedSet.add(id);
+          else selectedSet.delete(id);
+          updateBatchBar();
+        });
+      });
+    }
+
+    function getOrder(id) {
+      return MOCK_ORDERS.find((x) => x.id === id);
+    }
+
+    function selectOrder(id) {
+      selectedId = id;
+      const o = getOrder(id);
+      renderTable();
+      if (!o) return;
+
+      $("#formShell").classList.remove("pointer-events-none", "opacity-50");
+      $("#detailPlaceholder").classList.add("hidden");
+      $("#detailContent").classList.remove("hidden");
+
+      $("#dId").textContent = o.id;
+      $("#dShop").textContent = o.shop;
+      const ul = $("#dProducts");
+      ul.innerHTML = "";
+      o.products.forEach((p, i) => {
+        const li = document.createElement("li");
+        li.className = "rounded-lg border border-zinc-100 bg-zinc-50/80 p-2 text-xs leading-relaxed";
+        li.innerHTML = `<span class="font-semibold text-zinc-900">${i + 1}. ${p.name}</span><br/>
+          <span class="text-zinc-500">形状</span> ${p.shape} · <span class="text-zinc-500">尺寸</span> ${p.size} · <span class="text-zinc-500">颜色</span> ${p.color}<br/>
+          <span class="text-zinc-500">正面</span> ${p.front} · <span class="text-zinc-500">字体</span> ${p.font}<br/>
+          <span class="text-zinc-500">背面</span> ${p.back}`;
+        ul.appendChild(li);
+      });
+
+      $("#fieldName").value = o.recipient.name;
+      $("#fieldPhone").value = o.recipient.phone;
+      $("#fieldCountry").value = o.recipient.country;
+      $("#fieldAddress").value = o.recipient.address;
+      $("#fieldCity").value = o.recipient.city;
+      $("#fieldState").value = o.recipient.state;
+      $("#fieldZip").value = o.recipient.zip;
+
+      $("#fieldWeight").value = o.defaults.weight;
+      $("#fieldL").value = o.defaults.l;
+      $("#fieldW").value = o.defaults.w;
+      $("#fieldH").value = o.defaults.h;
+      $("#fieldDeclCn").value = o.defaults.declCn;
+      $("#fieldDeclEn").value = o.defaults.declEn;
+      $("#fieldDeclUsd").value = o.defaults.usd;
+      $("#fieldBattery").checked = false;
+      $("#fieldChannel").value = "";
+
+      validateForm();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function validateForm() {
+      const miss = [];
+      if (!selectedId) {
+        $("#missingList").innerHTML = "";
+        $("#missingOk").classList.add("hidden");
+        $("#btnSubmit").disabled = true;
+        $("#btnSubmit").classList.add("opacity-50");
+        $("#submitHint").textContent = "请先选择订单";
+        return;
+      }
+      if (!$("#fieldChannel").value) miss.push("物流渠道未选择");
+      const nums = [
+        ["重量 (g)", $("#fieldWeight").value],
+        ["长 (cm)", $("#fieldL").value],
+        ["宽 (cm)", $("#fieldW").value],
+        ["高 (cm)", $("#fieldH").value],
+      ];
+      nums.forEach(([label, v]) => {
+        const n = parseFloat(v);
+        if (v === "" || Number.isNaN(n) || n <= 0) miss.push(`${label}无效或为空`);
+      });
+      ["#fieldDeclCn", "#fieldDeclEn", "#fieldDeclUsd"].forEach((sel) => {
+        const el = $(sel);
+        if (!el.value || String(el.value).trim() === "") miss.push(`${sel === "#fieldDeclCn" ? "申报品名（中）" : sel === "#fieldDeclEn" ? "申报品名（英）" : "申报价值"}未填写`);
+      });
+      const phone = $("#fieldPhone").value || "";
+      if (phone.length < 6) miss.push("电话长度过短（V1 规则演示）");
+
+      const list = $("#missingList");
+      list.innerHTML = "";
+      miss.forEach((m) => {
+        const li = document.createElement("li");
+        li.textContent = m;
+        list.appendChild(li);
+      });
+      $("#missingOk").classList.toggle("hidden", miss.length > 0);
+      const ok = miss.length === 0;
+      $("#btnSubmit").disabled = !ok;
+      $("#btnSubmit").classList.toggle("opacity-50", !ok);
+      $("#submitHint").textContent = ok ? "可提交（原型不调用真实 API）" : "请补全上方字段";
+    }
+
+    function updateBatchBar() {
+      const n = selectedSet.size;
+      $("#batchCount").textContent = n;
+      $("#batchBar").classList.toggle("hidden", n === 0);
+    }
+
+    $$("#fieldChannel, #fieldWeight, #fieldL, #fieldW, #fieldH, #fieldDeclCn, #fieldDeclEn, #fieldDeclUsd").forEach((el) => {
+      el.addEventListener("input", validateForm);
+    });
+
+    $("#btnCopyPrev").addEventListener("click", () => {
+      $("#fieldDeclCn").value = lastDeclaration.cn;
+      $("#fieldDeclEn").value = lastDeclaration.en;
+      $("#fieldDeclUsd").value = lastDeclaration.usd;
+      validateForm();
+    });
+
+    $("#btnSaveDraft").addEventListener("click", () => {
+      alert("演示：服务端草稿 V1 将保存当前表单（此处未持久化）。");
+    });
+
+    $("#btnSubmit").addEventListener("click", () => {
+      if (!selectedId) return;
+      lastDeclaration = {
+        cn: $("#fieldDeclCn").value,
+        en: $("#fieldDeclEn").value,
+        usd: $("#fieldDeclUsd").value,
+      };
+      alert("演示成功：将获取面单 PNG → 写入生产文档 → 订单进「生产中」。\n订单：" + selectedId);
+    });
+
+    $("#btnBatchOpen").addEventListener("click", () => {
+      const ids = [...selectedSet];
+      const body = $("#modalBatchBody");
+      body.innerHTML = "";
+      ids.forEach((id, idx) => {
+        const ok = idx % 2 === 0;
+        const div = document.createElement("div");
+        div.className = "mb-2 flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2";
+        div.innerHTML = `<span class="mono text-xs font-medium">${id}</span>
+          <span class="text-xs font-semibold ${ok ? "text-emerald-600" : "text-red-600"}">${ok ? "成功" : "失败 · 需取消空单后重试"}</span>`;
+        body.appendChild(div);
+      });
+      $("#modalBatch").classList.remove("hidden");
+      $("#modalBatch").classList.add("flex");
+    });
+
+    $("#modalBatchClose").addEventListener("click", () => {
+      $("#modalBatch").classList.add("hidden");
+      $("#modalBatch").classList.remove("flex");
+    });
+
+    $("#btnBatchClear").addEventListener("click", () => {
+      selectedSet.clear();
+      $$(".chk-row").forEach((c) => (c.checked = false));
+      updateBatchBar();
+    });
+
+    $("#btnDemoToast").addEventListener("click", () => {
+      alert("本文件为静态 HTML：列表/校验/批量栏均为前端演示。定稿后可替换为 /admin/orders/shipping 路由与 API。");
+    });
+
+    $$(".sub-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentSub = btn.dataset.sub;
+        $$(".sub-tab").forEach((b) => {
+          const on = b.dataset.sub === currentSub;
+          b.classList.toggle("bg-zinc-900", on);
+          b.classList.toggle("text-white", on);
+          b.classList.toggle("font-semibold", on);
+          b.classList.toggle("border", !on);
+          b.classList.toggle("border-zinc-200", !on);
+          b.classList.toggle("bg-white", !on);
+          b.classList.toggle("text-zinc-600", !on);
+          b.classList.toggle("font-medium", !on);
+        });
+        selectedId = null;
+        $("#detailPlaceholder").classList.remove("hidden");
+        $("#detailContent").classList.add("hidden");
+        $("#formShell").classList.add("pointer-events-none", "opacity-50");
+        $("#missingList").innerHTML = "";
+        $("#missingOk").classList.add("hidden");
+        $("#btnSubmit").disabled = true;
+        $("#btnSubmit").classList.add("opacity-50");
+        renderTable();
+      });
+    });
+
+    renderTable();
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>

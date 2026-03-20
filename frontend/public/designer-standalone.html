@@ -157,6 +157,42 @@
             color: #64748b;
             margin-top: 8px;
         }
+        /* 自定义图案区块 */
+        .upload-section {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 8px;
+            border: 1.5px dashed #94a3b8;
+            border-radius: 6px;
+            background: white;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        .upload-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+        .clear-btn {
+            font-size: 11px;
+            color: #ef4444;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 2px 4px;
+            margin-top: 2px;
+        }
+        .clear-btn:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -190,6 +226,9 @@
                     <path id="ed-fp" transform="matrix(1,0,0,-1,0,113.3858)"
                           fill="#dabf9b" fill-rule="evenodd"
                           d="M69.8686 14.0786C68.5094 14.8158 64.5094 17.3092 62.1553 18.8983 47.5075 28.7844 36.1069 40.7415 30.2145 52.3956 25.9707 60.7907 24.5971 68.7719 26.1031 76.3129 26.9495 80.555 28.7402 84.437 31.4827 87.963 32.3107 89.0291 34.2221 91.0242 35.3058 91.9573 38.7692 94.9346 42.7311 96.8275 46.8524 97.4693 48.0892 97.6603 50.9553 97.6586 52.6629 97.4662 55.98 97.0889 58.8903 96.243 61.4594 94.8977 64.0329 97.8106 67.2554 99.5443 70.7536 99.5443 74.2912 99.5443 77.5477 97.772 80.1351 94.7988 82.5721 96.0979 85.3194 96.9633 88.3412 97.3706 89.6519 97.5475 90.8787 97.6374 92.0486 97.6385 94.134 97.6408 96.0392 97.3613 97.9174 96.7924 103.7109 95.0369 109.3989 90.2472 112.7044 84.3412 114.5509 81.0442 115.5943 77.7268 116.1085 73.5415 116.2627 72.21 116.2627 68.1591 116.0768 66.6978 115.638 63.1244 114.8357 60.035 113.4584 56.552 107.6851 41.9811 92.8831 26.5946 73.489 14.9995L71.905 14.0522C71.4226 13.752 70.4282 13.7837 69.8686 14.0786ZM71.0152 95.0488C73.5985 95.0488 75.6924 92.9548 75.6924 90.3716 75.6924 87.7884 73.5985 85.6945 71.0152 85.6945 68.432 85.6945 66.3381 87.7884 66.3381 90.3716 66.3381 92.9548 68.432 95.0488 71.0152 95.0488"/>
+                    <!-- 自定义SVG图案（默认隐藏） -->
+                    <image id="ed-custom-pattern" x="30.87" y="10" width="80" height="50"
+                           href="" style="display:none" opacity="0.85"/>
                     <text id="ed-ft" x="70.87" y="54" dominant-baseline="middle"
                           text-anchor="middle" font-family="'F-04',sans-serif"
                           font-size="24" fill="#333">Alice</text>
@@ -262,13 +301,44 @@
                 </div>
                 <div class="ctrl-row">
                     <label>正面字号</label>
-                    <input type="range" id="ed-fs" min="6" max="40" step="0.5" value="24" oninput="edUpdate()">
+                    <input type="range" id="ed-fs" min="6" max="60" step="0.5" value="24" oninput="edUpdate()">
                     <span class="vnum" id="ed-fs-v">24</span>px
                 </div>
                 <div class="ctrl-row">
                     <label>正面 Y</label>
                     <input type="range" id="ed-fy" min="20" max="90" step="0.5" value="54" oninput="edUpdate()">
                     <span class="vnum" id="ed-fy-v">54</span>
+                </div>
+                <!-- 自定义图案 UPLOAD 区块 -->
+                <div class="upload-section">
+                    <div class="section-label">自定义图案 UPLOAD</div>
+                    <label class="upload-btn" for="ed-svg-upload">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" x2="12" y1="3" y2="15"/>
+                        </svg>
+                        上传SVG图案
+                    </label>
+                    <input type="file" id="ed-svg-upload" accept=".svg" style="display:none" onchange="edUploadPattern(this)">
+                    <div id="ed-pattern-controls" style="display:none">
+                        <div class="ctrl-row">
+                            <label>图案缩放</label>
+                            <input type="range" id="ed-ps" min="0.2" max="3" step="0.1" value="1.0" oninput="edUpdatePattern()">
+                            <span class="vnum" id="ed-ps-v">1.0</span>x
+                        </div>
+                        <div class="ctrl-row">
+                            <label>图案 X</label>
+                            <input type="range" id="ed-px" min="0" max="141" step="1" value="70" oninput="edUpdatePattern()">
+                            <span class="vnum" id="ed-px-v">70</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <label>图案 Y</label>
+                            <input type="range" id="ed-py" min="0" max="113" step="1" value="30" oninput="edUpdatePattern()">
+                            <span class="vnum" id="ed-py-v">30</span>
+                        </div>
+                        <button class="clear-btn" onclick="edClearPattern()">清除图案</button>
+                    </div>
                 </div>
             </div>
 
@@ -295,7 +365,7 @@
                 </div>
                 <div class="ctrl-row">
                     <label>文字字号</label>
-                    <input type="range" id="ed-bs1" min="5" max="28" step="0.5" value="11" oninput="edUpdate()">
+                    <input type="range" id="ed-bs1" min="5" max="60" step="0.5" value="11" oninput="edUpdate()">
                     <span class="vnum" id="ed-bs1-v">11</span>px
                 </div>
                 <div class="ctrl-row">
@@ -323,7 +393,7 @@
                 </div>
                 <div class="ctrl-row">
                     <label>电话字号</label>
-                    <input type="range" id="ed-bs2" min="5" max="28" step="0.5" value="11" oninput="edUpdate()">
+                    <input type="range" id="ed-bs2" min="5" max="60" step="0.5" value="11" oninput="edUpdate()">
                     <span class="vnum" id="ed-bs2-v">11</span>px
                 </div>
                 <div class="ctrl-row">
@@ -336,12 +406,6 @@
 
         <!-- 操作按钮 -->
         <div class="action-btns">
-            <button class="btn-primary" onclick="edSendConfirm()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 6 9 17l-5-5"/>
-                </svg>
-                发送效果图
-            </button>
             <button class="btn-ghost" onclick="edCopyParams()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
@@ -356,6 +420,20 @@
                     <line x1="12" x2="12" y1="15" y2="3"/>
                 </svg>
                 下载 SVG
+            </button>
+            <button class="btn-ghost" onclick="edSaveDraft()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                保存草稿
+            </button>
+            <button class="btn-primary" onclick="edSendConfirm()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                发送效果图
             </button>
         </div>
         <div class="params-chip" id="ed-params">当前参数：形状: heart | 颜色: Silver | 正面字号: 24px | Y: 54 | 背面文字字号: 11px | 文字Y: 40.5 | 电话字号: 11px | 电话Y: 54</div>
@@ -522,6 +600,102 @@
         if (capPhone) capPhone.textContent = bc2;
       };
 
+      // ===== 自定义SVG图案功能 =====
+      let customPatternDataUrl = null;
+
+      window.edUploadPattern = function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const svgText = e.target.result;
+          // 将 SVG 转为 data URL
+          const blob = new Blob([svgText], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          customPatternDataUrl = url;
+          
+          // 显示图案并显示控制面板
+          const patternEl = document.getElementById('ed-custom-pattern');
+          patternEl.setAttribute('href', url);
+          patternEl.style.display = '';
+          document.getElementById('ed-pattern-controls').style.display = '';
+          
+          // 重置为默认居中位置
+          document.getElementById('ed-px').value = 30;
+          document.getElementById('ed-py').value = 5;
+          document.getElementById('ed-ps').value = 1.0;
+          edUpdatePattern();
+        };
+        reader.readAsText(file);
+      };
+
+      window.edUpdatePattern = function() {
+        const patternEl = document.getElementById('ed-custom-pattern');
+        if (!customPatternDataUrl) return;
+        
+        let scale = parseFloat(document.getElementById('ed-ps').value);
+        let px = parseFloat(document.getElementById('ed-px').value);
+        let py = parseFloat(document.getElementById('ed-py').value);
+        
+        // 边界约束：向缩放时每边留 6px 边距
+        const PADDING = 6;
+        const SHAPE_WIDTH = 141.74;  // 模板宽度
+        const SHAPE_HEIGHT = 113.39; // 模板高度
+        
+        // 计算图案尺寸（基于原始 80x50）
+        const baseW = 80 * scale;
+        const baseH = 50 * scale;
+        
+        // 边界限制：图案不能超出模板边框 6px
+        const maxW = SHAPE_WIDTH - PADDING * 2;
+        const maxH = SHAPE_HEIGHT - PADDING * 2;
+        
+        // 如果超出边界，缩小 scale
+        if (baseW > maxW || baseH > maxH) {
+          const scaleX = maxW / 80;
+          const scaleY = maxH / 50;
+          scale = Math.min(scaleX, scaleY);
+          document.getElementById('ed-ps').value = scale.toFixed(1);
+        }
+        
+        const finalW = 80 * scale;
+        const finalH = 50 * scale;
+        
+        // 位置边界限制（中心点）
+        const minX = PADDING + finalW / 2;
+        const maxX = SHAPE_WIDTH - PADDING - finalW / 2;
+        const minY = PADDING + finalH / 2;
+        const maxY = SHAPE_HEIGHT - PADDING - finalH / 2;
+        
+        px = Math.max(minX, Math.min(maxX, px));
+        py = Math.max(minY, Math.min(maxY, py));
+        
+        // 更新显示值
+        document.getElementById('ed-ps-v').textContent = scale.toFixed(1);
+        document.getElementById('ed-px-v').textContent = Math.round(px);
+        document.getElementById('ed-py-v').textContent = Math.round(py);
+        
+        // 更新滑块值
+        document.getElementById('ed-px').value = px;
+        document.getElementById('ed-py').value = py;
+        
+        // 设置图案位置（从中心点转换到左上角）
+        patternEl.setAttribute('x', px - finalW / 2);
+        patternEl.setAttribute('y', py - finalH / 2);
+        patternEl.setAttribute('width', finalW);
+        patternEl.setAttribute('height', finalH);
+      };
+
+      window.edClearPattern = function() {
+        customPatternDataUrl = null;
+        const patternEl = document.getElementById('ed-custom-pattern');
+        patternEl.setAttribute('href', '');
+        patternEl.style.display = 'none';
+        document.getElementById('ed-pattern-controls').style.display = 'none';
+        // 重置文件选择器
+        document.getElementById('ed-svg-upload').value = '';
+      };
+
       window.edCopyParams = function() {
         navigator.clipboard.writeText(document.getElementById('ed-params').textContent)
           .then(()=>alert('参数已复制！'));
@@ -529,6 +703,29 @@
 
       window.edSendConfirm = function() {
         alert('效果图已确认！（此处将来连接后端API发送客户确认邮件）');
+      };
+
+      window.edSaveDraft = function() {
+        // 保存当前参数到 localStorage
+        const params = {
+          shape: document.getElementById('ed-shape').value,
+          color: document.getElementById('ed-color').value,
+          frontText: document.getElementById('ed-fc').value,
+          frontFont: document.getElementById('ed-ff').value,
+          frontSize: document.getElementById('ed-fs').value,
+          frontY: document.getElementById('ed-fy').value,
+          backText: document.getElementById('ed-bc1').value,
+          backFont: document.getElementById('ed-bf').value,
+          backSize: document.getElementById('ed-bs1').value,
+          backY: document.getElementById('ed-by1').value,
+          phone: document.getElementById('ed-bc2').value,
+          phoneFont: document.getElementById('ed-pf').value,
+          phoneSize: document.getElementById('ed-bs2').value,
+          phoneY: document.getElementById('ed-by2').value,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('designerDraft', JSON.stringify(params));
+        alert('草稿已保存！');
       };
 
       window.edDownload = function() {
@@ -784,6 +981,57 @@
       // 页面加载完成后立即渲染初始状态
       document.addEventListener('DOMContentLoaded', async function() {
         await window.edUpdate();
+      });
+      
+      // 监听父页面发送的订单数据
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'loadOrder') {
+          const data = event.data.data;
+          console.log('📥 设计器收到订单数据:', data);
+          
+          // 更新表单字段（使用正确的ID）
+          if (data.frontText !== undefined) {
+            const el = document.getElementById('ed-fc');
+            if (el) el.value = data.frontText;
+          }
+          if (data.backText !== undefined) {
+            const el = document.getElementById('ed-bc');
+            if (el) el.value = data.backText;
+          }
+          if (data.phone !== undefined) {
+            const el = document.getElementById('ed-phone');
+            if (el) el.value = data.phone;
+          }
+          if (data.shape) {
+            const el = document.getElementById('ed-shape');
+            if (el) el.value = data.shape;
+          }
+          if (data.color) {
+            const el = document.getElementById('ed-color');
+            if (el) el.value = data.color;
+          }
+          if (data.font) {
+            const el1 = document.getElementById('ed-ff');
+            const el2 = document.getElementById('ed-bf');
+            if (el1) el1.value = data.font;
+            if (el2) el2.value = data.font;
+          }
+          
+          // 重新渲染
+          window.edUpdate();
+          
+          // 通知父页面加载完成
+          event.source.postMessage({ type: 'designerLoaded', orderId: data.orderId }, '*');
+        }
+        
+        // 处理获取SVG请求
+        if (event.data && event.data.type === 'getSVG') {
+          const svgData = window.edGetSVGData ? window.edGetSVGData() : null;
+          event.source.postMessage({ 
+            type: 'svgData', 
+            svg: svgData 
+          }, '*');
+        }
       });
     })();
     </script>

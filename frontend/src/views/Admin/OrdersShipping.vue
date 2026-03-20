@@ -390,9 +390,9 @@ const orders = ref([])
 const selectedOrder = ref(null)
 const searchKeyword = ref('')
 const showAdvanced = ref(false)
+// 物流渠道固定为PX（联邮通优先挂号-普货）
 const channels = ref([
-  { code: 'PX', name: '4PX标准直发 (7-15天)' },
-  { code: 'PY', name: '4PX快速直发 (3-7天)' }
+  { code: 'PX', name: '联邮通优先挂号-普货(PX) (7-15天)' }
 ])
 const loadingChannels = ref(false)
 const submitting = ref(false)
@@ -440,12 +440,14 @@ const filteredOrders = computed(() => {
   )
 })
 
-// 生成随机电话号码（隐私保护）
+// 生成随机美国电话号码（隐私保护，4PX必填）
 const generateFakePhone = () => {
-  const prefix = ['138', '139', '158', '159', '188', '189']
-  const p = prefix[Math.floor(Math.random() * prefix.length)]
-  const suffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0')
-  return p + suffix
+  // 美国格式: +1 (区号3位) (前缀3位) (后缀4位)
+  const areaCodes = ['202', '212', '213', '312', '415', '617', '702', '818', '305', '404']
+  const areaCode = areaCodes[Math.floor(Math.random() * areaCodes.length)]
+  const prefix = Math.floor(Math.random() * 900 + 100).toString() // 100-999
+  const suffix = Math.floor(Math.random() * 9000 + 1000).toString() // 1000-9999
+  return `+1${areaCode}${prefix}${suffix}`
 }
 
 // 获取产品描述
@@ -465,9 +467,11 @@ const loadOrders = async () => {
   demoMode.value = false
   
   try {
+    // 注意：由于orders表有两个外键指向sku_mapping(sku_id和matched_sku_id)，
+    // 必须明确指定使用哪个外键关系，否则Supabase会报错
     const { data, error } = await supabase
       .from('orders')
-      .select('*, sku_mapping(*)')
+      .select('*, sku_mapping!orders_sku_id_fkey(*)')
       .eq('status', 'confirmed')
       .order('created_at', { ascending: false })
     
@@ -556,33 +560,42 @@ const selectOrder = async (order) => {
   showResult.value = false
   orderResult.value = null
   
-  // 重置表单
-  form.recipient_name = order.customer_name || ''
-  form.recipient_phone = generateFakePhone()
-  form.recipient_email = ''
-  form.recipient_street = ''
-  form.recipient_city = ''
-  form.recipient_state = ''
-  form.recipient_postcode = ''
-  form.recipient_country = order.country || ''
+  // 自动填充收件人信息（从orders表的shipping_*字段）
+  // 优先使用 shipping_name，其次使用 customer_name
+  form.recipient_name = order.shipping_name || order.customer_name || ''
+  form.recipient_phone = generateFakePhone() // 4PX必填，自动生成隐私号码
+  form.recipient_email = order.customer_email || ''
+  
+  // 从orders表的shipping_*字段自动填充地址
+  form.recipient_street = order.shipping_address_line1 || ''
+  form.recipient_city = order.shipping_city || ''
+  form.recipient_state = order.shipping_state || ''
+  form.recipient_postcode = order.shipping_zip || ''
+  form.recipient_country = order.shipping_country || order.country || ''
+  
+  // 申报价值
   form.declare_value = order.total_amount || 9.99
   
-  // 尝试加载物流表数据
+  // 重量自动从sku_mapping.weight_g读取（单位：克）
+  if (order.sku_mapping && order.sku_mapping.weight_g) {
+    form.weight = order.sku_mapping.weight_g
+  } else {
+    form.weight = 30 // 默认30g
+  }
+  
+  // 尝试加载物流表数据（可能有已存在的物流信息）
   if (order.id && !demoMode.value) {
     await loadLogistics(order.id)
   }
   
-  // 根据国家加载渠道
-  if (form.recipient_country) {
-    await loadChannels(form.recipient_country)
-  }
+  // 物流渠道固定使用PX（联邮通优先挂号-普货）
+  form.channel_code = 'PX'
 }
 
-// 国家变化时重新加载渠道
+// 国家变化时（暂不动态查询渠道，固定使用PX）
 const onCountryChange = () => {
-  if (form.recipient_country) {
-    loadChannels(form.recipient_country)
-  }
+  // 当前只支持PX渠道，无需动态加载
+  console.log('国家切换为:', form.recipient_country)
 }
 
 // 创建物流订单

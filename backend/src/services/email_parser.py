@@ -68,10 +68,13 @@ class EtsyEmailParser:
         # 格式1： Your order number is: 3794236690
         # 格式2： Your order number is 3986891868.
         # 格式3： Order #3794236690（邮件主题中也有）
+        # 格式4： http://www.etsy.com/your/orders/4002217518（URL中提取）
         # ────────────────────────────────
         m = re.search(r"Your order number is:?\s*(\d+)", body)
         if not m:
             m = re.search(r"Order\s*#(\d+)", body)
+        if not m:
+            m = re.search(r"etsy\.com/your/orders/(\d+)", body)
         order.etsy_order_id = m.group(1) if m else ""
         if not order.etsy_order_id:
             return None
@@ -90,48 +93,87 @@ class EtsyEmailParser:
         #   105 BRIDGE ST
         #   SACKVILLE NB E4L 3P4
         #   Canada
-        # 终止词：Dispatching / We're applying / Sell with confidence
+        # 格式C（HTML格式）：
+        #   <span class='name'>Jessica Head</span>
+        #   <span class='first-line'>26 Yodalla Ave</span>
+        #   <span class='city'>EMU PLAINS</span> <span class='state'>NSW</span> <span class='zip'>2750</span>
+        #   <span class='country-name'>Australia</span>
+        # 终止词：Dispatching / We're applying / Sell with confidence / Shop policies
         # ────────────────────────────────
-        m = re.search(
-            r"\*?\s*Delivery address\s*\*?\s*\n([\s\S]*?)(?:\* Dispatching|Dispatching|We're applying|Sell with confidence)",
+        
+        # 先尝试解析 HTML 格式
+        html_addr_match = re.search(
+            r"Delivery Address:\s*<address[^>]*>([\s\S]*?)</address>",
             body, re.I
         )
-        if m:
-            lines = [l.strip() for l in m.group(1).split('\n') if l.strip()]
-            # 过滤掉只含 * 或空内容的行
-            lines = [l for l in lines if l not in ('*', '') and not re.fullmatch(r'\*+', l)]
-            if lines:
-                order.shipping_name = order.customer_name = lines[0]   # 真实姓名
-            if len(lines) > 1:
-                order.shipping_address_line1 = lines[1]
-            # 地址可能有两行（如建筑号 + 街道名）
-            if len(lines) > 3:
-                order.shipping_address_line2 = lines[2]
-                city_line = lines[3]
-            else:
-                city_line = lines[2] if len(lines) > 2 else ""
-            
-            # 解析城市行：格式 "SACKVILLE NB E4L 3P4" 或 "ROSE BAY NSW 2029"
-            # 最后一个单词为邮编，倒数第二个为州编，剩余为城市
-            if city_line:
-                parts = city_line.split()
-                if len(parts) >= 3:
-                    # 加拿大邮编格式： A1B 2C3（两段，第二段为纯数字+字母6位）
-                    # 澳大利亚/美国邮编：纯数字（如 2029 或 90210）
-                    last = parts[-1]
-                    second_last = parts[-2] if len(parts) >= 2 else ""
-                    if re.match(r'^[A-Z]\d[A-Z]$', second_last):   # 加拿大前半段 E4L
-                        order.shipping_zip = second_last + " " + last
-                        order.shipping_state = parts[-3]
-                        order.shipping_city = ' '.join(parts[:-3])
-                    else:
-                        order.shipping_zip = last
-                        order.shipping_state = second_last
-                        order.shipping_city = ' '.join(parts[:-2])
-            
-            # 最后一行为国家
-            if lines:
-                order.shipping_country = lines[-1]
+        if html_addr_match:
+            html_content = html_addr_match.group(1)
+            # 提取 name
+            name_match = re.search(r"<span[^>]*class=['\"]name['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if name_match:
+                order.shipping_name = order.customer_name = name_match.group(1).strip()
+            # 提取 first-line (地址)
+            first_line_match = re.search(r"<span[^>]*class=['\"]first-line['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if first_line_match:
+                order.shipping_address_line1 = first_line_match.group(1).strip()
+            # 提取 city
+            city_match = re.search(r"<span[^>]*class=['\"]city['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if city_match:
+                order.shipping_city = city_match.group(1).strip()
+            # 提取 state
+            state_match = re.search(r"<span[^>]*class=['\"]state['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if state_match:
+                order.shipping_state = state_match.group(1).strip()
+            # 提取 zip
+            zip_match = re.search(r"<span[^>]*class=['\"]zip['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if zip_match:
+                order.shipping_zip = zip_match.group(1).strip()
+            # 提取 country
+            country_match = re.search(r"<span[^>]*class=['\"]country-name['\"][^>]*>([^<]+)</span>", html_content, re.I)
+            if country_match:
+                order.shipping_country = country_match.group(1).strip()
+        else:
+            # 纯文本格式解析
+            m = re.search(
+                r"\*?\s*Delivery address\s*\*?\s*\n([\s\S]*?)(?:\* Dispatching|Dispatching|We're applying|Sell with confidence|Shop policies)",
+                body, re.I
+            )
+            if m:
+                lines = [l.strip() for l in m.group(1).split('\n') if l.strip()]
+                # 过滤掉只含 * 或空内容的行
+                lines = [l for l in lines if l not in ('*', '') and not re.fullmatch(r'\*+', l)]
+                if lines:
+                    order.shipping_name = order.customer_name = lines[0]   # 真实姓名
+                if len(lines) > 1:
+                    order.shipping_address_line1 = lines[1]
+                # 地址可能有两行（如建筑号 + 街道名）
+                if len(lines) > 3:
+                    order.shipping_address_line2 = lines[2]
+                    city_line = lines[3]
+                else:
+                    city_line = lines[2] if len(lines) > 2 else ""
+                
+                # 解析城市行：格式 "SACKVILLE NB E4L 3P4" 或 "ROSE BAY NSW 2029"
+                # 最后一个单词为邮编，倒数第二个为州编，剩余为城市
+                if city_line:
+                    parts = city_line.split()
+                    if len(parts) >= 3:
+                        # 加拿大邮编格式： A1B 2C3（两段，第二段为纯数字+字母6位）
+                        # 澳大利亚/美国邮编：纯数字（如 2029 或 90210）
+                        last = parts[-1]
+                        second_last = parts[-2] if len(parts) >= 2 else ""
+                        if re.match(r'^[A-Z]\d[A-Z]$', second_last):   # 加拿大前半段 E4L
+                            order.shipping_zip = second_last + " " + last
+                            order.shipping_state = parts[-3]
+                            order.shipping_city = ' '.join(parts[:-3])
+                        else:
+                            order.shipping_zip = last
+                            order.shipping_state = second_last
+                            order.shipping_city = ' '.join(parts[:-2])
+                
+                # 最后一行为国家
+                if lines:
+                    order.shipping_country = lines[-1]
         
         # ────────────────────────────────
         # 3. 解析订单金额

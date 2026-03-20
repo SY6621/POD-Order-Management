@@ -148,15 +148,23 @@ class EmailService:
                     full_content = body_text + body_html
                     
                     # 检查是否是 Etsy Transactions 订单邮件
-                    # 规则：
+                    # 规则（满足任一即可）：
                     # 1. 发件人是 yangqingssheng@gmail.com（转发邮件）
-                    # 2. 或内容包含 transaction@etsy.com
-                    # 3. 或内容包含 Your order number is
+                    # 2. 内容包含 transaction@etsy.com
+                    # 3. 内容包含 Your order number is
+                    # 4. 内容包含 Congratulations on your Etsy order（直接订单邮件）
+                    # 5. 内容包含 You made a sale on Etsy
+                    # 6. 内容包含 Order# 或 Order #
                     is_from_forwarder = "yangqingssheng@gmail.com" in full_content
                     has_etsy_transaction = "transaction@etsy.com" in full_content
                     has_order_number = "Your order number is" in full_content
+                    has_congratulations = "Congratulations on your Etsy order" in full_content
+                    has_made_sale = "You made a sale on Etsy" in full_content
+                    has_order_hash = "Order#" in full_content or "Order #" in full_content
                     
-                    is_etsy_transaction = is_from_forwarder or has_etsy_transaction or has_order_number
+                    is_etsy_transaction = (is_from_forwarder or has_etsy_transaction or 
+                                          has_order_number or has_congratulations or 
+                                          has_made_sale or has_order_hash)
                     
                     # 调试输出
                     if not is_etsy_transaction:

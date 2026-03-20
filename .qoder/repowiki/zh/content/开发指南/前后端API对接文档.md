@@ -4,27 +4,27 @@
 **本文档引用的文件**
 - [docs/frontend-backend-api.md](file://docs/frontend-backend-api.md)
 - [backend/src/api/main.py](file://backend/src/api/main.py)
+- [backend/src/services/shipping_service.py](file://backend/src/services/shipping_service.py)
+- [frontend/src/views/Admin/OrdersShipping.vue](file://frontend/src/views/Admin/OrdersShipping.vue)
+- [frontend/src/utils/api.js](file://frontend/src/utils/api.js)
+- [backend/src/config/settings.py](file://backend/src/config/settings.py)
+- [backend/src/services/database_service.py](file://backend/src/services/database_service.py)
+- [backend/scripts/test_4px_production_order.py](file://backend/scripts/test_4px_production_order.py)
+- [backend/tests/API-sign 物流公司API测试工具/test_4px_api.py](file://backend/tests/API-sign 物流公司API测试工具/test_4px_api.py)
+- [backend/scripts/process_real_order_shipping.py](file://backend/scripts/process_real_order_shipping.py)
+- [frontend/src/stores/orderStore.js](file://frontend/src/stores/orderStore.js)
+- [frontend/src/stores/shopStore.js](file://frontend/src/stores/shopStore.js)
 - [backend/src/services/effect_image_service.py](file://backend/src/services/effect_image_service.py)
 - [backend/src/services/pdf_service.py](file://backend/src/services/pdf_service.py)
 - [backend/src/services/svg_pdf_service.py](file://backend/src/services/svg_pdf_service.py)
 - [backend/src/services/email_service.py](file://backend/src/services/email_service.py)
 - [backend/src/services/template_service.py](file://backend/src/services/template_service.py)
-- [backend/src/services/database_service.py](file://backend/src/services/database_service.py)
-- [backend/src/services/shipping_service.py](file://backend/src/services/shipping_service.py)
-- [backend/src/config/settings.py](file://backend/src/config/settings.py)
 - [backend/src/models/order.py](file://backend/src/models/order.py)
 - [backend/pyproject.toml](file://backend/pyproject.toml)
 - [backend/.env.example](file://backend/.env.example)
-- [backend/scripts/upload_assets_to_supabase.py](file://backend/scripts/upload_assets_to_supabase.py)
-- [backend/scripts/test_storage_upload.py](file://backend/scripts/test_storage_upload.py)
-- [backend/scripts/convert_pdf_final.py](file://backend/scripts/convert_pdf_final.py)
-- [frontend/src/utils/api.js](file://frontend/src/utils/api.js)
-- [frontend/src/stores/orderStore.js](file://frontend/src/stores/orderStore.js)
-- [frontend/src/utils/supabase.js](file://frontend/src/utils/supabase.js)
 - [frontend/package.json](file://frontend/package.json)
 - [frontend/.env.example](file://frontend/.env.example)
 - [frontend/src/router/index.js](file://frontend/src/router/index.js)
-- [frontend/src/stores/shopStore.js](file://frontend/src/stores/shopStore.js)
 - [frontend/src/views/StorePortal/StoreLogin.vue](file://frontend/src/views/StorePortal/StoreLogin.vue)
 - [frontend/src/views/StorePortal/StoreOrders.vue](file://frontend/src/views/StorePortal/StoreOrders.vue)
 - [frontend/public/designer-standalone.html](file://frontend/public/designer-standalone.html)
@@ -36,11 +36,11 @@
 
 ## 更新摘要
 **变更内容**
-- 新增物流API端点：/api/shipping/create-order、/api/shipping/get-label、/api/shipping/get-products、/api/shipping/cancel-order、/api/shipping/query-order
-- 新增字体管理API：/fonts/{font_filename} 和 /api/fonts/list
-- 新增4PX物流集成和面单生成功能
-- 更新字体加载机制，支持动态字体文件获取
-- 新增物流服务和4PX客户端实现
+- 增强4PX物流API集成，完善 /api/shipping/create-order 端点的参数验证和格式化
+- 新增 /api/shipping/get-label、/api/shipping/get-products 等物流API端点
+- 改进前端 OrdersShipping.vue 的表单处理和显示逻辑，支持物流渠道动态查询
+- 优化物流订单创建流程，增强错误处理和状态管理
+- 完善物流服务的参数验证和数据格式化
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -92,6 +92,7 @@ API[API 调用封装]
 Supabase[Supabase 客户端]
 Router[Vue Router 路由系统]
 Designer[独立设计器]
+OrdersShipping[物流下单组件]
 end
 subgraph "后端层"
 FastAPI[FastAPI 服务]
@@ -103,12 +104,14 @@ ShippingSvc[物流服务]
 FontSvc[字体服务]
 DB[数据库服务]
 Config[配置管理]
+FourPX[4PX API客户端]
 end
 subgraph "数据层"
 DB[(Supabase 数据库)]
 Storage[(Supabase Storage)]
 FS[(文件系统)]
 Fonts[(字体文件)]
+Logistics[(物流数据)]
 end
 subgraph "门户架构"
 ShopPortal[商店门户]
@@ -119,6 +122,7 @@ subgraph "物流集成"
 FourPX[4PX 物流API]
 Labels[面单生成]
 Tracking[物流跟踪]
+Products[物流产品查询]
 end
 FE --> Store
 Store --> API
@@ -135,19 +139,24 @@ PDFSvc --> DB
 EmailSvc --> Config
 ShippingSvc --> FourPX
 ShippingSvc --> Labels
+ShippingSvc --> Products
 FontSvc --> Fonts
 FastAPI --> DB
 DB --> Storage
+DB --> Logistics
 Supabase --> DB
 Router --> ShopPortal
 Router --> FactoryPortal
 Router --> AdminPortal
 Designer --> FontSvc
+OrdersShipping --> API
+OrdersShipping --> FourPX
 ```
 
 **图表来源**
 - [backend/src/api/main.py:22-36](file://backend/src/api/main.py#L22-L36)
 - [backend/src/services/shipping_service.py:253-395](file://backend/src/services/shipping_service.py#L253-L395)
+- [frontend/src/views/Admin/OrdersShipping.vue:378-687](file://frontend/src/views/Admin/OrdersShipping.vue#L378-L687)
 - [frontend/src/utils/api.js:6-6](file://frontend/src/utils/api.js#L6-L6)
 - [frontend/src/stores/orderStore.js:23-23](file://frontend/src/stores/orderStore.js#L23-L23)
 - [backend/src/services/database_service.py:10-24](file://backend/src/services/database_service.py#L10-L24)
@@ -832,9 +841,24 @@ class ShippingLabel {
 3. **URL解析**: 从响应中提取面单PDF URL
 4. **存储更新**: 将面单URL保存到数据库
 
+### 前端物流下单组件
+
+#### OrdersShipping.vue 改进功能
+- **动态物流渠道查询**: 支持根据国家代码动态查询可用物流产品
+- **智能参数验证**: 增强表单验证和参数格式化
+- **实时状态反馈**: 提供创建过程的实时状态更新
+- **面单下载集成**: 支持直接下载和打印生成的面单
+
+#### 表单处理逻辑
+- **自动地址填充**: 从订单数据自动填充收件人信息
+- **重量自动计算**: 从SKU映射表获取产品重量
+- **电话隐私保护**: 自动生成符合4PX要求的隐私电话号码
+- **渠道动态选择**: 支持根据国家选择合适的物流产品
+
 **章节来源**
 - [backend/src/services/shipping_service.py:253-395](file://backend/src/services/shipping_service.py#L253-L395)
 - [backend/src/api/main.py:449-593](file://backend/src/api/main.py#L449-L593)
+- [frontend/src/views/Admin/OrdersShipping.vue:378-687](file://frontend/src/views/Admin/OrdersShipping.vue#L378-L687)
 
 ## 字体管理服务
 

@@ -1,0 +1,891 @@
+openapi: 3.0.3
+info:
+  title: ETSY订单自动化 API
+  description: |
+    提供效果图生成、邮件发送、PDF生成、物流管理等功能接口
+
+    **功能模块：**
+    - 效果图生成（SVG）
+    - 邮件服务
+    - 生产文档PDF
+    - 4PX物流集成
+    - 字体服务
+  version: 1.0.0
+  contact:
+    name: ETSY Order Automation Team
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发服务器
+
+tags:
+  - name: System
+    description: 系统接口
+  - name: Fonts
+    description: 字体服务
+  - name: Effect Image
+    description: 效果图生成
+  - name: Order
+    description: 订单管理
+  - name: Email
+    description: 邮件服务
+  - name: PDF
+    description: 生产文档PDF
+  - name: Shipping
+    description: 物流服务（4PX）
+
+paths:
+  /:
+    get:
+      tags:
+        - System
+      summary: API根路径
+      description: 返回API基本信息
+      operationId: root
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ETSY订单自动化 API"
+                  status:
+                    type: string
+                    example: "running"
+
+  /health:
+    get:
+      tags:
+        - System
+      summary: 健康检查
+      description: 检查API服务状态
+      operationId: health_check
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /fonts/{font_filename}:
+    get:
+      tags:
+        - Fonts
+      summary: 获取字体文件
+      description: 供前端设计器加载字体文件（TTF/OTF格式）
+      operationId: get_font
+      parameters:
+        - name: font_filename
+          in: path
+          required: true
+          description: 字体文件名
+          schema:
+            type: string
+            example: "F-01.ttf"
+      responses:
+        '200':
+          description: 字体文件
+          content:
+            font/ttf:
+              schema:
+                type: string
+                format: binary
+            font/otf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 不支持的文件格式
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 字体文件不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/fonts/list:
+    get:
+      tags:
+        - Fonts
+      summary: 列出所有可用字体
+      description: 获取字体目录中的所有TTF字体列表
+      operationId: list_fonts
+      responses:
+        '200':
+          description: 字体列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fonts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                          example: "F-01.ttf"
+                        name:
+                          type: string
+                          example: "F-01"
+                  error:
+                    type: string
+                    description: 错误信息（如有）
+
+  /api/effect-image/generate:
+    post:
+      tags:
+        - Effect Image
+      summary: 生成效果图SVG
+      description: 根据订单信息生成正面和背面效果图SVG文件
+      operationId: generate_effect_image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffectImageRequest'
+      responses:
+        '200':
+          description: 生成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order_id:
+                    type: string
+                    example: "4002217518"
+                  front_svg:
+                    type: string
+                    description: 正面SVG文件路径
+                    example: "/output/4002217518_heart_Gold_large_front_20260320_115333.svg"
+                  back_svg:
+                    type: string
+                    description: 背面SVG文件路径
+                    nullable: true
+                    example: "/output/4002217518_heart_Gold_large_back_20260320_115333.svg"
+        '500':
+          description: 生成失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/effect-image/view/{filename}:
+    get:
+      tags:
+        - Effect Image
+      summary: 查看效果图SVG文件
+      description: 直接返回SVG文件内容
+      operationId: view_effect_image
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: SVG文件名
+          schema:
+            type: string
+            example: "4002217518_heart_Gold_large_front_20260320_115333.svg"
+      responses:
+        '200':
+          description: SVG文件内容
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        '404':
+          description: 文件不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/effect-image/generate-and-upload:
+    post:
+      tags:
+        - Effect Image
+      summary: 一键生成效果图并上传
+      description: 生成效果图SVG并上传到Supabase Storage，URL写入orders表
+      operationId: generate_and_upload_effect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateAllRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order_id:
+                    type: string
+                    example: "123"
+                  effect_image_url:
+                    type: string
+                    format: uri
+                    description: 正面效果图URL
+                    example: "https://xxx.supabase.co/storage/v1/object/public/effect-images/4002217518_front.svg"
+                  effect_image_back_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: 背面效果图URL
+                    example: "https://xxx.supabase.co/storage/v1/object/public/effect-images/4002217518_back.svg"
+        '404':
+          description: 订单不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 生成失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/order/update-status:
+    post:
+      tags:
+        - Order
+      summary: 更新订单状态
+      description: |
+        更新订单状态，支持以下流转：
+        - pending -> effect_sent (效果图已发送)
+        - effect_sent -> producing (生产中)
+        - producing -> delivered (已送达)
+      operationId: update_order_status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order_id:
+                    type: string
+                    example: "4002217518"
+                  new_status:
+                    type: string
+                    example: "producing"
+
+  /api/email/send-confirmation:
+    post:
+      tags:
+        - Email
+      summary: 发送订单确认邮件
+      description: 向客户发送订单确认邮件，可附带效果图
+      operationId: send_confirmation_email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order_id:
+                    type: string
+                    example: "4002217518"
+                  message:
+                    type: string
+                    example: "邮件发送成功"
+        '500':
+          description: 发送失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/pdf/generate-and-upload:
+    post:
+      tags:
+        - PDF
+      summary: 生成并上传生产文档PDF
+      description: |
+        一键生成生产文档PDF并上传到Supabase Storage
+
+        数据流：
+        1. 查询orders表获取基础订单数据
+        2. 关联sku_mapping表获取shape/color/size/craft/sku_code
+        3. 关联logistics表获取物流信息
+        4. 关联production_documents表获取效果图链接
+        5. 调用svg_pdf_service生成PDF
+        6. 上传PDF到Supabase Storage
+        7. 更新orders.production_pdf_url
+      operationId: generate_and_upload_pdf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateAllRequest'
+      responses:
+        '200':
+          description: 生成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  order_id:
+                    type: string
+                    example: "123"
+                  production_pdf_url:
+                    type: string
+                    format: uri
+                    description: PDF文件URL
+                    example: "https://xxx.supabase.co/storage/v1/object/public/production-docs/4002217518.pdf"
+        '404':
+          description: 订单不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 生成失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/shipping/create-order:
+    post:
+      tags:
+        - Shipping
+      summary: 创建物流订单（4PX直发）
+      description: |
+        创建4PX物流订单，流程：
+        1. 从Supabase查询订单信息
+        2. 自动获取SKU重量（从sku_mapping.weight_g）
+        3. 自动补充收件人地址（从orders.shipping_*字段）
+        4. 构造4PX API参数
+        5. 调用4PX创建订单
+        6. 更新数据库（logistics + orders）
+      operationId: create_shipping_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingCreateOrderRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "物流订单创建成功"
+                  data:
+                    type: object
+                    properties:
+                      order_no:
+                        type: string
+                        description: 4PX订单号
+                        example: "4PX202603200001"
+                      tracking_number:
+                        type: string
+                        description: 物流跟踪号
+                        example: "4PX123456789"
+                      label_url:
+                        type: string
+                        format: uri
+                        description: 面单URL
+                        example: "https://label.4px.com/xxx.png"
+                      weight_used_kg:
+                        type: number
+                        format: float
+                        example: 0.03
+                      '4px_response':
+                        type: object
+                        description: 4PX原始响应数据
+        '400':
+          description: 4PX API调用失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 订单不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/shipping/get-label:
+    post:
+      tags:
+        - Shipping
+      summary: 获取物流面单
+      description: 根据tracking_number或order_no获取物流面单URL
+      operationId: get_shipping_label
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingGetLabelRequest'
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "获取面单成功"
+                  data:
+                    type: object
+                    properties:
+                      label_url:
+                        type: string
+                        format: uri
+                        example: "https://label.4px.com/xxx.png"
+                      raw_response:
+                        type: object
+        '400':
+          description: 参数错误或获取失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/shipping/get-products:
+    post:
+      tags:
+        - Shipping
+      summary: 查询可用物流产品
+      description: 查询指定国家和邮编的可用物流渠道（最多返回10个）
+      operationId: get_shipping_products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingGetProductsRequest'
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "查询到 5 个物流渠道"
+                  data:
+                    type: object
+                    properties:
+                      products:
+                        type: array
+                        maxItems: 10
+                        items:
+                          type: object
+                          properties:
+                            logistics_product_code:
+                              type: string
+                              example: "PX"
+                            logistics_product_name_cn:
+                              type: string
+                              example: "4PX标准直发"
+                            logistics_product_name_en:
+                              type: string
+                              example: "4PX Standard"
+                            delivery_time:
+                              type: string
+                              example: "7-15天"
+        '400':
+          description: 查询失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/shipping/cancel-order:
+    post:
+      tags:
+        - Shipping
+      summary: 取消物流订单
+      description: 取消已创建的4PX物流订单
+      operationId: cancel_shipping_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingCancelOrderRequest'
+      responses:
+        '200':
+          description: 取消成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "订单取消成功"
+                  data:
+                    type: object
+        '400':
+          description: 取消失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/shipping/query-order:
+    post:
+      tags:
+        - Shipping
+      summary: 查询物流订单状态
+      description: 查询4PX物流订单的当前状态
+      operationId: query_shipping_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingQueryOrderRequest'
+      responses:
+        '200':
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "查询成功"
+                  data:
+                    type: object
+                    description: 4PX订单详情
+        '400':
+          description: 查询失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    EffectImageRequest:
+      type: object
+      required:
+        - order_id
+        - text_front
+      properties:
+        order_id:
+          type: string
+          description: 订单ID
+          example: "4002217518"
+        shape:
+          type: string
+          description: 形状
+          enum: [bone, heart, circle]
+          default: bone
+          example: "heart"
+        color:
+          type: string
+          description: 颜色代码（G=金色, S=银色, B=黑色）
+          enum: [G, S, B]
+          default: G
+          example: "G"
+        size:
+          type: string
+          description: 尺寸
+          enum: [large, small]
+          default: large
+          example: "large"
+        text_front:
+          type: string
+          description: 正面文字
+          example: "Luna"
+        text_back:
+          type: string
+          description: 背面文字（可选）
+          default: ""
+          example: "416-555-0123"
+        font_code:
+          type: string
+          description: 字体代码
+          default: F-01
+          example: "F-04"
+
+    OrderStatusRequest:
+      type: object
+      required:
+        - order_id
+        - status
+      properties:
+        order_id:
+          type: string
+          description: 订单ID
+          example: "4002217518"
+        status:
+          type: string
+          description: |
+            新状态（本枚举为接口子集；现网 orders.status 全量见 docs/开发文档-页面状态按钮-v1.0.md）。
+            待下物流 = confirmed；未在下列列出时请使用业务约定接口或直写库。
+          enum: [pending, effect_sent, producing, delivered]
+          example: "producing"
+
+    SendEmailRequest:
+      type: object
+      required:
+        - order_id
+        - to_email
+        - customer_name
+      properties:
+        order_id:
+          type: string
+          description: 订单ID
+          example: "4002217518"
+        to_email:
+          type: string
+          format: email
+          description: 客户邮箱
+          example: "jessica@example.com"
+        customer_name:
+          type: string
+          description: 客户名称
+          example: "Jessica Smith"
+        product_info:
+          type: string
+          description: 产品信息
+          default: ""
+          example: "Heart Gold Large"
+        effect_image_path:
+          type: string
+          description: 效果图路径（可选）
+          nullable: true
+          example: "/output/4002217518_front.svg"
+
+    GenerateAllRequest:
+      type: object
+      required:
+        - order_id
+      properties:
+        order_id:
+          type: string
+          description: Supabase orders表的id
+          example: "123"
+
+    ShippingCreateOrderRequest:
+      type: object
+      required:
+        - order_id
+        - logistics_product_code
+        - recipient_name
+        - recipient_phone
+        - recipient_street
+        - recipient_city
+        - recipient_state
+        - recipient_postcode
+      properties:
+        order_id:
+          type: string
+          description: Supabase orders表的id
+          example: "123"
+        logistics_product_code:
+          type: string
+          description: 物流产品代码
+          example: "PX"
+        recipient_name:
+          type: string
+          description: 收件人姓名
+          example: "Jessica Smith"
+        recipient_phone:
+          type: string
+          description: 收件人电话
+          example: "+14165550123"
+        recipient_email:
+          type: string
+          format: email
+          description: 收件人邮箱（可选）
+          default: ""
+          example: "jessica@example.com"
+        recipient_street:
+          type: string
+          description: 街道地址
+          example: "123 Main St"
+        recipient_city:
+          type: string
+          description: 城市
+          example: "New York"
+        recipient_state:
+          type: string
+          description: 州/省
+          example: "NY"
+        recipient_postcode:
+          type: string
+          description: 邮编
+          example: "10001"
+        recipient_country:
+          type: string
+          description: 国家代码
+          default: US
+          example: "US"
+        weight_kg:
+          type: number
+          format: float
+          description: 重量（千克）
+          default: 0.03
+          example: 0.03
+        declare_value:
+          type: number
+          format: float
+          description: 申报价值
+          default: 10.0
+          example: 10.0
+        declare_currency:
+          type: string
+          description: 申报币种
+          default: USD
+          example: "USD"
+
+    ShippingGetLabelRequest:
+      type: object
+      properties:
+        tracking_number:
+          type: string
+          description: 物流跟踪号
+          nullable: true
+          example: "4PX123456789"
+        order_no:
+          type: string
+          description: 4PX订单号
+          nullable: true
+          example: "4PX202603200001"
+      oneOf:
+        - required: [tracking_number]
+        - required: [order_no]
+
+    ShippingGetProductsRequest:
+      type: object
+      required:
+        - country_code
+      properties:
+        country_code:
+          type: string
+          description: 国家代码
+          example: "US"
+        postcode:
+          type: string
+          description: 邮编（可选）
+          default: ""
+          example: "10001"
+
+    ShippingCancelOrderRequest:
+      type: object
+      required:
+        - order_no
+      properties:
+        order_no:
+          type: string
+          description: 4PX订单号
+          example: "4PX202603200001"
+        reason:
+          type: string
+          description: 取消原因
+          default: "客户取消订单"
+          example: "客户取消订单"
+
+    ShippingQueryOrderRequest:
+      type: object
+      required:
+        - order_no
+      properties:
+        order_no:
+          type: string
+          description: 4PX订单号
+          example: "4PX202603200001"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "错误信息"
+        data:
+          type: object
+          nullable: true

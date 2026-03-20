@@ -656,6 +656,21 @@ class SVGPDFService:
             "{{ADDRESS}}": str(data.get("address", "")),
         }
         
+        # === 物流面单集成 ===
+        label_url = data.get("label_url", "")
+        label_data_uri = ""
+        
+        if label_url:
+            label_data_uri = self._download_label_as_base64(label_url)
+            if label_data_uri:
+                print(f"[INFO] 面单已下载并嵌入: {label_url[:50]}...")
+        
+        if not label_data_uri:
+            print(f"[INFO] 面单不可用，使用占位符")
+            label_data_uri = self._get_placeholder_label()
+        
+        replacements["{{SHIPPING_LABEL_DATA}}"] = label_data_uri
+        
         result = svg_content
         for placeholder, value in replacements.items():
             if placeholder in result:
@@ -742,19 +757,22 @@ class SVGPDFService:
             
             # 新增：设计器SVG URL（从外部传入）
             "effect_svg_url": getattr(order_data, 'effect_svg_url', ''),
+            "label_url": getattr(order_data, 'label_url', ''),
         }
     
     def generate_from_raw_data(self, raw_data: Dict[str, Any]) -> Optional[Path]:
         """Generate PDF from raw data dictionary"""
         from src.services.shipping_service import shipping_service
         
-        # 保存 effect_svg_url（create_order_data 会丢失这个字段）
+        # 保存 effect_svg_url 和 label_url（create_order_data 会丢失这些字段）
         effect_svg_url = raw_data.get("effect_svg_url", "")
+        label_url = raw_data.get("label_url", "")
         
         order_data = shipping_service.create_order_data(raw_data)
         
-        # 恢复 effect_svg_url
+        # 恢复 effect_svg_url 和 label_url
         order_data.effect_svg_url = effect_svg_url
+        order_data.label_url = label_url
         
         shipping_service.create_shipping_label(order_data)
         return self.generate_pdf(order_data)
@@ -841,6 +859,55 @@ class SVGPDFService:
         except Exception as e:
             print(f"[ERROR] 下载面单失败: {e}")
             return None
+
+    def _download_label_as_base64(self, label_url: str) -> str:
+        """
+        从URL下载面单PNG并转为base64 data URI
+        
+        Args:
+            label_url: 面单图片URL（PNG格式，10x10cm）
+            
+        Returns:
+            base64 data URI格式字符串，失败返回空字符串
+        """
+        if not label_url:
+            return ""
+            
+        try:
+            print(f"[INFO] 下载面单PNG: {label_url[:60]}...")
+            response = requests.get(label_url, timeout=30)
+            
+            if response.status_code != 200:
+                print(f"[WARN] 面单下载HTTP {response.status_code}: {label_url[:50]}")
+                return ""
+            
+            # 检测内容类型
+            content_type = response.headers.get('content-type', 'image/png')
+            if 'png' in content_type.lower():
+                mime = 'image/png'
+            elif 'jpeg' in content_type.lower() or 'jpg' in content_type.lower():
+                mime = 'image/jpeg'
+            else:
+                mime = 'image/png'  # 默认PNG
+            
+            # 转为base64 data URI
+            b64 = base64.b64encode(response.content).decode('utf-8')
+            data_uri = f"data:{mime};base64,{b64}"
+            print(f"[OK] 面单PNG下载成功: {len(b64)} 字符 ({mime})")
+            return data_uri
+            
+        except Exception as e:
+            print(f"[WARN] 面单PNG下载失败: {e}")
+            return ""
+    
+    def _get_placeholder_label(self) -> str:
+        """
+        面单不可用时的降级占位符
+        
+        Returns:
+            空字符串，SVG模板中的image元素会不显示
+        """
+        return ""
 
 
 svg_pdf_service = SVGPDFService()

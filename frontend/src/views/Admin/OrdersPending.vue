@@ -17,27 +17,29 @@
               <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">{{ allOrdersCount }}条</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-400">子账号:</span>
+              <span class="text-xs text-slate-400">运营:</span>
               <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'all'">全部</button>
-              <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'A' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'A'">A</button>
-              <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'B' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'B'">B</button>
+              <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'A' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'A'">A运营</button>
+              <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'B' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'B'">B运营</button>
+              <button class="px-2 py-1 rounded text-xs font-medium" :class="activeAccount === 'C' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200'" @click="activeAccount = 'C'">C运营</button>
             </div>
           </div>
 
           <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-3 text-xs">
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">新订单 {{ newOrdersCount }}</button>
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待确认 {{ pendingCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCount }}</button>
           </div>
           
           <div class="overflow-x-auto" style="max-height: 200px;">
             <table class="w-full text-xs text-left">
               <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 sticky top-0 z-10">
                 <tr class="h-[36px]">
+                  <th class="px-3 whitespace-nowrap font-medium">店铺</th>
                   <th class="px-3 whitespace-nowrap font-medium">订单ID</th>
                   <th class="px-3 whitespace-nowrap font-medium">客户</th>
-                  <th class="px-3 whitespace-nowrap font-medium">产品</th>
                   <th class="px-3 whitespace-nowrap font-medium">国家</th>
+                  <th class="px-3 whitespace-nowrap font-medium">产品(SKU)</th>
                   <th class="px-3 whitespace-nowrap font-medium">数量</th>
                   <th class="px-3 whitespace-nowrap font-medium">状态</th>
                   <th class="px-3 whitespace-nowrap font-medium">操作</th>
@@ -46,20 +48,21 @@
               <tbody class="divide-y divide-slate-100">
                 <tr v-for="order in filteredOrders" :key="order.id" @click="selectOrder(order)" 
                     :class="['hover:bg-slate-50 transition-colors h-[40px] cursor-pointer', selectedOrder?.id === order.id ? 'bg-blue-50' : '']">
+                  <td class="px-3 whitespace-nowrap font-mono text-slate-600 text-[11px]">{{ order.shop_code || order.shops?.code || '-' }}</td>
                   <td class="px-3 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id || order.id }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.customer_name }}</td>
-                  <td class="px-3 whitespace-nowrap font-mono text-slate-500">{{ order.sku_mapping?.sku_code || order.sku_id }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.country || '美国' }}</td>
+                  <td class="px-3 whitespace-nowrap font-mono text-slate-500 text-[11px]">{{ order.sku_mapping?.sku_code || order.sku_id || '-' }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.quantity }}</td>
                   <td class="px-3 whitespace-nowrap">
                     <span v-if="order.status === 'new'" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">新订单</span>
-                    <span v-else-if="order.status === 'pending'" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待确认</span>
-                    <span v-else-if="order.status === 'effect_sent'" class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">效果图已发</span>
+                    <span v-else-if="order.status === 'pending'" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
                     <span v-else class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
                   </td>
                   <td class="px-3 whitespace-nowrap">
-                    <button v-if="order.status === 'new'" @click.stop="moveToPending(order)" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px] transition-colors">拒绝链接</button>
-                    <button v-else @click.stop="confirmOrder(order)" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] transition-colors">创建订单</button>
+                    <span v-if="order.status === 'new'" class="text-slate-400 text-[10px]">-</span>
+                    <button v-else-if="order.status === 'pending'" @click.stop="confirmOrder(order)" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] transition-colors">创建订单</button>
+                    <span v-else class="text-slate-400 text-[10px]">-</span>
                   </td>
                 </tr>
                 <tr v-if="filteredOrders.length === 0" class="h-[60px]">
@@ -100,27 +103,33 @@
             <h3 class="font-bold text-slate-800 text-sm">订单详情</h3>
           </div>
           <div v-if="selectedOrder" class="p-3">
+            <!-- 实拍图 -->
             <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden mb-3">
-              <img v-if="selectedOrder.product_image" :src="selectedOrder.product_image" class="w-full h-full object-cover"/>
+              <img v-if="selectedOrder.product_image" :src="selectedOrder.product_image" class="w-full h-full object-contain"/>
               <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-xs">暂无图片</div>
             </div>
-            <div class="space-y-1.5 text-xs">
-              <div class="flex justify-between"><span class="text-slate-400">订单ID:</span><span class="text-slate-700 font-medium">{{ selectedOrder.etsy_order_id || selectedOrder.id }}</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">客户:</span><span class="text-slate-700">{{ selectedOrder.customer_name }}</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">形状:</span><span class="text-slate-700">{{ selectedOrder.shape || '圆形' }}</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">颜色:</span><span class="text-slate-700">{{ selectedOrder.color || '古铜金' }}</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">尺寸:</span><span class="text-slate-700">{{ selectedOrder.size || '30mm' }}</span></div>
-              <div class="pt-2 border-t border-slate-100 mt-2">
-                <div class="text-slate-400 mb-1">正面内容:</div>
-                <div class="text-slate-700 font-medium">{{ selectedOrder.front_text || '-' }}</div>
+            <!-- 订单信息两列布局 -->
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mb-3">
+              <div><span class="text-slate-400">订单ID:</span> <span class="text-slate-700 font-medium text-red-500">{{ selectedOrder.etsy_order_id }}</span></div>
+              <div><span class="text-slate-400">国家:</span> <span class="text-slate-700">{{ selectedOrder.country || '美国' }}</span></div>
+              <div><span class="text-slate-400">客户:</span> <span class="text-slate-700">{{ selectedOrder.customer_name }}</span></div>
+              <div><span class="text-slate-400">颜色:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.color || '古铜金' }}</span></div>
+              <div><span class="text-slate-400">形状:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.shape || '圆形' }}</span></div>
+              <div><span class="text-slate-400">尺寸:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.size || '30mm' }}</span></div>
+            </div>
+            <!-- 正背面内容 -->
+            <div class="bg-slate-50 rounded-lg p-2 text-sm space-y-1.5 mb-3">
+              <div class="flex items-baseline gap-2">
+                <span class="text-slate-400 whitespace-nowrap">正面内容:</span>
+                <span class="text-slate-800 font-bold">{{ selectedOrder.front_text || '-' }}</span>
               </div>
-              <div>
-                <div class="text-slate-400 mb-1">背面内容:</div>
-                <div class="text-slate-700">{{ selectedOrder.back_text || '-' }}</div>
+              <div class="flex items-baseline gap-2">
+                <span class="text-slate-400 whitespace-nowrap">字体:</span>
+                <span class="text-slate-800 font-bold">{{ selectedOrder.font_code || 'F-04' }}</span>
               </div>
-              <div class="pt-2 border-t border-slate-100 mt-2 flex gap-2">
-                <button class="flex-1 px-2 py-1.5 rounded text-xs bg-white border border-slate-200 text-slate-600">本地上传</button>
-                <button class="flex-1 px-2 py-1.5 rounded text-xs bg-slate-800 text-white">下载SVG</button>
+              <div class="flex items-baseline gap-2">
+                <span class="text-slate-400 whitespace-nowrap">背面内容:</span>
+                <span class="text-slate-800 font-bold">{{ selectedOrder.back_text || '-' }}</span>
               </div>
             </div>
           </div>
@@ -183,6 +192,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 复制内容
               </button>
+              <button @click="submitEmail" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                提交邮件
+              </button>
             </div>
           </div>
         </div>
@@ -197,7 +210,7 @@ import { useOrderStore } from '../../stores/orderStore'
 
 const store = useOrderStore()
 const designerFrame = ref(null)
-const designerUrl = ref('/designer-offline-vector.html')
+const designerUrl = ref('/designer-standalone.html')
 const activeAccount = ref('all')
 const orderTab = ref('all')
 const selectedOrder = ref(null)
@@ -205,40 +218,88 @@ const customerNote = ref('')
 const selectedStyle = ref('natural')
 const emailContent = ref('')
 
-onMounted(() => {
-  store.getPendingOrders()
+onMounted(async () => {
+  await store.getPendingOrders()
+  // 调试输出
+  console.log('🔍 OrdersPending 页面数据:', {
+    storeOrders: store.orders.length,
+    allOrders: allOrders.value.length,
+    filteredOrders: filteredOrders.value.length,
+    firstOrder: store.orders[0]?.etsy_order_id || '无'
+  })
 })
 
 const allOrders = computed(() => {
-  return store.orders.filter(o => ['new', 'pending', 'effect_sent'].includes(o.status))
+  const filtered = store.orders.filter(o => ['new', 'pending'].includes(o.status))
+  console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length)
+  return filtered
 })
 
 const filteredOrders = computed(() => {
-  if (orderTab.value === 'new') {
-    return allOrders.value.filter(o => o.status === 'new')
-  } else if (orderTab.value === 'pending') {
-    return allOrders.value.filter(o => ['pending', 'effect_sent'].includes(o.status))
+  let orders = allOrders.value
+  
+  // 按运营筛选
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
-  return allOrders.value
+  
+  // 按状态标签筛选
+  if (orderTab.value === 'new') {
+    orders = orders.filter(o => o.status === 'new')
+  } else if (orderTab.value === 'pending') {
+    orders = orders.filter(o => o.status === 'pending')
+  }
+  
+  return orders
 })
 
-const allOrdersCount = computed(() => allOrders.value.length)
-const newOrdersCount = computed(() => allOrders.value.filter(o => o.status === 'new').length)
-const pendingCount = computed(() => allOrders.value.filter(o => ['pending', 'effect_sent'].includes(o.status)).length)
+const allOrdersCount = computed(() => {
+  let orders = allOrders.value
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
+  }
+  return orders.length
+})
+const newOrdersCount = computed(() => {
+  let orders = allOrders.value.filter(o => o.status === 'new')
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
+  }
+  return orders.length
+})
+const pendingCount = computed(() => {
+  let orders = allOrders.value.filter(o => o.status === 'pending')
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
+  }
+  return orders.length
+})
 
 const selectOrder = (order) => {
   selectedOrder.value = order
   if (designerFrame.value && designerFrame.value.contentWindow) {
     // 从 sku_mapping 获取 shape 和 color
-    const shape = order.sku_mapping?.shape || 'circle'
-    const color = order.sku_mapping?.color || '银色'
+    const shapeMap = { '心形': 'heart', '圆形': 'circle', '骨头形': 'bone' }
+    const colorMap = { '金色': 'Gold', '银色': 'Silver', '玫瑰金': 'RoseGold', '黑色': 'Black' }
+    
+    const shape = shapeMap[order.sku_mapping?.shape] || 'heart'
+    const color = colorMap[order.sku_mapping?.color] || 'Silver'
+    
+    // 解析背面文字：如果包含空格，分离文字和电话
+    let backText = order.back_text || ''
+    let phone = ''
+    if (backText.includes(' ')) {
+      const parts = backText.split(' ')
+      backText = parts[0]
+      phone = parts.slice(1).join(' ')
+    }
     
     designerFrame.value.contentWindow.postMessage({
       type: 'loadOrder',
       data: {
         frontText: order.front_text || '',
-        backText: order.back_text || '',
-        phone: order.phone || '',
+        backText: backText,
+        phone: phone,
         shape: shape,
         color: color,
         font: order.font_code || 'F-04'
@@ -250,7 +311,8 @@ const selectOrder = (order) => {
       shape: shape,
       color: color,
       frontText: order.front_text,
-      backText: order.back_text
+      backText: backText,
+      phone: phone
     })
   }
 }
@@ -266,10 +328,26 @@ const saveEffectImage = async () => {
     alert('请先选择一条订单')
     return
   }
-  const handleMessage = (event) => {
+  
+  // 获取设计器生成的SVG数据
+  const handleMessage = async (event) => {
     if (event.data && event.data.type === 'svgData') {
       window.removeEventListener('message', handleMessage)
-      alert('✅ 已从设计器获取SVG数据')
+      
+      try {
+        // 保存效果图
+        await store.saveEffectImage(selectedOrder.value.id, event.data.svgData)
+        
+        // 自动将状态更新为"pending"（待创建）
+        if (selectedOrder.value.status === 'new') {
+          await store.updateOrderStatus(selectedOrder.value.id, 'pending')
+          selectedOrder.value.status = 'pending'
+        }
+        
+        alert('✅ 效果图已保存，订单已转为待创建状态')
+      } catch (e) {
+        alert('❌ 保存失败：' + e.message)
+      }
     }
   }
   window.addEventListener('message', handleMessage)
@@ -345,5 +423,18 @@ const copyEmail = async () => {
   } catch (e) {
     alert('复制失败，请手动复制')
   }
+}
+
+const submitEmail = async () => {
+  if (!emailContent.value) {
+    alert('请先点击「生成邮件」')
+    return
+  }
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  // TODO: 调用后端API发送邮件
+  alert('🚀 邮件提交成功！（后端API待实现）')
 }
 </script>

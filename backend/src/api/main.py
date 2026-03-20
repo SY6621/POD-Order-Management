@@ -397,6 +397,7 @@ async def generate_and_upload_pdf(request: GenerateAllRequest):
                 "postal_code": logistics.get("postal_code", ""),
                 "country": logistics.get("country", ""),
                 "tracking_number": logistics.get("tracking_number", ""),
+                "label_url": logistics.get("label_url", ""),  # 4PX面单PNG URL
             })
         else:
             print(f"[WARN] 未找到物流数据")
@@ -453,9 +454,11 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
     
     流程：
     1. 从Supabase查询订单信息
-    2. 构造4PX API参数
-    3. 调用4PX创建订单
-    4. 更新数据库（logistics + orders）
+    2. 自动获取SKU重量（从sku_mapping.weight_g）
+    3. 自动补充收件人地址（从orders.shipping_*字段）
+    4. 构造4PX API参数
+    5. 调用4PX创建订单
+    6. 更新数据库（logistics + orders）
     """
     try:
         # 1. 查询订单信息
@@ -468,7 +471,7 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
         
         etsy_order_id = order.get("etsy_order_id", request.order_id)
         
-        # 2. 查询SKU信息
+        # 2. 查询SKU信息（包含重量weight_g）
         sku_data = {}
         sku_id = order.get("sku_id")
         if sku_id:
@@ -476,52 +479,85 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
             if sku_info:
                 sku_data = sku_info
         
-        # 3. 电话隐私处理
+        # 3. 重量处理：优先使用前端传值，其次使用SKU重量，默认30g
+        weight_kg = request.weight_kg
+        if weight_kg <= 0 or weight_kg == 0.03:  # 默认值检测
+            sku_weight_g = sku_data.get("weight_g", 0)
+            if sku_weight_g and sku_weight_g > 0:
+                weight_kg = sku_weight_g / 1000.0  # 克转千克
+                print(f"[INFO] 使用SKU重量: {sku_weight_g}g -> {weight_kg}kg")
+            else:
+                weight_kg = 0.03  # 默认30g = 0.03kg
+                print(f"[INFO] 使用默认重量: 30g")
+        
+        # 4. 收件人信息处理：优先使用前端传值，其次从orders表shipping_*字段补充
+        recipient_name = request.recipient_name or order.get("shipping_name") or order.get("customer_name") or ""
+        recipient_street = request.recipient_street or order.get("shipping_address_line1") or ""
+        recipient_city = request.recipient_city or order.get("shipping_city") or ""
+        recipient_state = request.recipient_state or order.get("shipping_state") or ""
+        recipient_postcode = request.recipient_postcode or order.get("shipping_zip") or ""
+        recipient_country = request.recipient_country or order.get("shipping_country") or order.get("country") or "US"
+        
+        # 5. 电话隐私处理（4PX必填）
         scrambled_phone = scramble_phone(request.recipient_phone)
         
-        # 4. 构造4PX订单数据
+        # 6. 构造4PX订单数据（严格按照官方API文档格式）
+        # 重量转换：千克 -> 克（整数）
+        weight_g = int(weight_kg * 1000)
+        if weight_g < 1:
+            weight_g = 27  # 默认27克
+        
         fourpx_order_data = {
             "ref_no": etsy_order_id,
             "business_type": "BDS",
-            "logistics_product_code": request.logistics_product_code,
+            "duty_type": "P",
+            "logistics_service_info": {
+                "logistics_product_code": request.logistics_product_code
+            },
             "parcel_list": [{
-                "weight": request.weight_kg,
+                "weight": weight_g,  # 重量单位：克（整数）
+                "parcel_value": request.declare_value,  # 申报总价值
+                "currency": request.declare_currency,  # 申报币种
+                "include_battery": "N",
                 "declare_product_info": [{
                     "declare_product_name_cn": "不锈钢宠物牌",
-                    "declare_product_name_en": "Stainless Steel Pet ID Tag",
-                    "declare_product_code": sku_data.get("sku_code", "B-E01B"),
+                    "declare_product_name_en": "Stainless Steel Pet Tag",
+                    "declare_product_code_qty": str(order.get("quantity", 1)),
                     "declare_unit_price_export": request.declare_value,
                     "currency_export": request.declare_currency,
-                    "qty": order.get("quantity", 1)
+                    "declare_unit_price_import": request.declare_value,
+                    "currency_import": request.declare_currency,
+                    "brand_export": "",
+                    "brand_import": ""
                 }]
             }],
-            "deliver_type": "2",
-            "duty_type": "P",
-            "include_battery": "N",
-            "recipient_info": {
-                "recipient_name": request.recipient_name,
-                "recipient_phone": scrambled_phone,
-                "recipient_email": request.recipient_email or "",
-                "recipient_country": request.recipient_country,
-                "recipient_state": request.recipient_state,
-                "recipient_city": request.recipient_city,
-                "recipient_district": "",
-                "recipient_street": request.recipient_street,
-                "recipient_post_code": request.recipient_postcode
+            "is_insure": "N",
+            "sender": {
+                "first_name": settings.EMAIL_ADDRESS.split("@")[0] if settings.EMAIL_ADDRESS else "Etsy Seller",
+                "company": "Etsy Shop",
+                "phone": "13800138000",
+                "post_code": "518000",
+                "country": "CN",
+                "state": "GuangDong",
+                "city": "Shenzhen",
+                "street": "Nanshan District Road 1"
             },
-            "sender_info": {
-                "sender_name": settings.EMAIL_ADDRESS.split("@")[0] if settings.EMAIL_ADDRESS else "Etsy Seller",
-                "sender_phone": "+86 13800138000",
-                "sender_country": "CN",
-                "sender_state": "广东省",
-                "sender_city": "深圳市",
-                "sender_district": "福田区",
-                "sender_street": "深南大道1号",
-                "sender_post_code": "518000"
+            "recipient_info": {
+                "first_name": recipient_name,
+                "phone": scrambled_phone,
+                "email": request.recipient_email or order.get("customer_email") or "",
+                "country": recipient_country,
+                "state": recipient_state,
+                "city": recipient_city,
+                "street": recipient_street,
+                "post_code": recipient_postcode
+            },
+            "deliver_type_info": {
+                "deliver_type": "2"  # 快递到仓
             }
         }
         
-        # 5. 调用4PX创建订单
+        # 7. 调用4PX创建订单
         result = fourpx_client.create_order(fourpx_order_data)
         
         if result.get("result") != "1":
@@ -531,12 +567,12 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
                 status_code=400
             )
         
-        # 6. 提取返回数据
+        # 8. 提取返回数据
         response_data = result.get("data", {})
         tracking_number = response_data.get("4px_tracking_no") or response_data.get("logistics_order_no", "")
         order_no = response_data.get("order_no", "")
         
-        # 7. 获取面单URL
+        # 9. 获取面单URL
         label_url = ""
         if tracking_number:
             label_result = fourpx_client.get_label(tracking_number)
@@ -545,12 +581,12 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
                 label_url_info = label_data.get("label_url_info", {})
                 label_url = label_url_info.get("logistics_label", "")
         
-        # 8. 更新logistics表
+        # 10. 更新logistics表
         logistics_list = db.select("logistics", {"order_id": request.order_id})
         logistics_update = {
             "tracking_number": tracking_number,
             "label_url": label_url,
-            "state_code": request.recipient_state,
+            "state_code": recipient_state,
             "delivery_status": "shipped",
             "shipped_at": datetime.now().isoformat()
         }
@@ -560,16 +596,16 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
         else:
             logistics_insert = {
                 "order_id": request.order_id,
-                "recipient_name": request.recipient_name,
-                "country": request.recipient_country,
-                "city": request.recipient_city,
-                "street_address": request.recipient_street,
-                "postal_code": request.recipient_postcode,
+                "recipient_name": recipient_name,
+                "country": recipient_country,
+                "city": recipient_city,
+                "street_address": recipient_street,
+                "postal_code": recipient_postcode,
                 **logistics_update
             }
             db.insert("logistics", logistics_insert)
         
-        # 9. 更新订单状态
+        # 11. 更新订单状态
         db.update("orders", {"id": request.order_id}, {"status": "producing"})
         
         return JSONResponse({
@@ -579,6 +615,7 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
                 "order_no": order_no,
                 "tracking_number": tracking_number,
                 "label_url": label_url,
+                "weight_used_kg": weight_kg,
                 "4px_response": response_data
             }
         })

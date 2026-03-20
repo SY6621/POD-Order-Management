@@ -78,10 +78,19 @@ def fetch_and_import_orders():
                 print(f"⚠️ 订单 {order.etsy_order_id} 已存在，跳过")
                 continue
             
+            # SKU 反推：根据形状/颜色/尺寸查找SKU
+            from src.services.order_service import lookup_sku
+            sku_info = lookup_sku(
+                order.items[0].shape if order.items else "",
+                order.items[0].color if order.items else "",
+                order.items[0].size if order.items else ""
+            )
+            sku_id = sku_info.get("id") if sku_info else None
+            
             # 导入数据库
             print(f"\n[3] 导入数据库...")
             
-            # 准备订单数据
+            # 准备订单数据（status 使用 pending，符合数据库约束）
             order_data = {
                 "etsy_order_id": order.etsy_order_id,
                 "customer_name": order.customer_name,
@@ -95,7 +104,8 @@ def fetch_and_import_orders():
                 "product_craft": "抛光",  # 默认值
                 "quantity": order.items[0].quantity if order.items else 1,
                 "total_amount": order.order_total,
-                "status": "new",
+                "status": "pending",  # 使用 pending（符合 orders_status_check 约束）
+                "sku_id": sku_id,  # 关联 SKU
                 "created_at": order.order_date or datetime.now().isoformat(),
             }
             

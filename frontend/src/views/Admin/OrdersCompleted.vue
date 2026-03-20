@@ -90,17 +90,17 @@
                   getRowBorderClass(order)
                 ]"
               >
-                <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700">{{ order.id }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ order.customer }}</td>
-                <td class="px-4 py-3 whitespace-nowrap font-mono text-slate-500 text-xs">{{ order.sku }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-slate-500">{{ order.completedDate }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-slate-500">{{ order.shippedDate }}</td>
-                <td class="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-500">{{ order.trackingNo }}</td>
+                <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id || order.id }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ order.customer_name }}</td>
+                <td class="px-4 py-3 whitespace-nowrap font-mono text-slate-500 text-xs">{{ order.sku_mapping?.sku_code || '-' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-slate-500">{{ formatDate(order.completed_at || order.created_at) }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-slate-500">{{ formatDate(order.shipped_at) || '-' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-500">{{ order.tracking_number || '-' }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <span :class="getDaysClass(order.deliveredDays)">{{ order.deliveredDays }}天</span>
+                  <span class="text-slate-600">-</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <a v-if="order.hasPdf" href="#" @click.stop.prevent="viewPdf(order)" class="text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                  <a v-if="order.production_pdf_url" href="#" @click.stop.prevent="viewPdf(order)" class="text-blue-600 hover:text-blue-700 flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     查看PDF
                   </a>
@@ -178,11 +178,11 @@
                       <!-- 右侧：生产文档预览 -->
                       <div>
                         <h4 class="font-bold text-slate-700 mb-3 text-sm">生产文档预览</h4>
-                        <div v-if="order.hasPdf" class="bg-white rounded-lg border border-slate-200 p-4">
+                        <div v-if="order.production_pdf_url" class="bg-white rounded-lg border border-slate-200 p-4">
                           <div class="bg-slate-100 rounded-lg h-32 flex items-center justify-center mb-3">
                             <div class="text-center text-slate-500">
                               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto mb-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                              <p class="text-xs">POD_{{ order.id }}.pdf</p>
+                              <p class="text-xs">POD_{{ order.etsy_order_id || order.id }}.pdf</p>
                             </div>
                           </div>
                           <div class="flex gap-2">
@@ -251,10 +251,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useOrderStore } from '../../stores/orderStore'
+import axios from 'axios'
 
 const router = useRouter()
+const store = useOrderStore()
+
+// API基础URL
+const API_BASE_URL = 'http://localhost:8000'
 
 // 筛选条件
 const searchText = ref('')
@@ -270,37 +276,45 @@ const pageSize = ref(20)
 // 展开行
 const expandedId = ref(null)
 
-// 假数据
-const mockOrders = ref([
-  { id: '4002217501', customer: 'Luna Parker', sku: 'B-HC-G-L', completedDate: '2026-03-10', shippedDate: '2026-03-09', trackingNo: '4PX1234567890', deliveredDays: 10, hasPdf: true, reviewSent: false, frontText: 'Luna', font: 'F-04', backText: '416.456.3524', shape: '心形', color: '金色', size: '大号', craft: '标准' },
-  { id: '4002217502', customer: 'Mike Johnson', sku: 'B-BO-S-S', completedDate: '2026-03-12', shippedDate: '2026-03-11', trackingNo: '4PX1234567891', deliveredDays: 8, hasPdf: true, reviewSent: false, frontText: 'Buddy', font: 'F-02', backText: '555.123.4567', shape: '骨头', color: '银色', size: '小号', craft: '标准' },
-  { id: '4002217503', customer: 'Emma Wilson', sku: 'B-CI-G-L', completedDate: '2026-03-14', shippedDate: '2026-03-13', trackingNo: '4PX1234567892', deliveredDays: 6, hasPdf: true, reviewSent: false, frontText: 'Max', font: 'F-01', backText: '666.789.0123', shape: '圆形', color: '金色', size: '大号', craft: '标准' },
-  { id: '4002217504', customer: 'Sarah Brown', sku: 'B-HC-S-S', completedDate: '2026-03-08', shippedDate: '2026-03-07', trackingNo: '4PX1234567893', deliveredDays: 12, hasPdf: true, reviewSent: true, frontText: 'Bella', font: 'F-03', backText: '777.456.7890', shape: '心形', color: '银色', size: '小号', craft: '标准' },
-  { id: '4002217505', customer: 'David Lee', sku: 'B-BO-G-L', completedDate: '2026-03-16', shippedDate: '2026-03-15', trackingNo: '4PX1234567894', deliveredDays: 4, hasPdf: true, reviewSent: false, frontText: 'Rocky', font: 'F-05', backText: '888.321.6543', shape: '骨头', color: '金色', size: '大号', craft: '标准' },
-  { id: '4002217506', customer: 'Amy Chen', sku: 'B-CI-S-S', completedDate: '2026-03-11', shippedDate: '2026-03-10', trackingNo: '4PX1234567895', deliveredDays: 9, hasPdf: false, reviewSent: false, frontText: 'Coco', font: 'F-06', backText: '999.654.3210', shape: '圆形', color: '银色', size: '小号', craft: '标准' },
-  { id: '4002217507', customer: 'Tom Harris', sku: 'B-HC-G-L', completedDate: '2026-03-09', shippedDate: '2026-03-08', trackingNo: '4PX1234567896', deliveredDays: 11, hasPdf: true, reviewSent: true, frontText: 'Lucky', font: 'F-04', backText: '111.222.3333', shape: '心形', color: '金色', size: '大号', craft: '标准' },
-  { id: '4002217508', customer: 'Lisa Wang', sku: 'B-BO-S-S', completedDate: '2026-03-15', shippedDate: '2026-03-14', trackingNo: '4PX1234567897', deliveredDays: 5, hasPdf: true, reviewSent: false, frontText: 'Daisy', font: 'F-02', backText: '444.555.6666', shape: '骨头', color: '银色', size: '小号', craft: '标准' },
-])
+// 正在生成PDF的订单ID
+const generatingOrderId = ref(null)
 
-// 总计数量
-const totalCount = computed(() => mockOrders.value.length)
+// 页面加载时获取真实数据
+onMounted(async () => {
+  await store.getCompletedOrders()
+  console.log('✅ 已完成订单页面加载，订单数:', store.orders.length)
+})
 
-// 筛选后的订单
+// 刷新订单列表
+const refreshOrders = async () => {
+  await store.getCompletedOrders()
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('zh-CN')
+}
+
+// 总计数量 - 使用真实数据
+const totalCount = computed(() => store.orders.length)
+
+// 筛选后的订单 - 使用真实数据
 const filteredOrders = computed(() => {
-  let result = [...mockOrders.value]
+  let result = [...store.orders]
   
   // 搜索文本筛选
   if (searchText.value) {
     const search = searchText.value.toLowerCase()
     result = result.filter(o => 
-      o.id.toLowerCase().includes(search) || 
-      o.customer.toLowerCase().includes(search)
+      (o.etsy_order_id || o.id || '').toLowerCase().includes(search) || 
+      (o.customer_name || '').toLowerCase().includes(search)
     )
   }
   
   // 产品筛选
   if (productFilter.value) {
-    result = result.filter(o => o.sku.includes(productFilter.value))
+    result = result.filter(o => (o.sku_mapping?.sku_code || '').includes(productFilter.value))
   }
   
   return result
@@ -318,10 +332,8 @@ const totalPages = computed(() => Math.ceil(filteredOrders.value.length / pageSi
 
 // 获取行边框样式
 const getRowBorderClass = (order) => {
-  if (order.reviewSent) {
+  if (order.review_sent) {
     return 'border-l-4 border-green-400'
-  } else if (order.deliveredDays >= 8) {
-    return 'border-l-4 border-orange-400 bg-orange-50/50'
   }
   return ''
 }
@@ -334,18 +346,14 @@ const getDaysClass = (days) => {
 
 // 获取追评状态文字
 const getReviewStatusText = (order) => {
-  if (order.reviewSent) return '已发送'
-  if (order.deliveredDays >= 8) return '建议发送'
+  if (order.review_sent) return '已发送'
   return '未发送'
 }
 
 // 获取追评状态样式
 const getReviewStatusClass = (order) => {
-  if (order.reviewSent) {
+  if (order.review_sent) {
     return 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700'
-  }
-  if (order.deliveredDays >= 8) {
-    return 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 animate-pulse'
   }
   return 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-500'
 }
@@ -370,28 +378,68 @@ const handleReset = () => {
   currentPage.value = 1
 }
 
+// 生成PDF
+const generatePdf = async (order) => {
+  generatingOrderId.value = order.id
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/pdf/generate-and-upload`, {
+      order_id: order.id
+    })
+    
+    if (response.data.success) {
+      alert('✅ 生产文档生成成功！')
+      // 刷新订单列表
+      await store.getCompletedOrders()
+    } else {
+      alert('❌ 生成失败: ' + (response.data.detail || '未知错误'))
+    }
+  } catch (err) {
+    console.error('生成PDF出错:', err)
+    alert('❌ 生成失败: ' + (err.response?.data?.detail || err.message || 'Network Error'))
+  } finally {
+    generatingOrderId.value = null
+  }
+}
+
 // 查看PDF
 const viewPdf = (order) => {
-  alert(`查看订单 ${order.id} 的生产文档`)
+  if (order.production_pdf_url) {
+    window.open(order.production_pdf_url, '_blank')
+  } else {
+    alert('PDF尚未生成，请先点击"生成"按钮')
+  }
 }
 
 // 下载PDF
 const downloadPdf = (order) => {
-  alert(`下载订单 ${order.id} 的生产文档`)
+  if (order.production_pdf_url) {
+    const link = document.createElement('a')
+    link.href = order.production_pdf_url
+    link.download = `POD_${order.etsy_order_id || order.id}.pdf`
+    link.click()
+  } else {
+    alert('PDF尚未生成，请先点击"生成"按钮')
+  }
 }
 
 // 打印PDF
 const printPdf = (order) => {
-  alert(`打印订单 ${order.id} 的生产文档`)
+  if (order.production_pdf_url) {
+    const printWindow = window.open(order.production_pdf_url, '_blank')
+    printWindow.onload = () => {
+      printWindow.print()
+    }
+  } else {
+    alert('PDF尚未生成，请先点击"生成"按钮')
+  }
 }
 
 // 发送追评邮件
 const sendReviewEmail = (order) => {
-  // 跳转到邮件模板页面，带上订单信息
   router.push({
     path: '/admin/effects',
     query: {
-      orderId: order.id,
+      orderId: order.etsy_order_id || order.id,
       action: 'review'
     }
   })

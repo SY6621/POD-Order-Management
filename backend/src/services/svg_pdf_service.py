@@ -575,9 +575,17 @@ class SVGPDFService:
         width_mm = data.get("width_mm") or shape_size.get("width_mm", 45)
         height_mm = data.get("height_mm") or shape_size.get("height_mm", 26)
         
-        # Step 3: 生成效果图形状（传递 size 参数）
-        front_shape_data = self._get_effect_shape_svg(shape, color, "front", size)
-        back_shape_data = self._get_effect_shape_svg(shape, color, "back", size)
+        # Step 3: 获取效果图SVG（优先从 production_documents 读取设计器SVG）
+        effect_svg_url = data.get("effect_svg_url", "")
+        if effect_svg_url:
+            # 使用设计器生成的SVG
+            print(f"[INFO] 使用设计器SVG: {effect_svg_url}")
+            front_shape_data, back_shape_data = self._get_designer_svg(effect_svg_url, shape, color, size)
+        else:
+            # 动态生成形状
+            print(f"[INFO] 动态生成形状: {shape}/{color}/{size}")
+            front_shape_data = self._get_effect_shape_svg(shape, color, "front", size)
+            back_shape_data = self._get_effect_shape_svg(shape, color, "back", size)
         
         # 生成尺寸标注线（仅正面需要）
         width_lines, height_lines = self._generate_dimension_lines(
@@ -731,14 +739,108 @@ class SVGPDFService:
             
             "width_mm": order_data.width_mm,
             "height_mm": order_data.height_mm,
+            
+            # 新增：设计器SVG URL（从外部传入）
+            "effect_svg_url": getattr(order_data, 'effect_svg_url', ''),
         }
     
     def generate_from_raw_data(self, raw_data: Dict[str, Any]) -> Optional[Path]:
         """Generate PDF from raw data dictionary"""
         from src.services.shipping_service import shipping_service
+        
+        # 保存 effect_svg_url（create_order_data 会丢失这个字段）
+        effect_svg_url = raw_data.get("effect_svg_url", "")
+        
         order_data = shipping_service.create_order_data(raw_data)
+        
+        # 恢复 effect_svg_url
+        order_data.effect_svg_url = effect_svg_url
+        
         shipping_service.create_shipping_label(order_data)
         return self.generate_pdf(order_data)
+    
+    def _get_designer_svg(self, effect_svg_url: str, shape: str, color: str, size: str) -> tuple:
+        """
+        从设计器SVG URL读取并解析正反面效果图
+        
+        Returns:
+            (front_shape_data, back_shape_data) 格式与 _get_effect_shape_svg 相同
+        """
+        try:
+            # 下载SVG内容
+            response = requests.get(effect_svg_url, timeout=30)
+            if response.status_code != 200:
+                print(f"[WARN] 无法下载设计器SVG: {effect_svg_url}")
+                # 回退到动态生成
+                return (
+                    self._get_effect_shape_svg(shape, color, "front", size),
+                    self._get_effect_shape_svg(shape, color, "back", size)
+                )
+            
+            svg_content = response.text
+            print(f"[OK] 下载设计器SVG成功: {len(svg_content)} 字符")
+            
+            # 解析SVG获取正反面（假设设计器SVG包含正反面）
+            # 这里简化处理：将整个SVG作为正面，背面动态生成
+            # 实际应该根据设计器SVG结构解析
+            
+            # 获取默认形状数据用于定位
+            front_default = self._get_effect_shape_svg(shape, color, "front", size)
+            back_default = self._get_effect_shape_svg(shape, color, "back", size)
+            
+            # 将设计器SVG嵌入到正面区域
+            # 注意：这里需要根据实际SVG结构调整大小和位置
+            front_svg = f'<g transform="translate({front_default["bbox"][0]}, {front_default["bbox"][1]}) scale(0.8)">{svg_content}</g>'
+            
+            front_shape_data = {
+                "svg": front_svg,
+                "bbox": front_default["bbox"],
+                "text_x": front_default["text_x"],
+                "text_y": front_default["text_y"],
+            }
+            
+            return front_shape_data, back_default
+            
+        except Exception as e:
+            print(f"[ERROR] 读取设计器SVG失败: {e}")
+            # 回退到动态生成
+            return (
+                self._get_effect_shape_svg(shape, color, "front", size),
+                self._get_effect_shape_svg(shape, color, "back", size)
+            )
+    
+    def _download_shipping_label(self, tracking_number: str) -> Optional[str]:
+        """
+        下载4PX物流面单PDF并转为base64
+        
+        Returns:
+            base64编码的PDF内容，失败返回None
+        """
+        try:
+            from src.services.shipping_service import shipping_service
+            
+            # 获取面单URL
+            label_url = shipping_service.get_label_url(tracking_number)
+            if not label_url:
+                print(f"[WARN] 无法获取面单URL: {tracking_number}")
+                return None
+            
+            print(f"[INFO] 下载面单: {label_url}")
+            
+            # 下载PDF
+            response = requests.get(label_url, timeout=30)
+            if response.status_code != 200:
+                print(f"[WARN] 下载面单失败: {response.status_code}")
+                return None
+            
+            # 转为base64
+            pdf_base64 = base64.b64encode(response.content).decode('utf-8')
+            print(f"[OK] 面单下载成功: {len(pdf_base64)} 字符")
+            return pdf_base64
+            
+        except Exception as e:
+            print(f"[ERROR] 下载面单失败: {e}")
+            return None
 
 
 svg_pdf_service = SVGPDFService()

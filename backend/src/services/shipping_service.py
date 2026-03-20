@@ -311,24 +311,44 @@ class FourPXClient:
         v = "1.1.0"
         return self.call_api(method, v, order_data)
     
-    def get_label(self, request_no: str, label_type: str = "1", label_size: str = "10x10") -> Dict[Any, Any]:
+    def get_label(self, request_no: str, label_type: str = "1", label_size: str = "label_100x100") -> Dict[Any, Any]:
         """
         获取标签
         API: ds.xms.label.get v1.1.0
         
         Args:
-            request_no: 4PX 请求单号（不是 ETSY order_no）
+            request_no: 4PX单号或客户参考号
             label_type: 标签类型，1-地址标签
-            label_size: 标签尺寸，如 "10x10"
+            label_size: 标签尺寸，如 "label_100x100" (10x10cm) 或 "label_100x150" (10x15cm)
+        
+        Returns:
+            响应数据，面单URL在 data.label_url_info.logistics_label 中
         """
         method = "ds.xms.label.get"
         v = "1.1.0"
         body = {
-            "request_no": request_no,  # 4PX API 要求用 request_no
+            "request_no": request_no,
             "label_type": label_type,
             "label_size": label_size
         }
         return self.call_api(method, v, body)
+    
+    def get_label_url(self, request_no: str) -> Optional[str]:
+        """
+        获取面单URL的便捷方法
+        
+        Args:
+            request_no: 4PX单号
+            
+        Returns:
+            面单PDF的URL，失败返回None
+        """
+        result = self.get_label(request_no)
+        if result.get("result") == "1":
+            label_data = result.get("data", {})
+            label_url_info = label_data.get("label_url_info", {})
+            return label_url_info.get("logistics_label")
+        return None
     
     def cancel_order(self, request_no: str, cancel_reason: str = "") -> Dict[Any, Any]:
         """

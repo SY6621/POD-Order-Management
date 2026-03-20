@@ -3,42 +3,17 @@ import { useShopStore } from '../stores/shopStore'
 import { useAdminStore } from '../stores/adminStore'
 
 const routes = [
+  // 根路径重定向到管理系统登录页
   {
     path: '/',
-    name: 'Dashboard',
-    component: () => import('../views/Dashboard/Dashboard.vue'),
-    meta: { title: '仪表盘总览' }
+    redirect: '/admin/login'
   },
+  // 待确认订单已合并到管理系统
   {
     path: '/pending',
-    name: 'PendingOrders',
-    component: () => import('../views/PendingOrders/PendingOrders.vue'),
-    meta: { title: '待确认订单' }
+    redirect: '/admin/orders/pending'
   },
-  {
-    path: '/production',
-    name: 'Production',
-    component: () => import('../views/Production/Production.vue'),
-    meta: { title: '生产中订单' }
-  },
-  {
-    path: '/completed',
-    name: 'CompletedOrders',
-    component: () => import('../views/CompletedOrders/CompletedOrders.vue'),
-    meta: { title: '已完成订单' }
-  },
-  {
-    path: '/logistics',
-    name: 'Logistics',
-    component: () => import('../views/Logistics/Logistics.vue'),
-    meta: { title: '物流追踪' }
-  },
-  {
-    path: '/email',
-    name: 'EmailTemplates',
-    component: () => import('../views/EmailTemplates/EmailTemplates.vue'),
-    meta: { title: '邮件模板' }
-  },
+
   {
     path: '/shipping',
     name: 'ShippingOrder',
@@ -98,7 +73,7 @@ const routes = [
   },
   {
     path: '/admin',
-    component: () => import('../views/Admin/AdminLayout.vue'),
+    component: () => import('../layouts/AdminLayout.vue'),
     meta: { requiresAdminAuth: true },
     children: [
       {
@@ -117,7 +92,7 @@ const routes = [
       {
         path: 'orders/shipping',
         name: 'OrdersShipping',
-        component: () => import('../views/Admin/AdminOrders.vue'), // 复用现有页面
+        component: () => import('../views/Admin/OrdersShipping.vue'),
         meta: { title: '物流下单' }
       },
       {
@@ -129,7 +104,7 @@ const routes = [
       {
         path: 'orders/completed',
         name: 'OrdersCompleted',
-        component: () => import('../views/Admin/AdminOrders.vue'), // 复用现有页面
+        component: () => import('../views/Admin/OrdersCompleted.vue'),
         meta: { title: '已完成订单' }
       },
       {
@@ -141,7 +116,7 @@ const routes = [
       {
         path: 'factory-overview',
         name: 'FactoryOverview',
-        component: () => import('../views/Admin/AdminFactories.vue'), // 复用现有页面
+        component: () => import('../views/Admin/FactoryOverview.vue'),
         meta: { title: '工厂生产总览' }
       },
       // 系统管理（仅主账号可见）

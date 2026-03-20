@@ -41,7 +41,7 @@ export const useOrderStore = defineStore('order', () => {
     urgent: '紧急'
   }
 
-  // 获取所有订单（直接查询 orders 表，不依赖外键关联）
+  // 获取所有订单（关联 sku_mapping 获取 shape/color/size）
   const fetchOrders = async () => {
     loading.value = true
     error.value = null
@@ -49,19 +49,26 @@ export const useOrderStore = defineStore('order', () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          sku_mapping (*)
+        `)
         .order('created_at', { ascending: false })
       
       if (fetchError) throw fetchError
       
       orders.value = data || []
       console.log('✅ 订单数据加载成功:', data?.length, '条')
-      // debug: 检查第一条订单是否有背面字段
+      // debug: 检查第一条订单是否有sku_mapping数据
       if (data?.length > 0) {
+        const first = data[0]
         console.log('🔍 第一条订单字段检查:', {
-          id: data[0].etsy_order_id,
-          front: data[0].effect_image_url ? '有' : '无',
-          back: data[0].effect_image_back_url ? '有' : '无'
+          id: first.etsy_order_id,
+          sku: first.sku_mapping?.sku_code || '无',
+          shape: first.sku_mapping?.shape || '无',
+          color: first.sku_mapping?.color || '无',
+          front: first.effect_image_url ? '有' : '无',
+          back: first.effect_image_back_url ? '有' : '无'
         })
       }
       return data
@@ -122,18 +129,46 @@ export const useOrderStore = defineStore('order', () => {
     error.value = null
     
     try {
+      // 先查询订单（不使用关联，避免权限问题）
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
         .eq('status', 'delivered')
         .order('created_at', { ascending: false })
       
-      if (fetchError) throw fetchError
-      console.log('✅ 已完成订单:', data?.length)
+      if (fetchError) {
+        console.error('Supabase 查询错误:', fetchError)
+        throw fetchError
+      }
+      
+      console.log('✅ 已完成订单原始数据:', data?.length)
+      
+      // 如果有订单，再单独查询 sku_mapping
+      if (data && data.length > 0) {
+        const ordersWithSku = await Promise.all(
+          data.map(async (order) => {
+            if (order.sku_id) {
+              const { data: skuData } = await supabase
+                .from('sku_mapping')
+                .select('*')
+                .eq('id', order.sku_id)
+                .single()
+              return { ...order, sku_mapping: skuData || {} }
+            }
+            return { ...order, sku_mapping: {} }
+          })
+        )
+        orders.value = ordersWithSku
+        console.log('✅ 已完成订单（含SKU）:', ordersWithSku.length)
+        return ordersWithSku
+      }
+      
+      orders.value = data || []
       return data || []
     } catch (err) {
       error.value = err.message
       console.error('❌ 已完成订单查询失败:', err)
+      console.error('错误详情:', err.message, err.code, err.details)
       return []
     } finally {
       loading.value = false

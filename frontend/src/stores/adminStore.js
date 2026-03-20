@@ -20,13 +20,13 @@ export const useAdminStore = defineStore('admin', () => {
     
     try {
       // 开发测试模式：本地验证（无需数据库）
-      // 默认管理员账号: admin / admin123
+      // 主账号: admin / admin123
       if (username === 'admin' && password === 'admin123') {
         const mockUser = {
           id: 'admin-001',
           username: 'admin',
           role: 'admin',
-          role_type: 'main',
+          role_type: 'main',  // 主账号
           email: 'admin@example.com'
         }
         
@@ -37,6 +37,31 @@ export const useAdminStore = defineStore('admin', () => {
         localStorage.setItem('admin_auth', JSON.stringify({
           userId: mockUser.id,
           username: mockUser.username,
+          role_type: 'main',
+          timestamp: Date.now()
+        }))
+        
+        return { success: true, user: mockUser }
+      }
+      
+      // 子账号: sub / sub123
+      if (username === 'sub' && password === 'sub123') {
+        const mockUser = {
+          id: 'sub-001',
+          username: 'sub',
+          role: 'operator',
+          role_type: 'sub',  // 子账号
+          email: 'sub@example.com'
+        }
+        
+        currentUser.value = mockUser
+        isAuthenticated.value = true
+        
+        // 保存到 localStorage
+        localStorage.setItem('admin_auth', JSON.stringify({
+          userId: mockUser.id,
+          username: mockUser.username,
+          role_type: 'sub',
           timestamp: Date.now()
         }))
         
@@ -78,6 +103,19 @@ export const useAdminStore = defineStore('admin', () => {
           role: 'admin',
           role_type: 'main',
           email: 'admin@example.com'
+        }
+        isAuthenticated.value = true
+        return true
+      }
+      
+      // 子账号验证
+      if (authData.userId === 'sub-001') {
+        currentUser.value = {
+          id: 'sub-001',
+          username: 'sub',
+          role: 'operator',
+          role_type: 'sub',
+          email: 'sub@example.com'
         }
         isAuthenticated.value = true
         return true

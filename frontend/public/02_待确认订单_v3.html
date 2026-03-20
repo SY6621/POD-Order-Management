@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<!-- saved from url=(0103)file:///D:/ETSY_Order_Automation/backend/tests/02_%E5%BE%85%E7%A1%AE%E8%AE%A4%E8%AE%A2%E5%8D%95_v3.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生产订单管理系统 - 待确认订单</title>
+    <script src="./02_待确认订单_v3_files/saved_resource"></script>
+    <link href="./02_待确认订单_v3_files/css2" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .designer-wrap { font-family: 'Inter', sans-serif; }
+        .section-label { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+        .ctrl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .ctrl-row label { width: 70px; font-size: 12px; color: #475569; flex-shrink: 0; }
+        .ctrl-row input[type="text"], .ctrl-row select { flex: 1; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; }
+        .ctrl-row input[type="range"] { flex: 1; height: 6px; }
+        .ctrl-row .vnum { width: 40px; text-align: right; font-size: 12px; color: #64748b; }
+        .action-btns { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
+        .btn-primary { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-ghost { background: white; color: #475569; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-ghost:hover { background: #f1f5f9; }
+        .btn-green { background: #22c55e; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; }
+        .btn-green:hover { background: #16a34a; }
+        .params-chip { margin-top: 12px; padding: 10px; background: #f1f5f9; border-radius: 6px; font-size: 12px; color: #64748b; text-align: center; }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.mx-2{margin-left:0.5rem;margin-right:0.5rem}.mx-6{margin-left:1.5rem;margin-right:1.5rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.ml-3{margin-left:0.75rem}.ml-auto{margin-left:auto}.mt-2{margin-top:0.5rem}.mt-6{margin-top:1.5rem}.mt-auto{margin-top:auto}.flex{display:flex}.grid{display:grid}.h-10{height:2.5rem}.h-20{height:5rem}.h-24{height:6rem}.h-\[280px\]{height:280px}.h-\[28px\]{height:28px}.h-\[32px\]{height:32px}.h-\[900px\]{height:900px}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-14{width:3.5rem}.w-24{width:6rem}.w-80{width:20rem}.w-\[1480px\]{width:1480px}.w-full{width:100%}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.resize-none{resize:none}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-8{gap:2rem}.gap-x-6{column-gap:1.5rem}.gap-y-1{row-gap:0.25rem}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-slate-100 > :not([hidden]) ~ :not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249 / var(--tw-divide-opacity, 1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-l{border-left-width:1px}.border-blue-200{--tw-border-opacity:1;border-color:rgb(191 219 254 / var(--tw-border-opacity, 1))}.border-orange-200{--tw-border-opacity:1;border-color:rgb(254 215 170 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-orange-100{--tw-bg-opacity:1;background-color:rgb(255 237 213 / var(--tw-bg-opacity, 1))}.bg-orange-50{--tw-bg-opacity:1;background-color:rgb(255 247 237 / var(--tw-bg-opacity, 1))}.bg-orange-500{--tw-bg-opacity:1;background-color:rgb(249 115 22 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-600{--tw-bg-opacity:1;background-color:rgb(71 85 105 / var(--tw-bg-opacity, 1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.object-cover{object-fit:cover}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-\[10px\]{font-size:10px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.leading-relaxed{line-height:1.625}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-orange-600{--tw-text-opacity:1;color:rgb(234 88 12 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-blue-200{--tw-shadow-color:#bfdbfe;--tw-shadow:var(--tw-shadow-colored)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:border-slate-300:hover{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-900:hover{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.hover\:text-slate-600:hover{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.hover\:underline:hover{-webkit-text-decoration-line:underline;text-decoration-line:underline}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500\/20:focus{--tw-ring-color:rgb(59 130 246 / 0.2)}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.mx-2{margin-left:0.5rem;margin-right:0.5rem}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.ml-3{margin-left:0.75rem}.ml-auto{margin-left:auto}.mt-2{margin-top:0.5rem}.mt-6{margin-top:1.5rem}.mt-auto{margin-top:auto}.flex{display:flex}.grid{display:grid}.h-10{height:2.5rem}.h-20{height:5rem}.h-24{height:6rem}.h-\[280px\]{height:280px}.h-\[28px\]{height:28px}.h-\[32px\]{height:32px}.h-\[900px\]{height:900px}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-14{width:3.5rem}.w-16{width:4rem}.w-24{width:6rem}.w-80{width:20rem}.w-\[1480px\]{width:1480px}.w-full{width:100%}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.resize-none{resize:none}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-x-6{column-gap:1.5rem}.gap-y-1{row-gap:0.25rem}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.divide-y > :not([hidden]) ~ :not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px * calc(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px * var(--tw-divide-y-reverse))}.divide-slate-100 > :not([hidden]) ~ :not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249 / var(--tw-divide-opacity, 1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.whitespace-nowrap{white-space:nowrap}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-l{border-left-width:1px}.border-blue-200{--tw-border-opacity:1;border-color:rgb(191 219 254 / var(--tw-border-opacity, 1))}.border-orange-200{--tw-border-opacity:1;border-color:rgb(254 215 170 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.bg-blue-100{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-orange-100{--tw-bg-opacity:1;background-color:rgb(255 237 213 / var(--tw-bg-opacity, 1))}.bg-orange-50{--tw-bg-opacity:1;background-color:rgb(255 247 237 / var(--tw-bg-opacity, 1))}.bg-orange-500{--tw-bg-opacity:1;background-color:rgb(249 115 22 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-600{--tw-bg-opacity:1;background-color:rgb(71 85 105 / var(--tw-bg-opacity, 1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.object-cover{object-fit:cover}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-\[10px\]{font-size:10px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.leading-relaxed{line-height:1.625}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235 / var(--tw-text-opacity, 1))}.text-orange-600{--tw-text-opacity:1;color:rgb(234 88 12 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-blue-200{--tw-shadow-color:#bfdbfe;--tw-shadow:var(--tw-shadow-colored)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:border-slate-300:hover{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-900:hover{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.hover\:text-slate-600:hover{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.hover\:underline:hover{-webkit-text-decoration-line:underline;text-decoration-line:underline}.focus\:border-blue-500:focus{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-2:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-blue-500\/20:focus{--tw-ring-color:rgb(59 130 246 / 0.2)}</style></head>
+<body class="bg-slate-200 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="flex h-[900px] w-[1480px] bg-white shadow-2xl rounded-2xl overflow-hidden shrink-0">
+
+        <!-- Main Content -->
+        <div class="flex-1 bg-slate-50 p-5 overflow-y-auto h-full">
+
+            <!-- ========== 红框1：待确认订单块 ========== -->
+            <div class="mb-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <h2 class="text-xl font-bold text-slate-800">待确认订单</h2>
+                    <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">37条</span>
+                </div>
+
+                <!-- 筛选栏 + 子账号Tab -->
+                <div class="flex items-center gap-2 mb-3">
+                    <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white transition-colors">
+                        全部
+                        <span class="bg-white text-slate-800 px-1.5 py-0.5 rounded-full text-[10px] font-bold">37</span>
+                    </button>
+                    <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        等待客户确认
+                        <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px] font-bold">32</span>
+                    </button>
+                    <!-- 子账号Tab（仅主账号显示） -->
+                    <div class="ml-3 flex items-center gap-2">
+                        <span class="text-xs text-slate-400">子账号:</span>
+                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white transition-colors">A账号</button>
+                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">B账号</button>
+                        <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">C账号</button>
+                    </div>
+                    <div class="ml-auto text-xs text-slate-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>
+                        后台24小时内无回复，可创建订单；如客户有修改则修改后让客户再次确认。
+                    </div>
+                </div>
+
+                <!-- 待确认订单表格 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr class="h-[32px]">
+                                    <th class="px-3 whitespace-nowrap font-medium">订单ID</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">客户名称</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">产品</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">国家</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">数量</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">状态</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">创建日期</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-001</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Maura McHale</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">美国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">200</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-02-03</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-0.5 rounded text-[10px] transition-colors">创建订单</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-002</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Kim Alison</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-G01B</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">英国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">1</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-02-01</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-0.5 rounded text-[10px] transition-colors">创建订单</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-003</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Alice Cooper</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">德国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">50</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-01-29</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-0.5 rounded text-[10px] transition-colors">创建订单</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-004</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">John Doe</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01C</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">法国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">5</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-01-28</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-0.5 rounded text-[10px] transition-colors">创建订单</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 红框2：新订单块 ========== -->
+            <div class="mb-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <h2 class="text-xl font-bold text-slate-800">新订单</h2>
+                    <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                        新到未处理
+                        <span class="bg-orange-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold">5</span>
+                    </button>
+                    <div class="ml-auto text-xs text-slate-400 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>
+                        新到订单须24小时内回复
+                    </div>
+                </div>
+
+                <!-- 新订单表格 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr class="h-[32px]">
+                                    <th class="px-3 whitespace-nowrap font-medium">订单ID</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">客户名称</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">产品</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">国家</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">数量</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">状态</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">创建日期</th>
+                                    <th class="px-3 whitespace-nowrap font-medium">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-001</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Maura McHale</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">美国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">200</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-02-03</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="btn-green flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path></svg>抄送效果图链接</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-002</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Kim Alison</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-G01B</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">英国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">1</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-02-01</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="btn-green flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path></svg>抄送效果图链接</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-003</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">Alice Cooper</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01A</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">德国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">50</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-01-29</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="btn-green flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path></svg>抄送效果图链接</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 transition-colors h-[28px]">
+                                    <td class="px-3 whitespace-nowrap font-medium text-slate-700">#PO-2602-004</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">John Doe</td>
+                                    <td class="px-3 whitespace-nowrap font-mono text-slate-500">B-E01C</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">法国</td>
+                                    <td class="px-3 whitespace-nowrap text-slate-600">5</td>
+                                    <td class="px-3 whitespace-nowrap"><span class="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">待确认</span></td>
+                                    <td class="px-3 whitespace-nowrap text-slate-500">2026-01-28</td>
+                                    <td class="px-3 whitespace-nowrap"><button class="btn-green flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path></svg>抄送效果图链接</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 红框3：订单详情 + 订制要求 ========== -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-4">
+                <div class="flex justify-between items-start mb-4">
+                    <!-- 左侧：产品图 + 订单详情 -->
+                    <div class="flex gap-4">
+                        <div class="w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+                            <img src="./02_待确认订单_v3_files/222-200x200.jpg" alt="Product" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                订单详情
+                            </h3>
+                            <div class="text-xs text-slate-400 mb-2 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                2023-10-24 09:30
+                            </div>
+                            <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                                <div class="flex"><span class="text-slate-400 w-14">订单ID:</span> <span class="text-slate-700 font-medium">#PO-2602-001</span></div>
+                                <div class="flex"><span class="text-slate-400 w-14">客户:</span> <span class="text-slate-700">Maura McHale</span></div>
+                                <div class="flex"><span class="text-slate-400 w-14">形状:</span> <span class="text-slate-700">圆形</span></div>
+                                <div class="flex"><span class="text-slate-400 w-14">颜色:</span> <span class="text-slate-700">古铜金</span></div>
+                                <div class="flex"><span class="text-slate-400 w-14">工艺:</span> <span class="text-slate-700">激光雕刻</span></div>
+                                <div class="flex"><span class="text-slate-400 w-14">尺寸:</span> <span class="text-slate-700">30mm</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 中间：订制要求 -->
+                    <div class="mx-auto">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                            订制要求
+                        </h3>
+                        <div class="text-xs space-y-1.5">
+                            <div class="flex"><span class="text-slate-400 w-16">正面内容:</span> <span class="text-slate-700 font-medium">Alice</span></div>
+                            <div class="flex"><span class="text-slate-400 w-16">字体:</span> <span class="text-slate-700">F-04</span></div>
+                            <div class="flex"><span class="text-slate-400 w-16">背面内容:</span> <span class="text-slate-700">If Lost 13999926688</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：日期信息 -->
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">订单日期</div>
+                            <div class="text-sm font-medium text-slate-700">2026-02-03</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">发货日期</div>
+                            <div class="text-sm font-medium text-slate-700">2026-02-10</div>
+                        </div>
+                        <button class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline></svg>
+                            本地上传
+                        </button>
+                        <div class="text-[10px] text-slate-400">自定义图形 SVG</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 红框4：效果图预览 ========== -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-4">
+                <div class="flex justify-center">
+                    <div class="text-center">
+                        <!-- 效果图预览 -->
+                        <div class="flex justify-center" style="gap:30px;margin-top:40px;margin-bottom:0">
+                            <!-- 正面 -->
+                            <div class="text-center">
+                                <svg width="220" height="220" viewBox="0 0 141.73 141.73" class="mb-1.5">
+                                    <path transform="matrix(1,0,0,-1,0,113.3858)" fill="#dabf9b" fill-rule="evenodd" d="M69.8686 14.0786C68.5094 14.8158 64.5094 17.3092 62.1553 18.8983 47.5075 28.7844 36.1069 40.7415 30.2145 52.3956 25.9707 60.7907 24.5971 68.7719 26.1031 76.3129 26.9495 80.555 28.7402 84.437 31.4827 87.963 32.3107 89.0291 34.2221 91.0242 35.3058 91.9573 38.7692 94.9346 42.7311 96.8275 46.8524 97.4693 48.0892 97.6603 50.9553 97.6586 52.6629 97.4662 55.98 97.0889 58.8903 96.243 61.4594 94.8977 64.0329 97.8106 67.2554 99.5443 70.7536 99.5443 74.2912 99.5443 77.5477 97.772 80.1351 94.7988 82.5721 96.0979 85.3194 96.9633 88.3412 97.3706 89.6519 97.5475 90.8787 97.6374 92.0486 97.6385 94.134 97.6408 96.0392 97.3613 97.9174 96.7924 103.7109 95.0369 109.3989 90.2472 112.7044 84.3412 114.5509 81.0442 115.5943 77.7268 116.1085 73.5415 116.2627 72.21 116.2627 68.1591 116.0768 66.6978 115.638 63.1244 114.8357 60.035 113.4584 56.552 107.6851 41.9811 92.8831 26.5946 73.489 14.9995L71.905 14.0522C71.4226 13.752 70.4282 13.7837 69.8686 14.0786ZM71.0152 95.0488C73.5985 95.0488 75.6924 92.9548 75.6924 90.3716 75.6924 87.7884 73.5985 85.6945 71.0152 85.6945 68.432 85.6945 66.3381 87.7884 66.3381 90.3716 66.3381 92.9548 68.432 95.0488 71.0152 95.0488"></path>
+                                    <text x="70.87" y="70" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="24" fill="#333">Alice</text>
+                                </svg>
+                                <div class="text-xs text-slate-400">Front</div>
+                            </div>
+                            <!-- 背面 -->
+                            <div class="text-center">
+                                <svg width="220" height="220" viewBox="0 0 141.73 141.73" class="mb-1.5">
+                                    <path transform="matrix(1,0,0,-1,0,113.3858)" fill="#dabf9b" fill-rule="evenodd" d="M69.8686 14.0786C68.5094 14.8158 64.5094 17.3092 62.1553 18.8983 47.5075 28.7844 36.1069 40.7415 30.2145 52.3956 25.9707 60.7907 24.5971 68.7719 26.1031 76.3129 26.9495 80.555 28.7402 84.437 31.4827 87.963 32.3107 89.0291 34.2221 91.0242 35.3058 91.9573 38.7692 94.9346 42.7311 96.8275 46.8524 97.4693 48.0892 97.6603 50.9553 97.6586 52.6629 97.4662 55.98 97.0889 58.8903 96.243 61.4594 94.8977 64.0329 97.8106 67.2554 99.5443 70.7536 99.5443 74.2912 99.5443 77.5477 97.772 80.1351 94.7988 82.5721 96.0979 85.3194 96.9633 88.3412 97.3706 89.6519 97.5475 90.8787 97.6374 92.0486 97.6385 94.134 97.6408 96.0392 97.3613 97.9174 96.7924 103.7109 95.0369 109.3989 90.2472 112.7044 84.3412 114.5509 81.0442 115.5943 77.7268 116.1085 73.5415 116.2627 72.21 116.2627 68.1591 116.0768 66.6978 115.638 63.1244 114.8357 60.035 113.4584 56.552 107.6851 41.9811 92.8831 26.5946 73.489 14.9995L71.905 14.0522C71.4226 13.752 70.4282 13.7837 69.8686 14.0786ZM71.0152 95.0488C73.5985 95.0488 75.6924 92.9548 75.6924 90.3716 75.6924 87.7884 73.5985 85.6945 71.0152 85.6945 68.432 85.6945 66.3381 87.7884 66.3381 90.3716 66.3381 92.9548 68.432 95.0488 71.0152 95.0488"></path>
+                                    <text x="70.87" y="60" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="11" fill="#333">If Lost</text>
+                                    <text x="70.87" y="75" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="11" fill="#333">13999926688</text>
+                                </svg>
+                                <div class="text-xs text-slate-400">Back</div>
+                            </div>
+                        </div>
+                        <!-- 订制内容说明 -->
+                        <div class="text-sm text-slate-600 mb-1">
+                            <span class="text-slate-400">Front:</span> <span class="font-medium text-slate-700">Alice</span>
+                            <span class="mx-2 text-slate-300">|</span>
+                            <span class="text-slate-400">Font:</span> <span class="text-slate-700">F-04</span>
+                            <span class="mx-2 text-slate-300">|</span>
+                            <span class="text-slate-400">Back:</span> <span class="font-medium text-slate-700">If Lost</span>
+                            <span class="mx-2 text-slate-300">|</span>
+                            <span class="text-slate-400">Phone:</span> <span class="font-medium text-slate-700">13999926688</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-slate-400">Effect Image</span>
+                            <span class="mx-2 text-slate-300">|</span>
+                            <span class="font-bold text-slate-700">Size: 38×30 mm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 红框5：参数调节面板 ========== -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:800px;margin:0 auto;">
+                    <!-- 左列：正面 -->
+                    <div>
+                        <div class="section-label mb-3">正面</div>
+                        <div class="ctrl-row">
+                            <label>形状</label>
+                            <select id="ed-shape">
+                                <option value="heart">心形</option>
+                                <option value="circle" selected="">圆形</option>
+                                <option value="bone">骨头形</option>
+                            </select>
+                        </div>
+                        <div class="ctrl-row">
+                            <label>颜色</label>
+                            <select id="ed-color">
+                                <option value="RoseGold">玫瑰金</option>
+                                <option value="Gold">金色</option>
+                                <option value="Silver" selected="">银色</option>
+                                <option value="Black">黑色</option>
+                            </select>
+                        </div>
+                        <div class="ctrl-row">
+                            <label>正面文字</label>
+                            <input type="text" id="ed-fc" value="Alice">
+                        </div>
+                        <div class="ctrl-row">
+                            <label>正面字号</label>
+                            <input type="range" id="ed-fs" min="6" max="40" value="24" step="0.5">
+                            <span class="vnum" id="ed-fs-v">24</span>px
+                        </div>
+                        <div class="ctrl-row">
+                            <label>正面 Y</label>
+                            <input type="range" id="ed-fy" min="20" max="90" value="54" step="0.5">
+                            <span class="vnum" id="ed-fy-v">54</span>
+                        </div>
+                    </div>
+
+                    <!-- 右列：背面 -->
+                    <div>
+                        <div class="section-label mb-3">背面</div>
+                        <div class="ctrl-row">
+                            <label>背面文字</label>
+                            <input type="text" id="ed-bc1" value="If Lost">
+                        </div>
+                        <div class="ctrl-row">
+                            <label>文字字号</label>
+                            <input type="range" id="ed-bs1" min="5" max="28" value="11" step="0.5">
+                            <span class="vnum" id="ed-bs1-v">11</span>px
+                        </div>
+                        <div class="ctrl-row">
+                            <label>文字 Y</label>
+                            <input type="range" id="ed-by1" min="20" max="90" value="40.5" step="0.5">
+                            <span class="vnum" id="ed-by1-v">40.5</span>
+                        </div>
+                        <div class="ctrl-row">
+                            <label>电话号码</label>
+                            <input type="text" id="ed-bc2" value="13999926688">
+                        </div>
+                        <div class="ctrl-row">
+                            <label>电话字号</label>
+                            <input type="range" id="ed-bs2" min="5" max="28" value="11" step="0.5">
+                            <span class="vnum" id="ed-bs2-v">11</span>px
+                        </div>
+                        <div class="ctrl-row">
+                            <label>电话 Y</label>
+                            <input type="range" id="ed-by2" min="20" max="90" value="54" step="0.5">
+                            <span class="vnum" id="ed-by2-v">54</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-btns">
+                    <button class="btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>操送效果图</button>
+                    <button class="btn-ghost"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>复制参数</button>
+                    <button class="btn-ghost"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>下载 SVG</button>
+                </div>
+                <div class="params-chip">当前参数：形状: circle | 颜色: Silver | 正面字号: 24px | Y: 54 | 背面文字字号: 11px | 文字Y: 40.5 | 电话字号: 11px | 电话Y: 54</div>
+
+                <!-- 下载原图按钮 -->
+                <div class="mt-6 flex justify-center items-center gap-4">
+                    <button class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                        下载原图
+                    </button>
+                    <button class="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        历史版本
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Email Panel -->
+        <div class="w-80 bg-white border-l border-slate-200 flex flex-col h-full shrink-0 overflow-y-auto">
+            <!-- Customer Header -->
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm">SJ</div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Sarah Jenkins</h3>
+                        <div class="flex items-center gap-1 text-xs text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                            英国
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col gap-5">
+                <!-- Generated Email -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-slate-500">生成的邮件</h4>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 leading-relaxed h-[280px] overflow-y-auto">
+                        <p class="mb-3">亲爱的 Sarah,</p>
+                        <p class="mb-3">感谢您联系我们关于订单 #44591 的事宜。我很乐意为您提供您所需的物流跟踪信息。</p>
+                        <p class="mb-3">根据我们的记录，您的包裹目前正在运输途中，预计将于本周五送达。您可以在此处跟踪其进度：[跟踪链接]。</p>
+                        <p class="mb-3">如果还有其他我可以协助的地方，请随时告诉我。</p>
+                        <p>诚挚问候，<br>Sophia</p>
+                    </div>
+                </div>
+
+                <!-- Customer Requirements -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-medium text-slate-500">客户需求</h4>
+                        <button class="text-blue-600 text-xs flex items-center gap-1 hover:underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                            粘贴
+                        </button>
+                    </div>
+                    <textarea class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="在此粘贴客户的需求以生成回复..."></textarea>
+                </div>
+
+                <!-- Style Selection -->
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-3">风格选择</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all bg-blue-50 border-blue-200 text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
+                            <span class="text-[10px] font-medium">自然语言</span>
+                        </button>
+                        <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                            <span class="text-[10px] font-medium">可爱风格</span>
+                        </button>
+                        <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border transition-all bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                            <span class="text-[10px] font-medium">直接了当</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-auto space-y-3">
+                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-sm shadow-blue-200 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M9 3v4"></path><path d="M3 7h6"></path></svg>
+                        生成邮件
+                    </button>
+                    <button class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                        复制内容
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+</body></html>

@@ -66,9 +66,10 @@ class EtsyEmailParser:
         # ────────────────────────────────
         # 1. 解析订单号
         # 格式1： Your order number is: 3794236690
-        # 格式2： Order #3794236690（邮件主题中也有）
+        # 格式2： Your order number is 3986891868.
+        # 格式3： Order #3794236690（邮件主题中也有）
         # ────────────────────────────────
-        m = re.search(r"Your order number is:\s*(\d+)", body)
+        m = re.search(r"Your order number is:?\s*(\d+)", body)
         if not m:
             m = re.search(r"Order\s*#(\d+)", body)
         order.etsy_order_id = m.group(1) if m else ""

@@ -72,8 +72,9 @@ import { useAdminStore } from '../../stores/adminStore'
 const router = useRouter()
 const adminStore = useAdminStore()
 
-const username = ref('')
-const password = ref('')
+// 开发环境默认值，方便测试
+const username = ref(import.meta.env.DEV ? 'admin' : '')
+const password = ref(import.meta.env.DEV ? 'admin' : '')
 const loading = ref(false)
 const error = ref('')
 

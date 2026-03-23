@@ -22,6 +22,7 @@ from src.services.effect_image_service import effect_image_service
 from src.services.email_service import email_service
 from src.services.database_service import db
 from src.services.shipping_service import FourPXClient
+from src.services.translation_service import translation_service
 from src.config.settings import settings
 
 
@@ -774,6 +775,110 @@ async def query_shipping_order(request: ShippingQueryOrderRequest):
     except Exception as e:
         return JSONResponse(
             {"success": False, "message": str(e), "data": None},
+            status_code=500
+        )
+
+
+# ==================== 翻译 API ====================
+
+class TranslateRequest(BaseModel):
+    """翻译请求模型"""
+    text: str
+    source_lang: str = "zh"
+    target_lang: str = "en"
+
+
+class TranslateEmailRequest(BaseModel):
+    """邮件翻译请求模型"""
+    chinese_content: str
+
+
+@app.post("/api/translate")
+async def translate_text(request: TranslateRequest):
+    """
+    通用翻译接口
+    
+    请求示例:
+    {
+        "text": "你好世界",
+        "source_lang": "zh",
+        "target_lang": "en"
+    }
+    """
+    try:
+        if not request.text.strip():
+            return JSONResponse(
+                {"success": False, "message": "翻译文本不能为空", "data": None},
+                status_code=400
+            )
+        
+        result = translation_service.translate(
+            text=request.text,
+            source_lang=request.source_lang,
+            target_lang=request.target_lang
+        )
+        
+        if result:
+            return {
+                "success": True,
+                "message": "翻译成功",
+                "data": {
+                    "translated_text": result,
+                    "source_lang": request.source_lang,
+                    "target_lang": request.target_lang
+                }
+            }
+        else:
+            return JSONResponse(
+                {"success": False, "message": "翻译失败，请检查API配置", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        return JSONResponse(
+            {"success": False, "message": f"翻译服务异常: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.post("/api/translate/email")
+async def translate_email(request: TranslateEmailRequest):
+    """
+    邮件专用翻译接口（中文 -> 英文）
+    
+    请求示例:
+    {
+        "chinese_content": "亲爱的客户，感谢您的订单..."
+    }
+    """
+    try:
+        if not request.chinese_content.strip():
+            return JSONResponse(
+                {"success": False, "message": "邮件内容不能为空", "data": None},
+                status_code=400
+            )
+        
+        result = translation_service.translate_email(
+            chinese_content=request.chinese_content
+        )
+        
+        if result:
+            return {
+                "success": True,
+                "message": "邮件翻译成功",
+                "data": {
+                    "english_content": result
+                }
+            }
+        else:
+            return JSONResponse(
+                {"success": False, "message": "翻译失败，请检查API配置", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        return JSONResponse(
+            {"success": False, "message": f"翻译服务异常: {str(e)}", "data": None},
             status_code=500
         )
 

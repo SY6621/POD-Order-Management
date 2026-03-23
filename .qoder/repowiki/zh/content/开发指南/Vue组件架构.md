@@ -20,6 +20,7 @@
 - [frontend/src/layouts/AdminLayout.vue](file://frontend/src/layouts/AdminLayout.vue)
 - [frontend/src/views/Admin/AdminDashboard.vue](file://frontend/src/views/Admin/AdminDashboard.vue)
 - [frontend/src/views/StorePortal/StoreLogin.vue](file://frontend/src/views/StorePortal/StoreLogin.vue)
+- [frontend/src/config/email-templates.json](file://frontend/src/config/email-templates.json)
 </cite>
 
 ## 更新摘要
@@ -29,6 +30,10 @@
 - 完善管理门户的订单工作流导航体系
 - 新增完整的物流下单功能和工厂生产监控界面
 - 增强邮件模板的联动模式和订单生成能力
+- **更新**：OrdersPending.vue组件重大重设计，采用三行布局结构、侧边预览面板、效果图片管理和邮件工作流程集成
+- **新增**：改进了订单状态管理组件，增强了生产文档同步功能
+- **新增**：更新了物流下单组件功能，实现了4PX物流渠道的完整集成
+- **新增**：增强了前端设计器组件，完善了SVG数据处理和状态管理
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -248,7 +253,7 @@ D --> D3[无系统设置权限]
 
 ### 物流下单组件 OrdersShipping.vue
 
-物流下单组件提供了完整的4PX物流渠道集成，支持订单选择、物流信息填写和运单创建功能：
+**更新** 物流下单组件提供了完整的4PX物流渠道集成，支持订单选择、物流信息填写和运单创建功能：
 
 ```mermaid
 classDiagram
@@ -342,7 +347,7 @@ OrdersCompleted --> ReviewSystem : "管理"
 
 ### 待确认订单组件 OrdersPending.vue
 
-待确认订单组件集成了效果设计器和邮件生成功能：
+**更新** 待确认订单组件经过重大重设计，采用三行布局结构、侧边预览面板、效果图片管理和邮件工作流程集成：
 
 ```mermaid
 classDiagram
@@ -357,21 +362,63 @@ class OrdersPending {
 +saveEffectImage() void
 +generateEmail() void
 +copyEmail() void
++confirmDesign() void
++submitEmail() void
++copyShareLink() void
++copyEmailContent() void
++goToShipping() void
 }
 class EffectDesigner {
 +String designerUrl
 +postMessage(data) void
 +getSVG() void
 }
+class EmailTemplates {
++Array templates
++Object emailTypeOptions
++Object toneOptions
++Object lengthOptions
++Object greetingOptions
+}
 OrdersPending --> EffectDesigner : "集成"
+OrdersPending --> EmailTemplates : "集成"
 ```
 
 **图表来源**
 - [frontend/src/views/Admin/OrdersPending.vue:194-350](file://frontend/src/views/Admin/OrdersPending.vue#L194-L350)
 
+#### 三行布局结构
+
+OrdersPending.vue采用了创新的三行布局设计：
+
+1. **第一行**：订单列表 + 订单详情（左侧）+ 设计器/邮件撰写区域（右侧）
+2. **第二行**：效果图预览 + 邮件预览（左右结构）
+3. **第三行**：操作按钮（复制链接、复制邮件、前往物流下单）
+
+#### 侧边预览面板
+
+右侧侧边面板包含：
+- **订单详情**：产品图片、订单信息、正背面内容
+- **效果图预览**：实时预览生成的效果图
+- **邮件预览**：英文版本邮件内容预览
+- **发送面板**：复制链接、复制邮件、前往物流下单操作
+
+#### 邮件工作流程集成
+
+组件集成了完整的邮件工作流程：
+- **邮件模板系统**：支持多种邮件类型和风格
+- **翻译功能**：中英文自动翻译
+- **样式设置**：语气、长度、称呼、落款人
+- **预览功能**：实时预览邮件效果
+- **发送功能**：保存邮件记录并更新订单状态
+
+**章节来源**
+- [frontend/src/views/Admin/OrdersPending.vue:1-1233](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1233)
+- [frontend/src/config/email-templates.json:1-374](file://frontend/src/config/email-templates.json#L1-L374)
+
 ### 邮件模板组件 AdminEffects.vue
 
-邮件模板组件经过重大重构，提供了统一的邮件模板管理和订单联动功能：
+**更新** 邮件模板组件经过重大重构，提供了统一的邮件模板管理和订单联动功能：
 
 ```mermaid
 classDiagram
@@ -405,15 +452,15 @@ AdminEffects --> EmailTemplateSystem : "重构"
 - [frontend/src/views/Admin/AdminEffects.vue:198-434](file://frontend/src/views/Admin/AdminEffects.vue#L198-L434)
 
 **章节来源**
-- [frontend/src/views/Admin/OrdersShipping.vue:1-674](file://frontend/src/views/Admin/OrdersShipping.vue#L1-L674)
+- [frontend/src/views/Admin/OrdersShipping.vue:1-687](file://frontend/src/views/Admin/OrdersShipping.vue#L1-L687)
 - [frontend/src/views/Admin/FactoryOverview.vue:1-279](file://frontend/src/views/Admin/FactoryOverview.vue#L1-L279)
-- [frontend/src/views/Admin/OrdersCompleted.vue:1-415](file://frontend/src/views/Admin/OrdersCompleted.vue#L1-L415)
-- [frontend/src/views/Admin/OrdersPending.vue:1-350](file://frontend/src/views/Admin/OrdersPending.vue#L1-L350)
+- [frontend/src/views/Admin/OrdersCompleted.vue:1-463](file://frontend/src/views/Admin/OrdersCompleted.vue#L1-L463)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1233](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1233)
 - [frontend/src/views/Admin/AdminEffects.vue:1-434](file://frontend/src/views/Admin/AdminEffects.vue#L1-L434)
 
 ## 状态管理架构
 
-系统现包含三个专用的状态管理store，分别服务于不同的门户：
+**更新** 系统现包含三个专用的状态管理store，分别服务于不同的门户，其中订单状态管理store增强了生产文档同步功能：
 
 ```mermaid
 graph TB
@@ -432,9 +479,53 @@ end
 ```
 
 **图表来源**
-- [frontend/src/stores/orderStore.js:1-375](file://frontend/src/stores/orderStore.js#L1-L375)
+- [frontend/src/stores/orderStore.js:1-746](file://frontend/src/stores/orderStore.js#L1-L746)
 - [frontend/src/stores/adminStore.js:1-321](file://frontend/src/stores/adminStore.js#L1-L321)
 - [frontend/src/stores/shopStore.js:1-190](file://frontend/src/stores/shopStore.js#L1-L190)
+
+### 订单状态管理增强
+
+**更新** 订单状态管理store的saveEffectImage方法增加了对production_documents表的同步处理：
+
+```mermaid
+classDiagram
+class OrderStore {
++Array orders
++Array allOrders
++Boolean loading
++String error
++Object statusMap
++Object priorityMap
++fetchOrders() Promise~Array~
++getOrdersByStatus(status) Promise~Array~
++getPendingOrders() Promise~Array~
++getProducingOrders() Promise~Array~
++getCompletedOrders() Promise~Array~
++getOrderStats() Promise~Object~
++updateOrderStatus(id, status) Promise~Object~
++updateOrderProgress(id, progress) Promise~Object~
++getOrderLogistics(id) Promise~Object~
++getOrderDocuments(id) Promise~Object~
++getOrderEmailLogs(id) Promise~Array~
++generateEffectImage(id) Promise~Object~
++generateProductionPdf(id) Promise~Object~
++fetchAllOrders() Promise~Array~
++saveEffectImage(orderId, svgData) Promise~Object~
++clearEffectImage(orderId) Promise~Object~
++updateEmailSentStatus(orderId, sent) Promise~Object~
++saveEmailLog(emailData) Promise~Object~
++getEmailLogByOrderId(orderId) Promise~Object~
+}
+class ProductionDocumentsSync {
++syncToProductionDocs(orderId, effectSvgUrl) Promise~void~
++updateExistingRecord(orderId, effectSvgUrl) Promise~void~
++insertNewRecord(orderId, effectSvgUrl) Promise~void~
+}
+OrderStore --> ProductionDocumentsSync : "增强"
+```
+
+**图表来源**
+- [frontend/src/stores/orderStore.js:496-592](file://frontend/src/stores/orderStore.js#L496-L592)
 
 ### 管理员状态管理
 
@@ -547,7 +638,7 @@ D --> D8[/admin/templates - 邮件模板]
 
 ### 订单状态管理Store
 
-订单状态管理是整个系统的核心，使用Pinia进行状态管理：
+**更新** 订单状态管理是整个系统的核心，使用Pinia进行状态管理，增强了生产文档同步功能：
 
 ```mermaid
 classDiagram
@@ -572,6 +663,11 @@ class OrderStore {
 +generateEffectImage(id) Promise~Object~
 +generateProductionPdf(id) Promise~Object~
 +fetchAllOrders() Promise~Array~
++saveEffectImage(orderId, svgData) Promise~Object~
++clearEffectImage(orderId) Promise~Object~
++updateEmailSentStatus(orderId, sent) Promise~Object~
++saveEmailLog(emailData) Promise~Object~
++getEmailLogByOrderId(orderId) Promise~Object~
 }
 class SupabaseClient {
 +from(table) QueryBuilder
@@ -584,7 +680,7 @@ OrderStore --> SupabaseClient : "使用"
 ```
 
 **图表来源**
-- [frontend/src/stores/orderStore.js:23-375](file://frontend/src/stores/orderStore.js#L23-L375)
+- [frontend/src/stores/orderStore.js:23-746](file://frontend/src/stores/orderStore.js#L23-L746)
 - [frontend/src/utils/supabase.js:1-18](file://frontend/src/utils/supabase.js#L1-L18)
 
 #### 状态管理流程
@@ -611,7 +707,7 @@ Note over View,Backend : 异步数据加载流程
 - [frontend/src/stores/orderStore.js:44-75](file://frontend/src/stores/orderStore.js#L44-L75)
 
 **章节来源**
-- [frontend/src/stores/orderStore.js:1-375](file://frontend/src/stores/orderStore.js#L1-L375)
+- [frontend/src/stores/orderStore.js:1-746](file://frontend/src/stores/orderStore.js#L1-L746)
 
 ### API服务层
 
@@ -721,11 +817,12 @@ F --> G
 H --> I[后端API]
 G --> J[Supabase客户端]
 K[utils/api.js] --> I
+L[email-templates.json] --> M[OrdersPending.vue]
 ```
 
 **图表来源**
 - [frontend/src/main.js:1-23](file://frontend/src/main.js#L1-L23)
-- [frontend/src/stores/orderStore.js:1-375](file://frontend/src/stores/orderStore.js#L1-L375)
+- [frontend/src/stores/orderStore.js:1-746](file://frontend/src/stores/orderStore.js#L1-L746)
 
 **章节来源**
 - [frontend/package.json:1-31](file://frontend/package.json#L1-L31)
@@ -734,10 +831,12 @@ K[utils/api.js] --> I
 
 ### 状态管理优化
 
-1. **响应式数据**: 使用Vue 3的响应式系统，确保数据变更时自动更新UI
+**更新** 1. **响应式数据**: 使用Vue 3的响应式系统，确保数据变更时自动更新UI
 2. **计算属性缓存**: 利用computed属性避免重复计算
 3. **懒加载路由**: 路由组件按需加载，减少初始包大小
 4. **多store隔离**: 不同门户使用独立store，避免状态污染
+5. **生产文档同步**: saveEffectImage方法同时更新orders表和production_documents表，确保数据一致性
+6. **三行布局优化**: OrdersPending.vue的三行布局减少了不必要的DOM层级，提升渲染性能
 
 ### 数据加载策略
 
@@ -745,6 +844,7 @@ K[utils/api.js] --> I
 2. **本地缓存**: 在store中维护订单数据副本，避免重复网络请求
 3. **错误处理**: 完善的错误捕获和用户反馈机制
 4. **门户隔离**: 店铺门户数据与管理门户数据完全隔离
+5. **邮件模板缓存**: email-templates.json文件在组件挂载时一次性加载
 
 ### 构建优化
 
@@ -781,6 +881,21 @@ K[utils/api.js] --> I
 - **原因**: API密钥配置错误或网络连接问题
 - **解决**: 检查API配置，确认网络连接正常
 
+#### 生产文档同步失败
+- **症状**: 效果图保存成功但生产文档缺失
+- **原因**: production_documents表同步失败
+- **解决**: 检查数据库权限，确认表存在且可写入
+
+#### OrdersPending.vue布局问题
+- **症状**: 三行布局显示异常或侧边面板不显示
+- **原因**: CSS样式冲突或组件状态管理问题
+- **解决**: 检查Tailwind CSS类名，确认响应式断点设置
+
+#### 邮件模板加载失败
+- **症状**: 邮件模板不显示或翻译功能异常
+- **原因**: email-templates.json文件格式错误或网络加载失败
+- **解决**: 检查JSON文件格式，确认文件路径正确
+
 **章节来源**
 - [frontend/src/utils/supabase.js:7-10](file://frontend/src/utils/supabase.js#L7-L10)
 - [frontend/src/stores/orderStore.js:68-75](file://frontend/src/stores/orderStore.js#L68-L75)
@@ -797,6 +912,7 @@ K[utils/api.js] --> I
 5. **权限控制**: 完整的用户权限和数据隔离机制
 6. **路由系统**: 基于Vue Router的SPA架构
 7. **功能完整性**: 新增物流下单、工厂监控、邮件模板等核心功能
+8. **用户体验优化**: OrdersPending.vue的三行布局设计提升了操作效率
 
 ### 技术亮点
 1. **现代化工具链**: Vite提供快速开发体验
@@ -806,6 +922,9 @@ K[utils/api.js] --> I
 5. **统一界面架构**: AdminEffects.vue的重大更新体现了统一的设计理念
 6. **实时监控**: FactoryOverview.vue提供工厂生产实时监控
 7. **自动化流程**: OrdersCompleted.vue支持自动邮件发送功能
+8. **数据一致性**: 增强的生产文档同步确保数据完整性
+9. **创新布局**: OrdersPending.vue的三行布局设计提升了用户体验
+10. **邮件工作流**: 完整的邮件生成、翻译、发送工作流程
 
 ### 改进建议
 1. **类型安全**: 可以考虑添加TypeScript支持
@@ -813,6 +932,8 @@ K[utils/api.js] --> I
 3. **性能监控**: 添加应用性能监控和错误追踪
 4. **国际化**: 支持多语言功能扩展
 5. **安全增强**: 生产环境中替换明文密码验证
-6. **API文档**: 为新增的物流API添加详细的文档说明
+6. **API文档**: 为新增的物流API和邮件API添加详细的文档说明
+7. **响应式优化**: 进一步优化移动端显示效果
+8. **缓存策略**: 实现更智能的数据缓存和更新机制
 
-该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件进一步完善了系统的功能完整性，特别是物流下单和工厂监控功能，为电商订单管理提供了全方位的解决方案。
+该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件进一步完善了系统的功能完整性，特别是物流下单和工厂监控功能，为电商订单管理提供了全方位的解决方案。OrdersPending.vue的重大重设计更是体现了现代前端开发的创新思维，通过三行布局和侧边预览面板显著提升了用户的操作效率和体验质量。

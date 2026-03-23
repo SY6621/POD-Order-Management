@@ -6,8 +6,10 @@
       <p class="text-sm text-slate-500 mt-1">处理客户订单，生成效果图并发送确认邮件</p>
     </div>
 
+    <!-- 【所有Tab共用布局】左侧主区域 + 右侧订单详情 -->
     <div class="flex gap-4">
-      <!-- ══ 左侧：订单列表 + 设计器 ══ -->
+      <!-- ══ 左侧：订单列表 + 设计器/邮件撰写 ══ -->
+      <!-- 待创建Tab时左侧缩小，其他Tab时左侧占满 -->
       <div class="flex-1 space-y-3 min-w-0">
         <!-- 版块1：合并订单表格 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -26,9 +28,10 @@
           </div>
 
           <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-3 text-xs">
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">新订单 {{ newOrdersCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'email' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-slate-500'" @click="orderTab = 'email'">邮件撰写 {{ emailOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allOrdersCount }}</button>
           </div>
           
           <div class="overflow-x-auto" style="max-height: 200px;">
@@ -42,6 +45,7 @@
                   <th class="px-3 whitespace-nowrap font-medium">产品(SKU)</th>
                   <th class="px-3 whitespace-nowrap font-medium">数量</th>
                   <th class="px-3 whitespace-nowrap font-medium">状态</th>
+                  <th v-if="orderTab === 'email' || orderTab === 'pending'" class="px-3 whitespace-nowrap font-medium">效果图</th>
                   <th class="px-3 whitespace-nowrap font-medium">操作</th>
                 </tr>
               </thead>
@@ -55,26 +59,40 @@
                   <td class="px-3 whitespace-nowrap font-mono text-slate-500 text-[11px]">{{ order.sku_mapping?.sku_code || order.sku_id || '-' }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.quantity }}</td>
                   <td class="px-3 whitespace-nowrap">
-                    <span v-if="order.status === 'new'" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">新订单</span>
-                    <span v-else-if="order.status === 'pending'" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
+                    <span v-if="order.status === 'pending' && !order.effect_image_url" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">新订单</span>
+                    <span v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">邮件撰写</span>
+                    <span v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
                     <span v-else class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
                   </td>
+                  <td v-if="orderTab === 'email' || orderTab === 'pending'" class="px-3 whitespace-nowrap">
+                    <div v-if="order.effect_image_url" class="w-10 h-10 rounded overflow-hidden border border-slate-200 bg-slate-100">
+                      <img :src="order.effect_image_url" class="w-full h-full object-cover" alt="效果图" />
+                    </div>
+                    <span v-else class="text-slate-400 text-[10px]">暂无</span>
+                  </td>
                   <td class="px-3 whitespace-nowrap">
-                    <span v-if="order.status === 'new'" class="text-slate-400 text-[10px]">-</span>
-                    <button v-else-if="order.status === 'pending'" @click.stop="confirmOrder(order)" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] transition-colors">创建订单</button>
+                    <span v-if="order.status === 'pending' && !order.effect_image_url" class="text-slate-400 text-[10px]">-</span>
+                    <div v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent" class="flex items-center gap-1">
+                      <button @click.stop="rollbackToEdit(order)" class="bg-amber-100 hover:bg-amber-200 text-amber-700 px-2 py-1 rounded text-[10px] transition-colors">回退编辑</button>
+                      <button @click.stop="goToEmailTab(order)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-[10px] transition-colors">写邮件</button>
+                    </div>
+                    <div v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent" class="flex items-center gap-1">
+                      <button @click.stop="rollbackToEmail(order)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-[10px] transition-colors">回退邮件</button>
+                      <button @click.stop="confirmOrder(order)" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] transition-colors">创建订单</button>
+                    </div>
                     <span v-else class="text-slate-400 text-[10px]">-</span>
                   </td>
                 </tr>
                 <tr v-if="filteredOrders.length === 0" class="h-[60px]">
-                  <td colspan="7" class="px-3 text-center text-slate-400 text-sm">暂无订单</td>
+                  <td :colspan="orderTab === 'email' || orderTab === 'pending' ? 9 : 8" class="px-3 text-center text-slate-400 text-sm">暂无订单</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- 版块2：设计器（独占左侧，无滚动条） -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <!-- 版剗2：设计器（只在新订单Tab显示） -->
+        <div v-if="orderTab === 'new'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <h3 class="font-bold text-slate-800 text-sm">效果图设计器</h3>
@@ -87,15 +105,264 @@
             <div v-else class="w-full h-[950px] flex items-center justify-center text-slate-400">设计器加载中...</div>
           </div>
           <div class="px-4 py-2 border-t border-slate-100 flex justify-center gap-2">
-            <button @click="saveEffectImage" :disabled="!selectedOrder" class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors">
+            <button @click="confirmDesign" :disabled="!selectedOrder" class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-              提交效果图
+              确认设计稿
             </button>
+          </div>
+        </div>
+      
+      <!-- 版剗2：效果图+邮件预览并排（只在待创建Tab显示，与设计器/邮件撰写同位置） -->
+        <div v-if="orderTab === 'pending'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-slate-800 text-sm">效果图预览 &amp; 邮件预览</h3>
+              <span class="text-xs text-slate-400">已发送邀请邮件，待客户确认</span>
+            </div>
+            <div class="text-xs text-slate-500" v-if="selectedOrder">当前: {{ selectedOrder.etsy_order_id || selectedOrder.id }}</div>
+          </div>
+          <div class="p-3">
+            <div class="grid grid-cols-2 gap-3">
+              <!-- 左：效果图 -->
+              <div class="flex flex-col">
+                <div class="text-[10px] text-slate-400 mb-1 flex items-center gap-1">
+                  <span class="w-4 h-4 bg-slate-100 text-slate-600 rounded flex items-center justify-center text-[9px]">&#128444;</span>
+                  效果图
+                  <span v-if="selectedOrder?.effect_image_url" class="text-green-500 ml-1">✓ 已确认</span>
+                </div>
+                <div class="aspect-[4/3] flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                  <img v-if="selectedOrder?.effect_image_url" :src="selectedOrder.effect_image_url" class="max-h-full max-w-full object-contain" alt="效果图" @error="$event.target.src=''" />
+                  <div v-else class="text-slate-400 text-sm flex flex-col items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                    <span class="text-xs">暂无效果图</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 右：邮件预览 -->
+              <div class="flex flex-col">
+                <div class="text-[10px] text-slate-400 mb-1 flex items-center gap-1">
+                  <span class="w-4 h-4 bg-blue-50 text-blue-600 rounded flex items-center justify-center text-[9px]">EN</span>
+                  邮件预览
+                  <span v-if="pendingEmailContent" class="text-green-500 ml-1">✓ 已生成</span>
+                </div>
+                <div v-if="pendingEmailContent" class="aspect-[4/3] bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 leading-relaxed overflow-y-auto whitespace-pre-wrap">
+                  {{ getEnglishEmailContent(pendingEmailContent) }}
+                </div>
+                <div v-else class="aspect-[4/3] flex items-center justify-center text-slate-400 text-xs bg-slate-50 rounded-lg border border-slate-200">
+                  选择订单后显示邮件内容
+                </div>
+              </div>
+            </div>
+            <!-- 操作按钮行 -->
+            <div v-if="selectedOrder" class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+              <div class="flex items-center gap-3">
+                <button @click="copyShareLink" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-5 py-2 rounded-lg text-sm flex items-center gap-1.5 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  复制链接
+                </button>
+                <button @click="copyEmailContent" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-5 py-2 rounded-lg text-sm flex items-center gap-1.5 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  复制邮件
+                </button>
+              </div>
+              <button @click="goToShipping" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                前往物流下单 →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 版剗2：邮件撰写区域（只在邮件撰写Tab显示，与设计器同位置） -->
+        <div v-if="orderTab === 'email'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-slate-800 text-sm">邮件撰写</h3>
+              <span class="text-xs text-slate-400">编辑邮件并发送给客户确认</span>
+            </div>
+            <div class="text-xs text-slate-500" v-if="selectedOrder">当前: {{ selectedOrder.etsy_order_id || selectedOrder.id }}</div>
+          </div>
+          
+          <div class="bg-slate-50 p-3" style="height: 950px; overflow-y: auto;">
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- 红框1：邮件编辑区（最显眼位置，占据主体） -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="bg-white rounded-lg border border-slate-200 p-3 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-xs font-medium text-slate-700 flex items-center gap-1">
+                  <span class="text-base">📝</span>
+                  邮件内容（中英文对照）
+                </h4>
+                <button @click="translateEmail" :disabled="!emailContentChinese || isTranslating" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 disabled:opacity-50 flex items-center gap-1">
+                  <svg v-if="isTranslating" class="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+                  {{ isTranslating ? '翻译中...' : '翻译' }}
+                </button>
+              </div>
+              
+              <!-- 中英文左右对照布局 -->
+              <div class="grid grid-cols-2 gap-3">
+                <!-- 中文版本 -->
+                <div class="flex flex-col">
+                  <div class="text-[10px] text-slate-400 mb-1 flex items-center gap-1">
+                    <span class="w-4 h-4 bg-red-100 text-red-600 rounded flex items-center justify-center text-[9px] font-bold">中</span>
+                    中文
+                  </div>
+                  <textarea v-model="emailContentChinese" class="flex-1 min-h-[320px] bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" placeholder="编辑中文邮件内容..."></textarea>
+                </div>
+                
+                <!-- 英文版本 -->
+                <div class="flex flex-col">
+                  <div class="text-[10px] text-slate-400 mb-1 flex items-center gap-1">
+                    <span class="w-4 h-4 bg-blue-100 text-blue-600 rounded flex items-center justify-center text-[9px] font-bold">EN</span>
+                    English
+                  </div>
+                  <textarea v-model="emailContentEnglish" class="flex-1 min-h-[320px] bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Edit English email content..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 客户需求（可折叠） -->
+            <div class="bg-white rounded-lg border border-slate-200 p-2 mb-3">
+              <div class="flex items-center justify-between cursor-pointer" @click="showCustomerNote = !showCustomerNote">
+                <h4 class="text-xs font-medium text-slate-500 flex items-center gap-1">
+                  <span>💬</span> 客户需求
+                  <span v-if="customerNote" class="text-[10px] text-green-500">（已填写）</span>
+                </h4>
+                <svg :class="['w-4 h-4 text-slate-400 transition-transform', showCustomerNote ? 'rotate-180' : '']" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <textarea v-if="showCustomerNote" v-model="customerNote" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 h-16 resize-none mt-2 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" placeholder="在此粘贴客户的需求..."></textarea>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- 红框2：邮件类型Tab + 场景模板（压缩为紧凑布局） -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="bg-white rounded-lg border border-slate-200 p-2 mb-3">
+              <!-- 邮件类型Tab（紧凑横排） -->
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs text-slate-500 shrink-0">类型:</span>
+                <div class="flex gap-1 flex-1">
+                  <button v-for="option in emailTypeOptions" :key="option.value"
+                    :class="['flex items-center gap-1 px-2.5 py-1 rounded text-xs border transition-all',
+                      emailType === option.value ? 'bg-blue-50 border-blue-200 text-blue-600 font-medium' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                    @click="emailType = option.value; selectedTemplate = null">
+                    <span>{{ option.icon }}</span>
+                    <span>{{ option.label }}</span>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 场景模板（紧凑横排） -->
+              <div v-if="currentTemplates.length > 0" class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 shrink-0">模板:</span>
+                <div class="flex gap-1 flex-1 flex-wrap">
+                  <button v-for="template in currentTemplates" :key="template.id"
+                    :class="['flex items-center gap-1 px-2.5 py-1 rounded text-xs border transition-all',
+                      selectedTemplate?.id === template.id ? 'bg-purple-50 border-purple-200 text-purple-600 font-medium' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                    @click="selectedTemplate = template">
+                    <span>{{ template.icon }}</span>
+                    <span>{{ template.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- 红框3：风格与落款设置（压缩为紧凑布局 + 保存设置功能） -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="bg-white rounded-lg border border-slate-200 p-2 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-500">风格设置</span>
+                <button @click="saveEmailSettings" class="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  {{ settingsSaved ? '已保存' : '保存设置' }}
+                </button>
+              </div>
+              
+              <!-- 第一行：语气 + 长度 -->
+              <div class="flex items-center gap-4 mb-2">
+                <!-- 语气 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 shrink-0">语气:</span>
+                  <div class="flex gap-0.5">
+                    <button v-for="option in toneOptions" :key="option.value"
+                      :class="['px-2 py-0.5 rounded text-xs border transition-all',
+                        emailTone === option.value ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                      @click="emailTone = option.value">
+                      {{ option.icon }} {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- 长度 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 shrink-0">长度:</span>
+                  <div class="flex gap-0.5">
+                    <button v-for="option in lengthOptions" :key="option.value"
+                      :class="['px-2 py-0.5 rounded text-xs border transition-all',
+                        emailLength === option.value ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                      @click="emailLength = option.value">
+                      {{ option.icon }} {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 第二行：称呼 + 落款人 -->
+              <div class="flex items-center gap-4">
+                <!-- 称呼 -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 shrink-0">称呼:</span>
+                  <div class="flex gap-0.5">
+                    <button v-for="option in greetingOptions" :key="option.value"
+                      :class="['px-2 py-0.5 rounded text-xs border transition-all',
+                        emailGreeting === option.value ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                      @click="emailGreeting = option.value">
+                      {{ option.icon }} {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- 落款人 -->
+                <div class="flex items-center gap-2 flex-1">
+                  <span class="text-xs text-slate-500 shrink-0">落款:</span>
+                  <div class="flex gap-0.5 flex-wrap">
+                    <button v-for="name in senderOptions.slice(0, 4)" :key="name"
+                      :class="['px-2 py-0.5 rounded text-xs border transition-all',
+                        senderName === name ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
+                      @click="senderName = name">
+                      {{ name }}
+                    </button>
+                  </div>
+                  <input v-if="!senderOptions.slice(0, 4).includes(senderName)" 
+                    v-model="senderName" 
+                    type="text" 
+                    class="flex-1 min-w-[80px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                    placeholder="自定义..." />
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+              <button @click="generateEmail" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                ✨ 生成邮件
+              </button>
+              <button @click="copyEmail" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                复制
+              </button>
+              <button @click="submitEmail" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                ✅ 邮件确认
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ 右侧：订单详情 + 邮件面板 ══ -->
+      <!-- 右侧：订单详情 + 发送面板（所有Tab右侧宽度一致） -->
       <div class="w-[320px] shrink-0 space-y-3">
         <!-- 订单详情 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -104,13 +371,13 @@
           </div>
           <div v-if="selectedOrder" class="p-3">
             <!-- 实拍图 -->
-            <div class="w-full h-32 bg-slate-100 rounded-lg overflow-hidden mb-3">
+            <div class="w-full h-28 bg-slate-100 rounded-lg overflow-hidden mb-2">
               <img v-if="selectedOrder.product_image" :src="selectedOrder.product_image" class="w-full h-full object-contain"/>
               <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-xs">暂无图片</div>
             </div>
             <!-- 订单信息两列布局 -->
-            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mb-3">
-              <div><span class="text-slate-400">订单ID:</span> <span class="text-slate-700 font-medium text-red-500">{{ selectedOrder.etsy_order_id }}</span></div>
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] mb-2">
+              <div><span class="text-slate-400">订单ID:</span> <span class="text-red-500 font-medium">{{ selectedOrder.etsy_order_id }}</span></div>
               <div><span class="text-slate-400">国家:</span> <span class="text-slate-700">{{ selectedOrder.country || '美国' }}</span></div>
               <div><span class="text-slate-400">客户:</span> <span class="text-slate-700">{{ selectedOrder.customer_name }}</span></div>
               <div><span class="text-slate-400">颜色:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.color || '古铜金' }}</span></div>
@@ -118,17 +385,17 @@
               <div><span class="text-slate-400">尺寸:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.size || '30mm' }}</span></div>
             </div>
             <!-- 正背面内容 -->
-            <div class="bg-slate-50 rounded-lg p-2 text-sm space-y-1.5 mb-3">
-              <div class="flex items-baseline gap-2">
-                <span class="text-slate-400 whitespace-nowrap">正面内容:</span>
+            <div class="bg-slate-50 rounded-lg p-2 text-[11px] space-y-1">
+              <div class="flex items-baseline gap-1">
+                <span class="text-slate-400 shrink-0">正面:</span>
                 <span class="text-slate-800 font-bold">{{ selectedOrder.front_text || '-' }}</span>
               </div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-slate-400 whitespace-nowrap">字体:</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-slate-400 shrink-0">字体:</span>
                 <span class="text-slate-800 font-bold">{{ selectedOrder.font_code || 'F-04' }}</span>
               </div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-slate-400 whitespace-nowrap">背面内容:</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-slate-400 shrink-0">背面:</span>
                 <span class="text-slate-800 font-bold">{{ selectedOrder.back_text || '-' }}</span>
               </div>
             </div>
@@ -136,78 +403,107 @@
           <div v-else class="p-3 text-center text-sm text-slate-400">请在左侧选择订单</div>
         </div>
 
-        <!-- 邮件面板 -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
-          <div class="p-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">{{ initials }}</div>
-              <div>
-                <h3 class="font-bold text-slate-800 text-sm">{{ selectedOrder?.customer_name || '请选择订单' }}</h3>
-                <div class="flex items-center gap-1 text-xs text-slate-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                  {{ selectedOrder?.country || '美国' }}
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- 红児4：客户发送流程面板（邮件撰写Tab显示） -->
+        <div v-if="orderTab === 'email'" class="space-y-3">
+          <!-- 蓝框1：效果图预览 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm">效果图预览</h3>
+              <span v-if="selectedOrder?.effect_image_url" class="text-[10px] text-green-500 flex items-center gap-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                已确认
+              </span>
+            </div>
+            <div class="p-2">
+              <div class="h-[160px] flex items-center justify-center bg-slate-50 rounded-lg border border-slate-100 overflow-hidden">
+                <img v-if="selectedOrder?.effect_image_url" :src="selectedOrder.effect_image_url" class="max-h-full max-w-full object-contain" alt="效果图" @error="$event.target.src=''" />
+                <div v-else class="text-slate-400 text-sm flex flex-col items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                  <span class="text-xs">暂无效果图</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="p-3 flex-1 flex flex-col gap-3">
-            <div>
-              <h4 class="text-xs font-medium text-slate-500 mb-1">生成的邮件</h4>
-              <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 leading-relaxed h-[500px] overflow-y-auto whitespace-pre-wrap">
-                <template v-if="emailContent">{{ emailContent }}</template>
-                <template v-else><p class="text-slate-400 text-center mt-48">请选择订单并点击「生成邮件」</p></template>
+          <!-- 蓝框2：邮件预览（在邮件撰写Tab显示） -->
+          <div v-if="orderTab === 'email'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm">确认邮件</h3>
+              <span v-if="confirmedEmailContent" class="text-xs text-green-500 flex items-center gap-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                已确认
+              </span>
+            </div>
+            <div class="p-2">
+              <div class="h-[120px] bg-slate-50 rounded-lg border border-slate-100 overflow-hidden p-2">
+                <div v-if="confirmedEmailContent" class="text-xs text-slate-600 overflow-y-auto h-full leading-relaxed">
+                  {{ confirmedEmailContent.substring(0, 300) }}{{ confirmedEmailContent.length > 300 ? '...' : '' }}
+                </div>
+                <div v-else class="h-full flex items-center justify-center text-slate-400 text-xs">
+                  点击“邮件确认”后显示
+                </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <h4 class="text-xs font-medium text-slate-500 mb-1">客户需求</h4>
-              <textarea v-model="customerNote" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-600 h-16 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500" placeholder="在此粘贴客户的需求..."></textarea>
+          <!-- 邮件预览卡片（待创建Tab显示） -->
+          <div v-if="orderTab === 'pending'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm">📧 邮件预览</h3>
+              <span v-if="pendingEmailContent" class="text-[10px] text-green-500 flex items-center gap-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                已生成
+              </span>
             </div>
-
-            <div>
-              <h4 class="text-xs font-medium text-slate-500 mb-1">风格选择</h4>
-              <div class="grid grid-cols-3 gap-1">
-                <button :class="['flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg border transition-all text-xs', selectedStyle === 'natural' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-400']" @click="selectedStyle = 'natural'">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="selectedStyle === 'natural' ? '#2563eb' : '#94a3b8'" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
-                  <span>自然</span>
-                </button>
-                <button :class="['flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg border transition-all text-xs', selectedStyle === 'cute' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-400']" @click="selectedStyle = 'cute'">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="selectedStyle === 'cute' ? '#2563eb' : '#94a3b8'" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                  <span>可爱</span>
-                </button>
-                <button :class="['flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg border transition-all text-xs', selectedStyle === 'direct' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-400']" @click="selectedStyle = 'direct'">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="selectedStyle === 'direct' ? '#2563eb' : '#94a3b8'" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                  <span>直接</span>
-                </button>
+            <div class="p-3">
+              <div v-if="pendingEmailContent" class="bg-slate-50 rounded-lg border border-slate-100 p-3 text-xs text-slate-600 leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-wrap">
+                {{ pendingEmailContent }}
+              </div>
+              <div v-else class="h-[100px] flex items-center justify-center text-slate-400 text-xs bg-slate-50 rounded-lg border border-slate-100">
+                选择订单后显示邮件内容
               </div>
             </div>
+          </div>
 
-            <div class="mt-auto space-y-2">
-              <button @click="generateEmail" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                生成邮件
-              </button>
-              <button @click="copyEmail" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                复制内容
-              </button>
-              <button @click="submitEmail" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-                提交邮件
+          <!-- 发送给客户操作面板（待创建Tab显示） -->
+          <div v-if="orderTab === 'pending' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
+              <h3 class="font-bold text-slate-800 text-sm">🚀 发送给客户</h3>
+            </div>
+            <div class="p-3 space-y-3">
+              <p class="text-xs text-slate-500">请复制效果图和邮件内容，通过Etsy后台发送给客户确认。</p>
+              
+              <!-- 操作按钮 -->
+              <div class="flex gap-2">
+                <button @click="copyShareLink" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  🔗 复制链接
+                </button>
+                <button @click="copyEmailContent" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  📋 复制邮件
+                </button>
+              </div>
+              <button @click="goToShipping" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                前往物流下单 →
               </button>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useOrderStore } from '../../stores/orderStore'
 
+const router = useRouter()
 const store = useOrderStore()
 const designerFrame = ref(null)
 const designerUrl = ref('/designer-standalone.html')
@@ -217,6 +513,67 @@ const selectedOrder = ref(null)
 const customerNote = ref('')
 const selectedStyle = ref('natural')
 const emailContent = ref('')
+const emailContentChinese = ref('')
+const emailContentEnglish = ref('')
+const confirmedEmailContent = ref('') // 点击"邮件确认"后才显示在右侧栏
+const pendingEmailContent = ref('') // 待创建Tab的邮件预览内容（从 email_logs 加载）
+const isTranslating = ref(false)
+const showCustomerNote = ref(false) // 客户需求折叠状态
+const settingsSaved = ref(false) // 设置保存状态
+
+// 邮件风格控制（新增）
+const emailTone = ref('casual') // 语气：formal(正式) / casual(随和) / lively(活泼)
+const emailLength = ref('standard') // 长度：short(简短) / standard(标准) / detailed(详细)
+const emailGreeting = ref('hi') // 称呼：dear(亲爱的) / hi(嗨) / hey(嘿)
+
+// 风格选项定义
+const toneOptions = [
+  { value: 'formal', label: '正式', desc: '商务专业', icon: '👔' },
+  { value: 'casual', label: '随和', desc: '自然友好', icon: '😊' },
+  { value: 'lively', label: '活泼', desc: '轻松有趣', icon: '🎉' }
+]
+
+const lengthOptions = [
+  { value: 'short', label: '简短', desc: '50字以内', icon: '📝' },
+  { value: 'standard', label: '标准', desc: '100字左右', icon: '📄' },
+  { value: 'detailed', label: '详细', desc: '200字以上', icon: '📚' }
+]
+
+const greetingOptions = [
+  { value: 'dear', label: 'Dear', desc: '正式礼貌', icon: '💼' },
+  { value: 'hi', label: 'Hi', desc: '友好自然', icon: '👋' },
+  { value: 'hey', label: 'Hey', desc: '轻松亲近', icon: '✌️' }
+]
+
+// 导入邮件模板
+import emailTemplates from '../../config/email-templates.json'
+
+// 邮件撰写功能增强
+const emailType = ref('first_confirm') // 邮件类型：first_confirm | modification | follow_up
+const senderName = ref('Customer Support Team') // 落款人
+const confirmationDeadline = ref('') // 确认截止时间
+const selectedTemplate = ref(null) // 选中的场景模板
+
+// 邮件类型选项
+const emailTypeOptions = [
+  { value: 'first_confirm', label: '首封确认', desc: '订单收到后的首次确认', icon: '📧' },
+  { value: 'modification', label: '修改确认', desc: '客户要求修改后的确认', icon: '✏️' },
+  { value: 'follow_up', label: '追评邮件', desc: '发货后的售后跟进', icon: '⭐' }
+]
+
+// 当前邮件类型的模板列表
+const currentTemplates = computed(() => {
+  return emailTemplates[emailType.value]?.templates || []
+})
+
+// 预设落款人选项
+const senderOptions = [
+  'Customer Support Team',
+  'Pet Tag Studio',
+  'Sarah',
+  'Emily',
+  'Custom...'
+]
 
 onMounted(async () => {
   await store.getPendingOrders()
@@ -227,6 +584,65 @@ onMounted(async () => {
     filteredOrders: filteredOrders.value.length,
     firstOrder: store.orders[0]?.etsy_order_id || '无'
   })
+  
+  // 加载保存的邮件设置
+  loadEmailSettings()
+})
+
+// 加载邮件设置
+const loadEmailSettings = () => {
+  try {
+    const savedSettings = localStorage.getItem('emailSettings')
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      emailTone.value = settings.tone || 'casual'
+      emailLength.value = settings.length || 'standard'
+      emailGreeting.value = settings.greeting || 'hi'
+      senderName.value = settings.senderName || 'Customer Support Team'
+      emailType.value = settings.emailType || 'first_confirm'
+      console.log('✅ 已加载保存的邮件设置')
+    }
+  } catch (e) {
+    console.warn('加载邮件设置失败:', e)
+  }
+}
+
+// 保存邮件设置
+const saveEmailSettings = () => {
+  try {
+    const settings = {
+      tone: emailTone.value,
+      length: emailLength.value,
+      greeting: emailGreeting.value,
+      senderName: senderName.value,
+      emailType: emailType.value
+    }
+    localStorage.setItem('emailSettings', JSON.stringify(settings))
+    settingsSaved.value = true
+    setTimeout(() => { settingsSaved.value = false }, 2000)
+    console.log('✅ 邮件设置已保存')
+  } catch (e) {
+    console.error('保存邮件设置失败:', e)
+  }
+}
+
+// 监听 Tab 切换，自动选择第一个订单
+watch(orderTab, (newTab) => {
+  if (newTab === 'new' && filteredOrders.value.length > 0) {
+    // 切换到新订单 Tab 时，自动选择第一个订单并生成效果图
+    const firstNewOrder = filteredOrders.value[0]
+    if (firstNewOrder) {
+      selectOrder(firstNewOrder)
+      console.log('📌 自动选择新订单:', firstNewOrder.etsy_order_id)
+    }
+  } else if (newTab === 'pending' && filteredOrders.value.length > 0) {
+    // 切换到待创建 Tab 时，自动选择第一个订单
+    const firstPendingOrder = filteredOrders.value[0]
+    if (firstPendingOrder) {
+      selectOrder(firstPendingOrder)
+      console.log('📌 自动选择待创建订单:', firstPendingOrder.etsy_order_id)
+    }
+  }
 })
 
 const allOrders = computed(() => {
@@ -244,10 +660,15 @@ const filteredOrders = computed(() => {
   }
   
   // 按状态标签筛选
+  // 新订单：无效果图的 pending 订单
+  // 邮件撰写：有效果图的 pending 订单（等待发送邮件）
+  // 待创建：有效果图且已发送邮件的 pending 订单
   if (orderTab.value === 'new') {
-    orders = orders.filter(o => o.status === 'new')
+    orders = orders.filter(o => o.status === 'pending' && !o.effect_image_url)
+  } else if (orderTab.value === 'email') {
+    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && !o.email_sent)
   } else if (orderTab.value === 'pending') {
-    orders = orders.filter(o => o.status === 'pending')
+    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent)
   }
   
   return orders
@@ -261,22 +682,46 @@ const allOrdersCount = computed(() => {
   return orders.length
 })
 const newOrdersCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'new')
+  let orders = allOrders.value.filter(o => o.status === 'pending' && !o.effect_image_url)
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
+  }
+  return orders.length
+})
+const emailOrdersCount = computed(() => {
+  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && !o.email_sent)
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   return orders.length
 })
 const pendingCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'pending')
+  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent)
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   return orders.length
 })
 
-const selectOrder = (order) => {
+const selectOrder = async (order) => {
   selectedOrder.value = order
+  // 选择新订单时清空已确认的邮件内容
+  confirmedEmailContent.value = ''
+  pendingEmailContent.value = ''
+  
+  // 如果在待创建Tab，加载该订单的邮件内容
+  if (orderTab.value === 'pending' && order.email_sent) {
+    try {
+      const emailLog = await store.getEmailLogByOrderId(order.id)
+      if (emailLog && emailLog.content) {
+        pendingEmailContent.value = emailLog.content
+        console.log('✅ 已加载邮件内容')
+      }
+    } catch (e) {
+      console.warn('加载邮件内容失败:', e)
+    }
+  }
+  
   if (designerFrame.value && designerFrame.value.contentWindow) {
     // 从 sku_mapping 获取 shape 和 color
     const shapeMap = { '心形': 'heart', '圆形': 'circle', '骨头形': 'bone' }
@@ -375,6 +820,49 @@ const confirmOrder = async (order) => {
   }
 }
 
+const rollbackToEdit = async (order) => {
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到编辑状态？\n此操作会清空效果图数据，订单将回到"新订单"Tab。`)) return
+  try {
+    await store.clearEffectImage(order.id)
+    selectedOrder.value = null
+    alert('✅ 订单已回退到编辑状态！')
+  } catch (e) {
+    alert('❌ 操作失败：' + e.message)
+  }
+}
+
+const confirmDesign = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择一条订单')
+    return
+  }
+  try {
+    // 保存效果图
+    await saveEffectImage()
+    // 跳转到邮件撰写Tab
+    orderTab.value = 'email'
+    alert('✅ 设计稿已确认，请编写邮件发送给客户确认')
+  } catch (e) {
+    alert('❌ 操作失败：' + e.message)
+  }
+}
+
+const goToEmailTab = (order) => {
+  selectOrder(order)
+  orderTab.value = 'email'
+}
+
+const rollbackToEmail = async (order) => {
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到邮件撰写状态？\n此操作会标记邮件为未发送，订单将回到"邮件撰写"Tab。`)) return
+  try {
+    await store.updateEmailSentStatus(order.id, false)
+    selectedOrder.value = null
+    alert('✅ 订单已回退到邮件撰写状态！')
+  } catch (e) {
+    alert('❌ 操作失败：' + e.message)
+  }
+}
+
 const initials = computed(() => {
   const name = selectedOrder.value?.customer_name || 'M'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -385,48 +873,118 @@ const generateEmail = () => {
     alert('请先选择一条订单')
     return
   }
+  if (!selectedTemplate.value) {
+    alert('请先选择一个场景模板')
+    return
+  }
+  
   const order = selectedOrder.value
   const firstName = order.customer_name?.split(' ')[0] || 'there'
   const orderId = order.etsy_order_id || order.id
-  const frontText = order.front_text || ''
-  const backText = order.back_text || ''
-  const hasEffectImage = !!order.effect_image_url
-  const effectImageLine = hasEffectImage
-    ? `\nWe have prepared a preview of your custom tag. You can view it here:\n${order.effect_image_url}\n`
-    : '\nWe are currently preparing a preview of your custom tag and will send it to you within 4 hours.\n'
-  const customDetails = [frontText, backText].filter(Boolean).join(' / ')
-  const detailsLine = customDetails ? `\nYour customization details: ${customDetails}\n` : ''
-  const noteSection = customerNote.value ? `\nNote: ${customerNote.value}\n` : ''
-  let greeting = ''
-  let sign = ''
-  if (selectedStyle.value === 'cute') {
-    greeting = `Hi ${firstName}! 💕`
-    sign = 'With love,\nOur Pet Tag Team 🐾'
-  } else if (selectedStyle.value === 'direct') {
-    greeting = `Hi ${firstName},`
-    sign = 'Best,\nCustomer Support'
-  } else {
-    greeting = `Dear ${firstName},`
-    sign = 'Kind regards,\nCustomer Support Team'
+  const effectImageUrl = order.effect_image_url || ''
+  
+  // 计算24小时截止时间
+  const now = new Date()
+  const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  const deadlineStr = deadline.toLocaleString('en-US', { 
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' 
+  })
+  confirmationDeadline.value = deadlineStr
+  
+  // 获取模板内容
+  const tone = emailTone.value
+  const length = emailLength.value
+  const templateContent = selectedTemplate.value.content[tone]?.[length]
+  
+  if (!templateContent) {
+    alert('模板内容不存在，请检查模板配置')
+    return
   }
-  emailContent.value = `${greeting}\n\nThank you for your order! We have received your customization request for order #${orderId}.${detailsLine}${effectImageLine}${noteSection}\nPlease review and let us know if everything looks good, or if you would like any changes.\n\n${sign}`
+  
+  // 替换变量
+  const replaceVars = (text) => {
+    return text
+      .replace(/\{firstName\}/g, firstName)
+      .replace(/\{orderId\}/g, orderId)
+      .replace(/\{effectImageUrl\}/g, effectImageUrl)
+      .replace(/\{senderName\}/g, senderName.value)
+      .replace(/\{confirmationDeadline\}/g, deadlineStr)
+  }
+  
+  // 根据称呼类型调整开头
+  const greetingMap = {
+    dear: { en: `Dear ${firstName},`, zh: `${firstName}您好，` },
+    hi: { en: `Hi ${firstName}!`, zh: `嗨 ${firstName}！` },
+    hey: { en: `Hey ${firstName} 👋`, zh: `嘿 ${firstName}～` }
+  }
+  
+  // 落款映射
+  const signMap = {
+    formal: { en: `Best regards,\n${senderName.value}`, zh: `此致\n${senderName.value}` },
+    casual: { en: `Best,\n${senderName.value}`, zh: `祝好，\n${senderName.value}` },
+    lively: { en: `Cheers! 🎉\n${senderName.value}`, zh: `加油！🎉\n${senderName.value}` }
+  }
+  
+  const greeting = greetingMap[emailGreeting.value]
+  const sign = signMap[tone]
+  
+  // 生成邮件内容
+  emailContentEnglish.value = `${greeting.en}\n\n${replaceVars(templateContent.en)}\n\n${sign.en}`
+  emailContentChinese.value = `${greeting.zh}\n\n${replaceVars(templateContent.zh)}\n\n${customerNote.value ? `\n备注：${customerNote.value}\n` : ''}${sign.zh}`
+  emailContent.value = emailContentEnglish.value
+}
+
+const translateEmail = async () => {
+  if (!emailContentChinese.value) {
+    alert('请先生成中文邮件内容')
+    return
+  }
+  
+  isTranslating.value = true
+  try {
+    // 调用后端翻译API
+    const response = await fetch('http://localhost:8000/api/translate/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        chinese_content: emailContentChinese.value
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      emailContentEnglish.value = result.data.english_content
+      emailContent.value = result.data.english_content
+      alert('✅ 翻译成功！英文内容已更新')
+    } else {
+      alert('❌ 翻译失败：' + result.message)
+    }
+  } catch (e) {
+    alert('❌ 翻译失败：' + e.message)
+  } finally {
+    isTranslating.value = false
+  }
 }
 
 const copyEmail = async () => {
-  if (!emailContent.value) {
+  if (!emailContentChinese.value && !emailContentEnglish.value) {
     alert('请先点击「生成邮件」')
     return
   }
   try {
-    await navigator.clipboard.writeText(emailContent.value)
-    alert('✅ 邮件内容已复制到剪贴板！')
+    const fullContent = `=== 中文版本 Chinese Version ===\n\n${emailContentChinese.value}\n\n=== English Version ===\n\n${emailContentEnglish.value}`
+    await navigator.clipboard.writeText(fullContent)
+    alert('✅ 中英文邮件内容已复制到剪贴板！')
   } catch (e) {
     alert('复制失败，请手动复制')
   }
 }
 
 const submitEmail = async () => {
-  if (!emailContent.value) {
+  if (!emailContentChinese.value && !emailContentEnglish.value) {
     alert('请先点击「生成邮件」')
     return
   }
@@ -434,7 +992,128 @@ const submitEmail = async () => {
     alert('请先选择订单')
     return
   }
-  // TODO: 调用后端API发送邮件
-  alert('🚀 邮件提交成功！（后端API待实现）')
+  try {
+    // 合并中英文内容
+    const fullContent = `=== 中文版本 Chinese Version ===\n\n${emailContentChinese.value}\n\n=== English Version ===\n\n${emailContentEnglish.value}`
+    
+    // 邮件类型标签映射
+    const emailTypeLabels = {
+      'first_confirm': '首封确认邮件',
+      'modification': '修改确认邮件',
+      'follow_up': '追评邮件'
+    }
+    
+    // 1. 保存邮件记录到 email_logs 表
+    await store.saveEmailLog({
+      order_id: selectedOrder.value.id,
+      email_type: emailType.value,
+      subject: `【${emailTypeLabels[emailType.value]}】Your Custom ${selectedOrder.value.sku_mapping?.product_name || 'Product'} - ${selectedOrder.value.etsy_order_id}`,
+      content: fullContent,
+      effect_image_url: selectedOrder.value.effect_image_url,
+      sender_name: senderName.value,
+      confirmation_deadline: emailType.value === 'first_confirm' ? confirmationDeadline.value : null
+    })
+    
+    // 2. 更新订单状态为已发送邮件
+    await store.updateEmailSentStatus(selectedOrder.value.id, true)
+    
+    // 3. 设置已确认的邮件内容（显示在右侧“确认邮件”栏）
+    confirmedEmailContent.value = emailContentEnglish.value
+    
+    // 4. 清空邮件内容
+    emailContentChinese.value = ''
+    emailContentEnglish.value = ''
+    emailContent.value = ''
+    customerNote.value = ''
+    
+    // 5. 跳转到待创建Tab
+    orderTab.value = 'pending'
+    selectedOrder.value = null
+    
+    alert('✅ 邮件已保存，订单已流转到待创建状态！')
+  } catch (e) {
+    alert('❌ 邮件保存失败：' + e.message)
+  }
+}
+
+// 提取邮件中的英文版本（去除中文版本和多余空行）
+const getEnglishEmailContent = (content) => {
+  if (!content) return ''
+  
+  // 如果包含中文版本分隔标记，只取英文部分
+  const chineseMarker = '=== 中文版本 Chinese Version ==='
+  const englishOnly = content.split(chineseMarker)[0]
+  
+  // 去除多余的空行（保留最多两个连续换行）
+  return englishOnly
+    .replace(/\n{3,}/g, '\n\n')  // 将3个或更多换行符替换为2个
+    .trim()
+}
+
+// 复制分享链接（效果图+邮件）
+const copyShareLink = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  try {
+    // 生成分享链接（包含效果图和订单ID）
+    const shareUrl = `${window.location.origin}/share/order/${selectedOrder.value.id}`
+    await navigator.clipboard.writeText(shareUrl)
+    alert('✅ 分享链接已复制！\n客服可通过此链接查看效果图和邮件内容')
+  } catch (e) {
+    alert('复制失败，请手动复制')
+  }
+}
+
+// 复制邮件内容（用于客服粘贴到Etsy）
+const copyEmailContent = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  try {
+    // 从etsy订单中获取已保存的邮件内容
+    const emailLog = await store.getEmailLogByOrderId(selectedOrder.value.id)
+    if (emailLog && emailLog.content) {
+      await navigator.clipboard.writeText(emailLog.content)
+      alert('✅ 邮件内容已复制！\n客服可粘贴到Etsy后台发送给客户')
+    } else {
+      alert('暂无邮件内容，请先生成邮件')
+    }
+  } catch (e) {
+    alert('复制失败：' + e.message)
+  }
+}
+
+// 确认发送给客户（订单进入生产流程）
+const confirmSendToCustomer = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  if (!confirm(`确认将订单 ${selectedOrder.value.etsy_order_id} 转入生产流程？\n\n请确保已通过Etsy将效果图和邮件发送给客户。`)) return
+  
+  try {
+    // 更新订单状态为生产中
+    await store.updateOrderStatus(selectedOrder.value.id, 'producing')
+    selectedOrder.value = null
+    alert('✅ 订单已转入生产中！')
+  } catch (e) {
+    alert('❌ 操作失败：' + e.message)
+  }
+}
+
+// 前往物流下单页面
+const goToShipping = () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  // 带上订单ID跳转到物流下单页面
+  router.push({
+    path: '/admin/shipping',
+    query: { orderId: selectedOrder.value.id }
+  })
 }
 </script>

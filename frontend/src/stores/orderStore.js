@@ -591,6 +591,123 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
+  // 清空效果图（回退编辑）
+  const clearEffectImage = async (orderId) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      // 1. 更新订单记录，清空 effect_image_url
+      const { data, error: updateError } = await supabase
+        .from('orders')
+        .update({ 
+          effect_image_url: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+      
+      if (updateError) throw updateError
+      
+      // 2. 更新本地缓存
+      const index = orders.value.findIndex(o => o.id === orderId)
+      if (index !== -1) {
+        orders.value[index].effect_image_url = null
+      }
+      
+      console.log('✅ 效果图已清空')
+      return data
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 效果图清空失败:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 更新邮件发送状态
+  const updateEmailSentStatus = async (orderId, sent) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const { data, error: updateError } = await supabase
+        .from('orders')
+        .update({ 
+          email_sent: sent,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .select()
+      
+      if (updateError) throw updateError
+      
+      // 更新本地缓存
+      const index = orders.value.findIndex(o => o.id === orderId)
+      if (index !== -1) {
+        orders.value[index].email_sent = sent
+      }
+      
+      console.log('✅ 邮件发送状态已更新:', sent)
+      return data
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 邮件状态更新失败:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 保存邮件记录
+  const saveEmailLog = async (emailData) => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const { data, error: insertError } = await supabase
+        .from('email_logs')
+        .insert([{
+          ...emailData,
+          sent_at: new Date().toISOString(),
+          status: 'sent'
+        }])
+        .select()
+      
+      if (insertError) throw insertError
+      
+      console.log('✅ 邮件记录已保存:', data)
+      return data
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 邮件记录保存失败:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 根据订单ID获取最新的邮件记录
+  const getEmailLogByOrderId = async (orderId) => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('email_logs')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError
+      
+      return data
+    } catch (err) {
+      console.error('❌ 邮件记录获取失败:', err)
+      return null
+    }
+  }
+
   return {
     // 状态
     orders,
@@ -619,6 +736,10 @@ export const useOrderStore = defineStore('order', () => {
     generateProductionPdf,
     searchOrderById,
     getOrderWithDetails,
-    saveEffectImage
+    saveEffectImage,
+    clearEffectImage,
+    updateEmailSentStatus,
+    saveEmailLog,
+    getEmailLogByOrderId
   }
 })

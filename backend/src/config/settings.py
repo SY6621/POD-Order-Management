@@ -23,6 +23,10 @@ class Settings:
     FOURPX_APP_SECRET: str = os.getenv("FOURPX_APP_SECRET", "")
     FOURPX_SANDBOX: bool = os.getenv("FOURPX_SANDBOX", "true").lower() == "true"
     
+    # 智谱AI (GLM-4) 翻译 API 配置
+    ZHIPU_API_KEY: str = os.getenv("ZHIPU_API_KEY", "")
+    ZHIPU_MODEL: str = os.getenv("ZHIPU_MODEL", "glm-4-flash")
+    
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     ASSETS_DIR: Path = BASE_DIR / "assets"

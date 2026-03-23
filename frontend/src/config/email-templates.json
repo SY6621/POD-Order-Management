@@ -1,0 +1,373 @@
+{
+  "first_confirm": {
+    "name": "首封确认邮件",
+    "icon": "📧",
+    "description": "订单收到后的首次确认",
+    "templates": [
+      {
+        "id": "standard",
+        "name": "标准确认",
+        "icon": "✅",
+        "description": "常规效果图确认",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Thanks for your order #{orderId}! Preview: {effectImageUrl}\n\nReply 'Confirmed' to start production. 24h confirmation required.",
+              "zh": "感谢订单 #{orderId}！预览图：{effectImageUrl}\n\n回复'确认'开始制作。需24小时内确认。"
+            },
+            "standard": {
+              "en": "Thank you for your order #{orderId}. Your custom tag preview is ready: {effectImageUrl}\n\nPlease review and reply 'Confirmed' if everything looks good. We need your confirmation within 24 hours to ensure timely delivery.",
+              "zh": "感谢您下单 #{orderId}。定制标签预览已准备好：{effectImageUrl}\n\n请查看并回复'确认'。我们需要您在24小时内确认以确保按时发货。"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nThank you very much for your order #{orderId}. We have carefully prepared your custom pet tag preview: {effectImageUrl}\n\nPlease take a moment to review the design. We want to ensure everything is perfect before we start production.\n\n✅ If satisfied, please reply 'Confirmed'\n✏️ If changes needed, please let us know\n\n⏰ Important: Please confirm within 24 hours to meet our delivery schedule.\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n非常感谢您的订单 #{orderId}。我们已仔细为您准备定制宠物标签预览：{effectImageUrl}\n\n请花点时间查看设计效果。我们希望确保一切完美后再开始生产。\n\n✅ 满意请回复'确认'\n✏️ 需要调整请告知\n\n⏰ 重要：请在24小时内确认以满足交货计划。\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Hey {firstName}! Your order #{orderId} is ready 🎉\nPreview: {effectImageUrl}\n\nJust reply 'Confirmed' if you like it!",
+              "zh": "嘿 {firstName}！订单 #{orderId} 准备好啦 🎉\n预览：{effectImageUrl}\n\n喜欢就回复'确认'！"
+            },
+            "standard": {
+              "en": "Hi {firstName}! Thanks for ordering #{orderId} 😊\n\nYour preview is ready: {effectImageUrl}\n\nLet me know what you think! Reply 'Confirmed' if it looks good, or tell me if you want any changes. Need your reply within 24h.",
+              "zh": "嗨 {firstName}！感谢下单 #{orderId} 😊\n\n预览图好啦：{effectImageUrl}\n\n觉得怎么样？满意回复'确认'，要改就告诉我。24小时内回复哦。"
+            },
+            "detailed": {
+              "en": "Hey there {firstName}! 🎉\n\nSuper excited about your order #{orderId}! Your custom tag preview is ready: {effectImageUrl}\n\nTake a look and let me know your thoughts! I want to make sure you absolutely love it.\n\n✅ Love it? Just reply 'Confirmed' and I'll get started!\n✏️ Want tweaks? Tell me what you'd like different!\n\n⏰ Heads up: Please let me know within 24 hours so we can stay on track.\n\nBest,\n{senderName}",
+              "zh": "嘿 {firstName}！🎉\n\n你的订单 #{orderId} 让我超兴奋！定制标签预览好了：{effectImageUrl}\n\n看看效果告诉我想法！我想确保你超喜欢。\n\n✅ 喜欢？回复'确认'我马上开工！\n✏️ 要调整？告诉我怎么改！\n\n⏰ 提醒：请在24小时内回复，进度不耽误。\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "Yay! Order #{orderId} is HERE! 🎉✨\nYour preview: {effectImageUrl}\n\nHit me with 'Confirmed' if you love it! 💖",
+              "zh": "耶！订单 #{orderId} 来啦！🎉✨\n预览图：{effectImageUrl}\n\n喜欢就喊'确认'！💖"
+            },
+            "standard": {
+              "en": "OMG {firstName}! Your order #{orderId} is gonna be AMAZING! 🎉✨\n\nCheck out this awesome preview: {effectImageUrl}\n\nSooo... what do you think?! 🤩 Reply 'Confirmed' if you're loving it! Want changes? Just say the word! 💪\n\n⏰ Clock's ticking! 24 hours to confirm!",
+              "zh": "哇塞 {firstName}！订单 #{orderId} 一定会超棒！🎉✨\n\n看看这个超赞预览：{effectImageUrl}\n\n所以... 觉得怎么样？！🤩 喜欢就喊'确认'！要改就说一声！💪\n\n⏰ 时间紧迫！24小时确认！"
+            },
+            "detailed": {
+              "en": "Woohoo {firstName}! 🎉🎉🎉\n\nYour order #{orderId} just made my day! Your custom tag is ready for its big reveal: {effectImageUrl}\n\nDrumroll please... 🥁 What do you think?! I need to know!\n\n✅ OBSESSED? Reply 'Confirmed' and let's DO THIS! 🔥\n✏️ Want tweaks? Tell me everything - I got you! 💯\n\n⏰ REAL TALK: 24 hour countdown starts NOW! No reply = I'm going for it! 🎬\n\nLet's make something awesome together! 🌟\n\nCheers! 🎉\n{senderName}",
+              "zh": "呜呼 {firstName}！🎉🎉🎉\n\n你的订单 #{orderId} 让我今天超开心！定制标签准备好揭晓：{effectImageUrl}\n\n请听... 🥁 你觉得怎么样？！我要知道！\n\n✅ 超喜欢？回复'确认'，咱们开干！🔥\n✏️ 要调整？告诉我所有想法，我搞定！💯\n\n⏰ 说实话：24小时倒计时开始！没回复我就直接上了！🎬\n\n一起做出超棒的东西！🌟\n\n加油！🎉\n{senderName}"
+            }
+          }
+        }
+      },
+      {
+        "id": "urgent",
+        "name": "加急确认",
+        "icon": "⚡",
+        "description": "强调尽快确认",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "URGENT: Order #{orderId} preview ready: {effectImageUrl}\n\nPlease confirm ASAP to meet deadline.",
+              "zh": "紧急：订单 #{orderId} 预览已准备好：{effectImageUrl}\n\n请尽快确认以满足截止日期。"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nYour order #{orderId} preview is ready: {effectImageUrl}\n\nDue to production scheduling, we kindly request your confirmation within 12 hours. This will ensure we can deliver on time.",
+              "zh": "{firstName}您好，\n\n您的订单 #{orderId} 预览已准备好：{effectImageUrl}\n\n由于生产排期，恳请您在12小时内确认。这将确保我们能按时交付。"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nYour custom tag order #{orderId} is ready for review: {effectImageUrl}\n\nDue to our production schedule constraints, we would greatly appreciate your confirmation within 12 hours. This will allow us to:\n\n✅ Start production immediately\n✅ Meet our promised delivery date\n✅ Ensure the highest quality\n\nPlease reply 'Confirmed' or let us know if changes are needed.\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n您的定制标签订单 #{orderId} 已准备好供您查看：{effectImageUrl}\n\n由于我们的生产排期限制，恳请您在12小时内确认。这将使我们能够：\n\n✅ 立即开始生产\n✅ 满足承诺的交货日期\n✅ 确保最高质量\n\n请回复'确认'或告知是否需要修改。\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Hey {firstName}! Quick one - your #{orderId} preview is ready: {effectImageUrl}\n\nCan you confirm soon? Need to keep things moving! 🚀",
+              "zh": "嘿 {firstName}！简单说 - 你的 #{orderId} 预览好了：{effectImageUrl}\n\n能尽快确认吗？需要保持进度！🚀"
+            },
+            "standard": {
+              "en": "Hi {firstName}! 👋\n\nYour order #{orderId} is ready to go: {effectImageUrl}\n\nCould you take a quick look and confirm? We're on a bit of a tight schedule and your speedy reply would really help us out!\n\nThanks!",
+              "zh": "嗨 {firstName}！👋\n\n你的订单 #{orderId} 准备好出发了：{effectImageUrl}\n\n能看一眼确认吗？我们时间有点紧，你的快速回复会帮大忙！\n\n谢谢！"
+            },
+            "detailed": {
+              "en": "Hey {firstName}! 🏃‍♀️\n\nYour custom tag #{orderId} is ready: {effectImageUrl}\n\nI'm on a tight timeline here and need to get production started soon to hit our delivery date. Could you do me a huge favor and confirm within 12 hours?\n\n✅ Looks good? Reply 'Confirmed'\n✏️ Need changes? Let me know ASAP\n\nYou're the best! Thanks for helping us stay on track! 🙏\n\nBest,\n{senderName}",
+              "zh": "嘿 {firstName}！🏃‍♀️\n\n你的定制标签 #{orderId} 好了：{effectImageUrl}\n\n我这边时间很紧，需要尽快开始生产以赶上交货日期。能帮我个大忙在12小时内确认吗？\n\n✅ 看起来不错？回复'确认'\n✏️ 需要修改？尽快告诉我\n\n你最棒了！谢谢帮我们保持进度！🙏\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "🚨 FAST CONFIRM NEEDED! 🚨\nOrder #{orderId}: {effectImageUrl}\n\n12 hours to confirm! Let's GO! ⚡",
+              "zh": "🚨 需要快速确认！🚨\n订单 #{orderId}：{effectImageUrl}\n\n12小时确认！冲！⚡"
+            },
+            "standard": {
+              "en": "Hey {firstName}! ⚡⚡⚡\n\nYour AMAZING order #{orderId} is ready: {effectImageUrl}\n\nBut here's the thing - I need your confirmation in 12 hours to keep this train moving! Can you help me out?\n\nReply 'Confirmed' and let's make this happen! 🚀",
+              "zh": "嘿 {firstName}！⚡⚡⚡\n\n你的超棒订单 #{orderId} 好了：{effectImageUrl}\n\n但问题是 - 我需要你在12小时内确认以保持进度！能帮帮我吗？\n\n回复'确认'，咱们开干！🚀"
+            },
+            "detailed": {
+              "en": "OMG {firstName}! 🚨\n\nYour order #{orderId} is READY and looking FIRE: {effectImageUrl}\n\nBUT (and this is important!) I need your confirmation in 12 hours or we might miss our delivery window! 😱\n\n✅ LOVE IT? Confirm NOW!\n✏️ Changes? Tell me QUICK!\n\nHelp me help you get this awesome tag on time! 💪\n\nCheers! 🎉\n{senderName}",
+              "zh": "天哪 {firstName}！🚨\n\n你的订单 #{orderId} 好了，看起来超棒：{effectImageUrl}\n\n但是（这很重要！）我需要你在12小时内确认，否则我们可能错过交货窗口！😱\n\n✅ 喜欢？立即确认！\n✏️ 修改？快告诉我！\n\n帮我帮你准时拿到这个超棒的标签！💪\n\n加油！🎉\n{senderName}"
+            }
+          }
+        }
+      },
+      {
+        "id": "custom_request",
+        "name": "定制需求确认",
+        "icon": "🎨",
+        "description": "客户有特殊要求时使用",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Order #{orderId} with your custom request is ready: {effectImageUrl}\n\nPlease confirm the design meets your requirements.",
+              "zh": "带有您定制需求的订单 #{orderId} 已准备好：{effectImageUrl}\n\n请确认设计符合您的要求。"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nYour order #{orderId} with special customization is ready for review: {effectImageUrl}\n\nWe've implemented your requested changes. Please confirm the design meets your expectations.",
+              "zh": "{firstName}您好，\n\n带有特殊定制的订单 #{orderId} 已准备好供您查看：{effectImageUrl}\n\n我们已实施您要求的修改。请确认设计符合您的期望。"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nThank you for your custom order #{orderId}. We've carefully created your tag with your special requirements: {effectImageUrl}\n\nPlease review the design carefully to ensure it matches your vision. If any adjustments are needed, we're happy to make them.\n\n✅ Satisfied? Reply 'Confirmed'\n✏️ Adjustments needed? Let us know\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n感谢您的定制订单 #{orderId}。我们已根据您的特殊要求仔细制作了标签：{effectImageUrl}\n\n请仔细查看设计，确保符合您的设想。如需任何调整，我们很乐意修改。\n\n✅ 满意？回复'确认'\n✏️ 需要调整？请告知\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Hey {firstName}! Your custom order #{orderId} is done: {effectImageUrl}\n\nCheck if it's what you wanted!",
+              "zh": "嘿 {firstName}！你的定制订单 #{orderId} 完成了：{effectImageUrl}\n\n看看是不是你想要的！"
+            },
+            "standard": {
+              "en": "Hi {firstName}! 😊\n\nYour special order #{orderId} is ready: {effectImageUrl}\n\nI made it exactly like you requested! Take a look and let me know if it's what you had in mind. Happy to adjust if needed!",
+              "zh": "嗨 {firstName}！😊\n\n你的特殊订单 #{orderId} 好了：{effectImageUrl}\n\n我按你的要求做的！看看是不是你想要的。需要调整乐意效劳！"
+            },
+            "detailed": {
+              "en": "Hey {firstName}! 🎨\n\nYour custom order #{orderId} is ready and I think it turned out great: {effectImageUrl}\n\nI followed your special requirements carefully. Does it look like what you imagined? I want to make sure it's perfect for you!\n\n✅ Perfect? Reply 'Confirmed'!\n✏️ Not quite right? Tell me what to fix!\n\nBest,\n{senderName}",
+              "zh": "嘿 {firstName}！🎨\n\n你的定制订单 #{orderId} 好了，我觉得效果很棒：{effectImageUrl}\n\n我仔细按照你的特殊要求做的。看起来是你想象的样子吗？我想确保对你来说是完美的！\n\n✅ 完美？回复'确认'！\n✏️ 不太对？告诉我怎么改！\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "Your CUSTOM creation #{orderId} is HERE! 🎨✨\n{effectsImageUrl}\n\nIs this what you dreamed of?! 🌟",
+              "zh": "你的定制创作 #{orderId} 来啦！🎨✨\n{effectsImageUrl}\n\n这是你梦想的样子吗？！🌟"
+            },
+            "standard": {
+              "en": "OMG {firstName}! Your CUSTOM order #{orderId} is READY! 🎉🎨\n\nCheck it out: {effectImageUrl}\n\nI made it EXACTLY like you wanted! Does it match your vision? Tell me everything! 🤩",
+              "zh": "天哪 {firstName}！你的定制订单 #{orderId} 好了！🎉🎨\n\n看看：{effectImageUrl}\n\n我按你的要求做的！符合你的设想吗？告诉我所有想法！🤩"
+            },
+            "detailed": {
+              "en": "WOOHOO {firstName}! 🎨🎉✨\n\nYour CUSTOM creation #{orderId} is FINISHED and I'm SO excited: {effectImageUrl}\n\nI put so much care into making it exactly like you described! Does it match what you had in mind? I NEED to know!\n\n✅ DREAM COME TRUE? Confirm NOW! 🔥\n✏️ Not perfect? Tell me EVERYTHING! 💯\n\nLet's make this EXACTLY right! 🌟\n\nCheers! 🎉\n{senderName}",
+              "zh": "呜呼 {firstName}！🎨🎉✨\n\n你的定制创作 #{orderId} 完成了，我超兴奋：{effectImageUrl}\n\n我花了好多心思按你描述做的！符合你的设想吗？我要知道！\n\n✅ 梦想成真？立即确认！🔥\n✏️ 不完美？告诉我所有！💯\n\n咱们把它做到完全正确！🌟\n\n加油！🎉\n{senderName}"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "modification": {
+    "name": "修改确认邮件",
+    "icon": "✏️",
+    "description": "客户要求修改后的确认",
+    "templates": [
+      {
+        "id": "minor_change",
+        "name": "小修改确认",
+        "icon": "✏️",
+        "description": "文字微调等小改动",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Changes completed for order #{orderId}: {effectImageUrl}\n\nPlease confirm.",
+              "zh": "订单 #{orderId} 修改完成：{effectImageUrl}\n\n请确认。"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nWe've made the requested changes to order #{orderId}: {effectImageUrl}\n\nPlease review and confirm if the adjustments meet your requirements.",
+              "zh": "{firstName}您好，\n\n我们已按要求修改订单 #{orderId}：{effectImageUrl}\n\n请查看并确认调整是否符合您的要求。"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nThank you for your feedback. We have made the requested adjustments to your order #{orderId}: {effectImageUrl}\n\nPlease review the updated design carefully. If further modifications are needed, please let us know.\n\n✅ Satisfied? Reply 'Confirmed'\n✏️ More changes needed? Contact us\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n感谢您的反馈。我们已按要求调整您的订单 #{orderId}：{effectImageUrl}\n\n请仔细查看更新后的设计。如需进一步修改，请告知。\n\n✅ 满意？回复'确认'\n✏️ 还需修改？联系我们\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Done with the changes for #{orderId}! {effectImageUrl}\n\nBetter now?",
+              "zh": "#{orderId} 的修改完成啦！{effectImageUrl}\n\n现在好些了吗？"
+            },
+            "standard": {
+              "en": "Hey {firstName}! ✏️\n\nMade those tweaks you wanted for #{orderId}: {effectImageUrl}\n\nHow's this looking? Let me know if it's better or if you need anything else adjusted!",
+              "zh": "嘿 {firstName}！✏️\n\n按你的要求改了 #{orderId}：{effectImageUrl}\n\n这样看起来怎么样？告诉我有没有更好或还需要调整什么！"
+            },
+            "detailed": {
+              "en": "Hi {firstName}! 😊\n\nAll done with the changes for your order #{orderId}: {effectImageUrl}\n\nI think it looks much better now! What do you think? If you need any other tweaks, just let me know - I want to get it perfect for you!\n\n✅ Perfect now? Reply 'Confirmed'!\n✏️ Still not right? Tell me what to fix!\n\nBest,\n{senderName}",
+              "zh": "嗨 {firstName}！😊\n\n你的订单 #{orderId} 修改完成：{effectImageUrl}\n\n我觉得现在看起来好多了！你觉得呢？如果还需要调整，告诉我 - 我想给你做到完美！\n\n✅ 现在完美了？回复'确认'！\n✏️ 还不对？告诉我怎么改！\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "FIXED! ✨ Order #{orderId}: {effectImageUrl}\n\nWhatcha think?!",
+              "zh": "改好了！✨ 订单 #{orderId}：{effectImageUrl}\n\n觉得咋样？！"
+            },
+            "standard": {
+              "en": "Yasss! ✨ Tweaks done for #{firstName}'s order #{orderId}!\n\nCheck it: {effectImageUrl}\n\nBetter? Worse? Tell me everything! Reply 'Confirmed' if it's perfect now! 🚀",
+              "zh": "耶斯！✨ {firstName}的订单 #{orderId} 调整完成！\n\n看看：{effectImageUrl}\n\n更好了？更差了？告诉我所有！现在完美就回复'确认'！🚀"
+            },
+            "detailed": {
+              "en": "BOOM! 💥 Changes COMPLETE for order #{orderId}!\n\nFresh preview: {effectImageUrl}\n\nI made those tweaks you wanted! Is this hitting different?! Tell me!\n\n✅ FIRE? Confirm NOW! 🔥\n✏️ Still off? Tell me EVERYTHING! 💯\n\nLet's get this RIGHT! 🌟\n\nCheers! 🎉\n{senderName}",
+              "zh": "搞定！💥 订单 #{orderId} 修改完成！\n\n新鲜预览：{effectImageUrl}\n\n我按你的要求改了！这次感觉对了没？告诉我！\n\n✅ 超棒？立即确认！🔥\n✏️ 还不对？告诉我所有！💯\n\n咱们把它做对！🌟\n\n加油！🎉\n{senderName}"
+            }
+          }
+        }
+      },
+      {
+        "id": "major_revision",
+        "name": "大改确认",
+        "icon": "🔄",
+        "description": "设计重新调整等大改动",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Major revision completed for #{orderId}: {effectImageUrl}\n\nPlease review carefully.",
+              "zh": "订单 #{orderId} 重大修改完成：{effectImageUrl}\n\n请仔细查看。"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nWe have completed the major revisions to your order #{orderId}: {effectImageUrl}\n\nPlease review the updated design carefully to ensure it now meets your expectations.",
+              "zh": "{firstName}您好，\n\n我们已完成订单 #{orderId} 的重大修改：{effectImageUrl}\n\n请仔细查看更新后的设计，确保现在符合您的期望。"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nThank you for your patience. We have completed the significant revisions to your order #{orderId}: {effectImageUrl}\n\nThe design has been substantially updated based on your feedback. Please review carefully and let us know if this version meets your requirements or if any further adjustments are needed.\n\n✅ Satisfied with changes? Reply 'Confirmed'\n✏️ Further adjustments needed? Let us know\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n感谢您的耐心。我们已完成订单 #{orderId} 的重大修改：{effectImageUrl}\n\n设计已根据您的反馈大幅更新。请仔细查看并告知此版本是否符合您的要求或是否需要进一步调整。\n\n✅ 对修改满意？回复'确认'\n✏️ 还需调整？请告知\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Big changes done for #{orderId}! {effectImageUrl}\n\nHope this is more what you wanted!",
+              "zh": "#{orderId} 大改完成！{effectImageUrl}\n\n希望这次更符合你的要求！"
+            },
+            "standard": {
+              "en": "Hey {firstName}! 🔄\n\nMade those big changes you wanted for #{orderId}: {effectImageUrl}\n\nThis should be much closer to what you had in mind! Let me know how it looks now.",
+              "zh": "嘿 {firstName}！🔄\n\n按你的要求对 #{orderId} 做了大改：{effectImageUrl}\n\n这次应该更接近你想要的！告诉我现在看起来怎么样。"
+            },
+            "detailed": {
+              "en": "Hi {firstName}! 😊\n\nOkay, made those major changes to your order #{orderId}: {effectImageUrl}\n\nI reworked it based on your feedback - hopefully this version is much better! Take your time reviewing it and let me know your thoughts.\n\n✅ Much better? Reply 'Confirmed'!\n✏️ Still needs work? Tell me what's off!\n\nBest,\n{senderName}",
+              "zh": "嗨 {firstName}！😊\n\n好的，对你的订单 #{orderId} 做了重大修改：{effectImageUrl}\n\n我根据你的反馈重做了 - 希望这个版本好多了！花时间看看告诉我想法。\n\n✅ 好多了？回复'确认'！\n✏️ 还需要改？告诉我哪里不对！\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "MAJOR glow-up for #{orderId}! ✨🔄\n{effectsImageUrl}\n\nThis hits different, right?!",
+              "zh": "#{orderId} 大变身！✨🔄\n{effectsImageUrl}\n\n这次感觉对了，是吧？！"
+            },
+            "standard": {
+              "en": "OMG {firstName}! MAJOR changes done! 🔄✨\n\nOrder #{orderId}: {effectImageUrl}\n\nI basically rebuilt this based on your feedback! WAY better now, right?! Tell me! 🤩",
+              "zh": "天哪 {firstName}！重大修改完成！🔄✨\n\n订单 #{orderId}：{effectImageUrl}\n\n我基本上按你的反馈重做了！现在好多了，是吧？！告诉我！🤩"
+            },
+            "detailed": {
+              "en": "YOOO {firstName}! 🔄🔥✨\n\nYour order #{orderId} got a COMPLETE makeover: {effectImageUrl}\n\nI went back to the drawing board based on your feedback and rebuilt it! This version is SO much better! What do you think?!\n\n✅ NOW we're talking?! Confirm! 🔥\n✏️ Still not it? Tell me EVERYTHING! 💯\n\nWe're gonna get this PERFECT! 🌟\n\nCheers! 🎉\n{senderName}",
+              "zh": "哟 {firstName}！🔄🔥✨\n\n你的订单 #{orderId} 完全重做：{effectImageUrl}\n\n我根据你的反馈重新开始重做了！这个版本好多了！你觉得呢？！\n\n✅ 这次对了？确认！🔥\n✏️ 还不对？告诉我所有！💯\n\n咱们要做到完美！🌟\n\n加油！🎉\n{senderName}"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "follow_up": {
+    "name": "追评邮件",
+    "icon": "⭐",
+    "description": "发货后的售后跟进",
+    "templates": [
+      {
+        "id": "standard_review",
+        "name": "标准追评",
+        "icon": "⭐",
+        "description": "常规评价邀请",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Hope you received your order #{orderId}. We'd appreciate your review: [Review Link]",
+              "zh": "希望您已收到订单 #{orderId}。期待您的评价：[评价链接]"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nWe hope your custom pet tag has arrived safely. If you're satisfied with your purchase, we would greatly appreciate it if you could take a moment to leave a review.\n\n⭐ Leave a review: [Your Etsy Shop Review Link]\n\nYour feedback helps us improve and helps other customers find us.\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n希望您的定制宠物标签已安全送达。如果您对购买满意，我们非常感谢您能花点时间留下评价。\n\n⭐ 留下评价：[Etsy店铺评价链接]\n\n您的反馈帮助我们改进，也帮助其他客户找到我们。\n\n此致，\n{senderName}"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nWe hope your custom pet tag has arrived and that both you and your furry friend are enjoying it.\n\nIf you have a moment, we would be truly grateful if you could share your experience by leaving a review. Your feedback:\n\n✅ Helps us improve our products and service\n✅ Assists other pet parents in finding quality custom tags\n✅ Supports our small business\n\n⭐ Leave your review here: [Your Etsy Shop Review Link]\n\nThank you for choosing us and for taking the time to share your thoughts.\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n希望您的定制宠物标签已送达，您和您的毛孩子都喜欢它。\n\n如果您方便，我们非常感谢您能分享体验并留下评价。您的反馈：\n\n✅ 帮助我们改进产品和服务\n✅ 帮助其他宠物主人找到优质定制标签\n✅ 支持我们的小生意\n\n⭐ 在此留下评价：[Etsy店铺评价链接]\n\n感谢您选择我们并花时间分享想法。\n\n此致，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Hey {firstName}! Hope your pet tag arrived! 🎉\nMind leaving a quick review? [Link] Thanks!",
+              "zh": "嘿 {firstName}！希望宠物标签到了！🎉\n方便留个评价吗？[链接] 谢谢！"
+            },
+            "standard": {
+              "en": "Hi {firstName}! 👋\n\nHope your custom pet tag arrived safely and you love it! 🎉\n\nIf you have a sec, would you mind leaving a review? It really helps other pet parents find us and means a lot to our small business!\n\n⭐ Review link: [Your Etsy Shop Review Link]\n\nThanks so much! 😊",
+              "zh": "嗨 {firstName}！👋\n\n希望定制宠物标签安全送达而且你喜欢！🎉\n\n如果有空，方便留个评价吗？这真的帮助其他宠物主人找到我们，对我们小生意意义重大！\n\n⭐ 评价链接：[Etsy店铺评价链接]\n\n非常感谢！😊"
+            },
+            "detailed": {
+              "en": "Hey {firstName}! 🐾\n\nHope your furry friend is loving their new custom tag! 🎉\n\nIf you're happy with it, I'd be SO grateful if you could leave a review. It might seem small, but it really makes a huge difference for our little shop!\n\nYour review helps:\n✅ Other pet parents discover us\n✅ Us improve and grow\n✅ Spread the word about quality custom tags\n\n⭐ Drop your review here: [Your Etsy Shop Review Link]\n\nThank you from the bottom of my heart! 💕\n\nBest,\n{senderName}",
+              "zh": "嘿 {firstName}！🐾\n\n希望你的毛孩子喜欢他们的新定制标签！🎉\n\n如果满意，如果你能留个评价我会超感激。看起来小事，但对我们小店意义重大！\n\n你的评价帮助：\n✅ 其他宠物主人发现我们\n✅ 我们改进和成长\n✅ 传播优质定制标签的口碑\n\n⭐ 在此评价：[Etsy店铺评价链接]\n\n衷心感谢！💕\n\n祝好，\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "OMG hope you LOVE your tag! 🎉\nQuick review? [Link] You're the BEST! 🌟",
+              "zh": "天哪希望你喜欢标签！🎉\n快速评价？[链接] 你最棒了！🌟"
+            },
+            "standard": {
+              "en": "Hey {firstName}! 🎉🐾\n\nHope your pet is ROCKING their new tag! 😍\n\nIf you're obsessed with it, please leave us a review! It literally means THE WORLD to us! 🌍✨\n\n⭐ Review link: [Your Etsy Shop Review Link]\n\nYou're amazing! Thanks! 💕",
+              "zh": "嘿 {firstName}！🎉🐾\n\n希望你的宠物正炫耀他们的新标签！😍\n\n如果你超喜欢，请给我们评价！这对我们来说就是全世界！🌍✨\n\n⭐ 评价链接：[Etsy店铺评价链接]\n\n你太棒了！谢谢！💕"
+            },
+            "detailed": {
+              "en": "WOOHOO {firstName}! 🎉🐾✨\n\nHope your furry bestie is LOVING their custom tag! I'm literally so excited for you both! 😍\n\nIf the tag made you smile, could you do me the BIGGEST favor and leave a review? It would mean ABSOLUTELY EVERYTHING to me and my little shop! 🙏💕\n\nYour review:\n✅ Helps other pet parents find awesome tags\n✅ Keeps my small business running\n✅ Makes my day EVERY TIME! 🌟\n\n⭐ Leave that review: [Your Etsy Shop Review Link]\n\nTHANK YOU THANK YOU THANK YOU! 🎉\n\nCheers! 🥳\n{senderName}",
+              "zh": "呜呼 {firstName}！🎉🐾✨\n\n希望你的毛孩子最爱他们的定制标签！我真的超为你们兴奋！😍\n\n如果标签让你笑了，能帮我个大忙留个评价吗？这对我和我的小店来说就是一切！🙏💕\n\n你的评价：\n✅ 帮助其他宠物主人找到超棒标签\n✅ 让我的小生意继续运转\n✅ 每次都让我开心一整天！🌟\n\n⭐ 留下评价：[Etsy店铺评价链接]\n\n谢谢谢谢谢谢！🎉\n\n加油！🥳\n{senderName}"
+            }
+          }
+        }
+      },
+      {
+        "id": "holiday_followup",
+        "name": "节日追评",
+        "icon": "🎄",
+        "description": "节日期间发送的追评",
+        "content": {
+          "formal": {
+            "short": {
+              "en": "Season's Greetings! Hope you enjoyed your order #{orderId}. We'd appreciate your review: [Link]",
+              "zh": "节日快乐！希望您喜欢订单 #{orderId}。期待您的评价：[链接]"
+            },
+            "standard": {
+              "en": "Dear {firstName},\n\nSeason's Greetings! 🎄 We hope your custom pet tag has brought joy to you and your furry friend.\n\nIf you have a moment during this festive season, we would greatly appreciate your review:\n\n⭐ [Your Etsy Shop Review Link]\n\nWishing you and your pet a wonderful holiday season!\n\nBest regards,\n{senderName}",
+              "zh": "{firstName}您好，\n\n节日快乐！🎄 希望您的定制宠物标签给您和毛孩子带来了欢乐。\n\n如果您在节日期间有空，我们非常感谢您的评价：\n\n⭐ [Etsy店铺评价链接]\n\n祝您和您的宠物节日快乐！\n\n此致，\n{senderName}"
+            },
+            "detailed": {
+              "en": "Dear {firstName},\n\nWarmest holiday wishes to you and your furry companion! 🎄✨\n\nWe hope your custom pet tag has added a special touch to your celebrations. As the year comes to a close, we would be honored if you could share your experience with a review.\n\nYour feedback helps us continue creating special pieces for pet lovers like you in the coming year.\n\n⭐ Share your thoughts: [Your Etsy Shop Review Link]\n\nThank you for being part of our journey this year. Wishing you joy, love, and wagging tails! 🐾\n\nWith gratitude,\n{senderName}",
+              "zh": "{firstName}您好，\n\n向您和您的毛孩子致以最温暖的节日祝福！🎄✨\n\n希望您的定制宠物标签为您的庆祝活动增添了特别色彩。随着一年即将结束，如果您能分享体验并留下评价，我们将深感荣幸。\n\n您的反馈帮助我们在来年继续为像您这样的宠物爱好者创作特别作品。\n\n⭐ 分享您的想法：[Etsy店铺评价链接]\n\n感谢您今年成为我们旅程的一部分。祝您欢乐、爱心和摇尾巴！🐾\n\n感激之情，\n{senderName}"
+            }
+          },
+          "casual": {
+            "short": {
+              "en": "Happy Holidays! 🎄 Hope your pet loves their tag! Quick review? [Link]",
+              "zh": "节日快乐！🎄 希望宠物喜欢标签！快速评价？[链接]"
+            },
+            "standard": {
+              "en": "Hey {firstName}! 🎄✨\n\nHappy Holidays! Hope your furry friend is enjoying their custom tag this season!\n\nIf you have a moment between all the festivities, would you mind leaving a review? It would be the perfect holiday gift for our small shop! 🎁\n\n⭐ Review link: [Your Etsy Shop Review Link]\n\nWishing you and your pet a magical holiday season! 🐾",
+              "zh": "嘿 {firstName}！🎄✨\n\n节日快乐！希望你的毛孩子这个季节喜欢他们的定制标签！\n\n如果在节日活动之间有空，方便留个评价吗？这对我们小店来说是完美的节日礼物！🎁\n\n⭐ 评价链接：[Etsy店铺评价链接]\n\n祝你和你的宠物节日快乐！🐾"
+            },
+            "detailed": {
+              "en": "Hey {firstName}! 🎄🎉✨\n\nHappy Holidays to you and your furry family member! 🐾\n\nI hope your custom pet tag is making this season even more special! There's nothing better than seeing pets rock their personalized tags during the holidays! 😍\n\nIf you're feeling the holiday spirit, would you consider leaving us a review? It would honestly be the BEST gift you could give our small business! 🎁\n\n⭐ Spread the holiday cheer: [Your Etsy Shop Review Link]\n\nThank you for supporting small businesses this holiday season! You're amazing! 💕\n\nHappy Holidays! 🎄\n{senderName}",
+              "zh": "嘿 {firstName}！🎄🎉✨\n\n祝你和你的毛孩子家庭成员节日快乐！🐾\n\n希望你的定制宠物标签让这个季节更加特别！没有什么比看到宠物在节日期间炫耀他们的个性化标签更棒的了！😍\n\n如果你感受到了节日气氛，考虑给我们留个评价好吗？说实话，这是你能给我们小生意最好的礼物！🎁\n\n⭐ 传播节日欢乐：[Etsy店铺评价链接]\n\n感谢您在这个节日季节支持小生意！你太棒了！💕\n\n节日快乐！🎄\n{senderName}"
+            }
+          },
+          "lively": {
+            "short": {
+              "en": "HAPPY HOLIDAYS! 🎄🎉 Hope your pet is SLAYING with their tag! Review? [Link]",
+              "zh": "节日快乐！🎄🎉 希望宠物带着标签超酷！评价？[链接]"
+            },
+            "standard": {
+              "en": "OMG {firstName}! HAPPY HOLIDAYS! 🎄✨🎉\n\nHope your furry friend is ROCKING their custom tag this season! 🐾\n\nIf you're feeling festive, could you drop us a review? It would be the PERFECT holiday surprise for our shop! 🎁✨\n\n⭐ Review link: [Your Etsy Shop Review Link]\n\nHave the MOST magical holiday! 🌟",
+              "zh": "天哪 {firstName}！节日快乐！🎄✨🎉\n\n希望你的毛孩子这个季节正炫耀他们的定制标签！🐾\n\n如果你感受到了节日气氛，能给我们留个评价吗？这对我们店铺来说是完美的节日惊喜！🎁✨\n\n⭐ 评价链接：[Etsy店铺评价链接]\n\n度过最神奇的节日！🌟"
+            },
+            "detailed": {
+              "en": "WOOHOO {firstName}! IT'S THE HOLIDAYS! 🎄🎉✨🎅\n\nHope your pet is looking EXTRA adorable with their custom tag this season! I'm literally imagining all the cute holiday photos! 📸🐾\n\nIf you're in the holiday spirit (and I hope you ARE! 🎄), could you do us the ULTIMATE favor and leave a review? It would be like the BEST present under our tree! 🎁✨\n\nYour review = Holiday MAGIC for our small shop! 🪄\n\n⭐ Spread that holiday joy: [Your Etsy Shop Review Link]\n\nTHANK YOU and HAPPY HOLIDAYS! 🎉🎄💕\n\nCheers! 🥳\n{senderName}",
+              "zh": "呜呼 {firstName}！节日快乐！🎄🎉✨🎅\n\n希望你的宠物这个季节带着定制标签看起来特别可爱！我真的在想象所有可爱的节日照片！📸🐾\n\n如果你感受到了节日气氛（我希望你感受到了！🎄），能帮我们终极忙留个评价吗？这就像我们树下最好的礼物！🎁✨\n\n你的评价 = 给我们小店的节日魔法！🪄\n\n⭐ 传播节日欢乐：[Etsy店铺评价链接]\n\n谢谢，节日快乐！🎉🎄💕\n\n加油！🥳\n{senderName}"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

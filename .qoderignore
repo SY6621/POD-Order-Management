@@ -1,0 +1,29 @@
+# Qoder 索引忽略配置
+# 这些目录/文件不会被IDE索引，可大幅提升性能
+
+# Node.js 依赖（约150MB）
+node_modules/
+.npm/
+
+# 构建输出
+dist/
+build/
+
+# 大型字体文件
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# 临时文件
+*.log
+*.tmp
+*.bak
+*.bak_*
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# Git
+.git/

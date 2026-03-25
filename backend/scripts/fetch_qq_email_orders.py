@@ -86,6 +86,7 @@ def fetch_and_import_orders():
                 order.items[0].size if order.items else ""
             )
             sku_id = sku_info.get("id") if sku_info else None
+            weight_g = sku_info.get("weight_g") if sku_info else 30  # 默认30g
             
             # 导入数据库
             print(f"\n[3] 导入数据库...")
@@ -107,6 +108,15 @@ def fetch_and_import_orders():
                 "status": "pending",  # 使用 pending（符合 orders_status_check 约束）
                 "sku_id": sku_id,  # 关联 SKU
                 "created_at": order.order_date or datetime.now().isoformat(),
+                # 地址信息（用于物流下单页自动填充）
+                "shipping_name": order.shipping_name,
+                "shipping_address_line1": order.shipping_address_line1,
+                "shipping_address_line2": order.shipping_address_line2,
+                "shipping_city": order.shipping_city,
+                "shipping_state": order.shipping_state,
+                "shipping_zip": order.shipping_zip,
+                "shipping_country": order.shipping_country,
+                "weight_g": weight_g,  # 从SKU获取重量
             }
             
             # 插入订单

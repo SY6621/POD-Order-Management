@@ -592,22 +592,81 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
             "shipped_at": datetime.now().isoformat()
         }
         
-        if logistics_list:
-            db.update("logistics", {"order_id": request.order_id}, logistics_update)
-        else:
-            logistics_insert = {
-                "order_id": request.order_id,
-                "recipient_name": recipient_name,
-                "country": recipient_country,
-                "city": recipient_city,
-                "street_address": recipient_street,
-                "postal_code": recipient_postcode,
-                **logistics_update
-            }
-            db.insert("logistics", logistics_insert)
+        try:
+            if logistics_list:
+                db.update("logistics", {"order_id": request.order_id}, logistics_update)
+            else:
+                logistics_insert = {
+                    "order_id": request.order_id,
+                    "recipient_name": recipient_name,
+                    "country": recipient_country,
+                    "city": recipient_city,
+                    "street_address": recipient_street,
+                    "postal_code": recipient_postcode,
+                    **logistics_update
+                }
+                db.insert("logistics", logistics_insert)
+        except Exception as logistics_err:
+            print(f"[WARN] logistics表更新失败（可忽略）: {logistics_err}")
+            # logistics更新失败不阻断主流程，只保存核心字段
+            try:
+                core_update = {"tracking_number": tracking_number, "label_url": label_url}
+                if logistics_list:
+                    db.update("logistics", {"order_id": request.order_id}, core_update)
+                else:
+                    db.insert("logistics", {"order_id": request.order_id, "recipient_name": recipient_name, "tracking_number": tracking_number, "label_url": label_url})
+            except Exception as e2:
+                print(f"[WARN] logistics核心字段保存也失败: {e2}")
         
-        # 11. 更新订单状态
+        # 11. 更新订单状态（无论logistics是否成功，状态必须更新）
         db.update("orders", {"id": request.order_id}, {"status": "producing"})
+        
+        # 12. 自动生成生产文档PDF（异步触发，不阻断响应）
+        production_pdf_url = ""
+        try:
+            from src.services.svg_pdf_service import svg_pdf_service
+            # 重新查询完整订单数据
+            order_full = db.select_one("orders", {"id": request.order_id}) or order
+            # 补充SKU数据
+            if sku_data:
+                order_full.update({
+                    "sku": sku_data.get("sku_code", ""),
+                    "shape": sku_data.get("shape", ""),
+                    "color": sku_data.get("color", ""),
+                    "size": sku_data.get("size", ""),
+                    "craft": sku_data.get("craft", "抛光"),
+                    "material": sku_data.get("material", ""),
+                })
+            # 补充物流数据（刚写入的）
+            order_full.update({
+                "recipient_name": recipient_name,
+                "street_address": recipient_street,
+                "city": recipient_city,
+                "state_code": recipient_state,
+                "postal_code": recipient_postcode,
+                "country": recipient_country,
+                "tracking_number": tracking_number,
+                "label_url": label_url,
+            })
+            # 补充效果图数据
+            prod_docs = db.select("production_documents", {"order_id": request.order_id})
+            if prod_docs:
+                doc = prod_docs[0]
+                order_full.update({
+                    "effect_image_url": doc.get("effect_jpg_url", ""),
+                    "effect_svg_url": doc.get("effect_svg_url", ""),
+                    "real_photo_urls": doc.get("real_photo_urls", ""),
+                })
+            # 生成PDF
+            pdf_path = svg_pdf_service.generate_from_raw_data(order_full)
+            if pdf_path:
+                dest_name = f"{order_full.get('etsy_order_id') or request.order_id}.pdf"
+                production_pdf_url = db.upload_file("production-docs", pdf_path, dest_name) or ""
+                if production_pdf_url:
+                    db.update("orders", {"id": request.order_id}, {"production_pdf_url": production_pdf_url})
+                    print(f"[INFO] 生产文档PDF自动生成成功: {production_pdf_url}")
+        except Exception as pdf_err:
+            print(f"[WARN] 生产文档PDF自动生成失败（不影响主流程）: {pdf_err}")
         
         return JSONResponse({
             "success": True,
@@ -616,6 +675,7 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
                 "order_no": order_no,
                 "tracking_number": tracking_number,
                 "label_url": label_url,
+                "production_pdf_url": production_pdf_url,
                 "weight_used_kg": weight_kg,
                 "4px_response": response_data
             }

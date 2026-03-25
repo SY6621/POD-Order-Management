@@ -55,6 +55,15 @@ class Order(Base):
     customer_name = Column(String(100))
     customer_email = Column(String(100))
     
+    # 收件人地址信息（从邮件解析，用于物流下单）
+    shipping_name = Column(String(100))
+    shipping_address_line1 = Column(Text)
+    shipping_address_line2 = Column(Text)
+    shipping_city = Column(String(50))
+    shipping_state = Column(String(50))
+    shipping_zip = Column(String(20))
+    shipping_country = Column(String(50))
+    
     # 定制内容（刻字）
     front_text = Column(Text)  # 正面刻字
     back_text = Column(Text)   # 背面刻字
@@ -62,6 +71,7 @@ class Order(Base):
     # 订单数量与金额
     quantity = Column(Integer, default=1)
     total_amount = Column(Numeric(10, 2), default=0)
+    weight_g = Column(Integer, default=30)  # 重量（克），用于物流下单
     
     # 订单状态
     status = Column(String(20), default="new")

@@ -98,7 +98,7 @@ const routes = [
       {
         path: 'orders/producing',
         name: 'OrdersProducing',
-        component: () => import('../views/Admin/AdminOrders.vue'), // 复用现有页面
+        component: () => import('../views/Admin/OrdersProducing.vue'),
         meta: { title: '生产中订单' }
       },
       {

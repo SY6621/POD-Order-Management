@@ -154,24 +154,24 @@
                 order.status === '逾期' ? 'bg-red-50 border-l-4 border-red-500' : 'hover:bg-slate-50'
               ]"
             >
-              <td class="px-4 whitespace-nowrap font-medium text-slate-700">{{ order.id }}</td>
-              <td class="px-4 whitespace-nowrap font-mono text-slate-500">{{ order.sku }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.shape }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.size }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.craft }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.factory }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-500">{{ order.orderDate }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-500">{{ order.dueDate }}</td>
+              <td class="px-4 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id }}</td>
+              <td class="px-4 whitespace-nowrap font-mono text-slate-500">{{ order.sku_mappings?.sku_code || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.shape || order.product_shape || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.size || order.product_size || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.craft || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">-</td>
+              <td class="px-4 whitespace-nowrap text-slate-500">{{ formatDate(order.created_at) }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-500">-</td>
               <td class="px-4 whitespace-nowrap">
-                <span :class="getStatusClass(order.status)">
-                  {{ getStatusText(order.status) }}
-                </span>
+                <span :class="getStatusClass('生产中')">生产中</span>
               </td>
               <td class="px-4 whitespace-nowrap">
-                <button v-if="order.hasPdf" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+                <button v-if="order.production_pdf_url" @click="viewPdf(order)" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 text-xs">
                   <span>📄</span>PDF
                 </button>
-                <span v-else class="text-slate-400">-</span>
+                <button v-else @click="generatePdf(order)" :disabled="generatingId === order.id" class="text-orange-500 hover:text-orange-700 font-medium flex items-center gap-1 text-xs disabled:opacity-50">
+                  <span>{{ generatingId === order.id ? '生成中...' : '生成PDF' }}</span>
+                </button>
               </td>
             </tr>
             <tr v-if="filteredOrders.length === 0" class="h-[60px]">
@@ -204,21 +204,34 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
+import supabase from '../../utils/supabase'
 
-// 假数据
-const mockOrders = ref([
-  { id: '4002217518', sku: 'B-HC-G-L', shape: '心形', size: '大号', craft: '金色', factory: '工厂A', orderDate: '03-15', dueDate: '03-18', status: '生产中', hasPdf: true },
-  { id: '4002217519', sku: 'B-BO-S-S', shape: '骨头', size: '小号', craft: '银色', factory: '工厂B', orderDate: '03-14', dueDate: '03-17', status: '逾期', hasPdf: true },
-  { id: '4002217520', sku: 'B-CI-G-L', shape: '圆形', size: '大号', craft: '金色', factory: '工厂A', orderDate: '03-16', dueDate: '03-19', status: '待揽件', hasPdf: true },
-  { id: '4002217521', sku: 'B-HC-S-S', shape: '心形', size: '小号', craft: '银色', factory: '工厂A', orderDate: '03-15', dueDate: '03-18', status: '已完成', hasPdf: true },
-  { id: '4002217522', sku: 'B-BO-G-L', shape: '骨头', size: '大号', craft: '金色', factory: '工厂B', orderDate: '03-13', dueDate: '03-16', status: '逾期', hasPdf: true },
-  { id: '4002217523', sku: 'B-CI-S-S', shape: '圆形', size: '小号', craft: '银色', factory: '工厂A', orderDate: '03-16', dueDate: '03-19', status: '生产中', hasPdf: true },
-  { id: '4002217524', sku: 'B-HC-G-L', shape: '心形', size: '大号', craft: '金色', factory: '工厂B', orderDate: '03-15', dueDate: '03-18', status: '生产中', hasPdf: true },
-  { id: '4002217525', sku: 'B-BO-S-S', shape: '骨头', size: '小号', craft: '银色', factory: '工厂A', orderDate: '03-16', dueDate: '03-20', status: '待揽件', hasPdf: true },
-  { id: '4002217526', sku: 'B-CI-G-L', shape: '圆形', size: '大号', craft: '金色', factory: '工厂B', orderDate: '03-17', dueDate: '03-20', status: '生产中', hasPdf: false },
-  { id: '4002217527', sku: 'B-HC-S-S', shape: '心形', size: '小号', craft: '银色', factory: '工厂A', orderDate: '03-17', dueDate: '03-21', status: '生产中', hasPdf: true },
-])
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+const realOrders = ref([])
+const loading = ref(false)
+const generatingId = ref(null)
+
+onMounted(() => loadOrders())
+
+async function loadOrders() {
+  loading.value = true
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`*, sku_mappings:sku_mapping(*), logistics(*)`)
+      .eq('status', 'producing')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    realOrders.value = data || []
+    console.log(`✅ 工厂生产总览加载: ${realOrders.value.length} 条`)
+  } catch (e) {
+    console.error('❌ 加载失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
 
 // 筛选条件
 const filters = reactive({
@@ -230,35 +243,49 @@ const filters = reactive({
 
 // 统计数据
 const stats = computed(() => ({
-  producing: mockOrders.value.filter(o => o.status === '生产中').length,
-  todayCompleted: mockOrders.value.filter(o => o.status === '已完成').length,
-  overdue: mockOrders.value.filter(o => o.status === '逾期').length,
-  waitingPickup: mockOrders.value.filter(o => o.status === '待揽件').length,
+  producing: realOrders.value.length,
+  todayCompleted: 0,
+  overdue: 0,
+  waitingPickup: 0,
 }))
 
-// 筛选后的订单
-const filteredOrders = computed(() => {
-  return mockOrders.value.filter(order => {
-    if (filters.factory !== 'all' && order.factory !== filters.factory) return false
-    if (filters.status !== 'all' && order.status !== filters.status) return false
-    return true
-  })
-})
+// 展示订单列表
+const filteredOrders = computed(() => realOrders.value)
 
-// 工厂汇总
-const factorySummary = computed(() => {
-  const factories = ['工厂A', '工厂B']
-  return factories.map(name => {
-    const orders = mockOrders.value.filter(o => o.factory === name)
-    return {
-      name,
-      producing: orders.filter(o => o.status === '生产中').length,
-      completed: orders.filter(o => o.status === '已完成').length,
-      overdue: orders.filter(o => o.status === '逾期').length,
-      waitingPickup: orders.filter(o => o.status === '待揽件').length,
+// 工厂汇总（未分配工厂时不展示）
+const factorySummary = computed(() => [])
+
+async function generatePdf(order) {
+  generatingId.value = order.id
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/pdf/generate-and-upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: order.id })
+    })
+    const data = await res.json()
+    if (data.success) {
+      const idx = realOrders.value.findIndex(o => o.id === order.id)
+      if (idx !== -1) realOrders.value[idx] = { ...realOrders.value[idx], production_pdf_url: data.production_pdf_url }
+    } else {
+      alert('❌ 生成失败: ' + (data.detail || data.message || '未知错误'))
     }
-  })
-})
+  } catch (e) {
+    alert('❌ 网络错误: ' + e.message)
+  } finally {
+    generatingId.value = null
+  }
+}
+
+function viewPdf(order) {
+  if (order.production_pdf_url) window.open(order.production_pdf_url, '_blank')
+}
+
+function formatDate(str) {
+  if (!str) return '-'
+  const d = new Date(str)
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 // 状态样式
 const getStatusClass = (status) => {
@@ -266,7 +293,7 @@ const getStatusClass = (status) => {
     '生产中': 'bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold',
     '已完成': 'bg-green-100 text-green-600 px-2 py-0.5 rounded text-[10px] font-bold',
     '逾期': 'bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold',
-    '待揽件': 'bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold',
+    '待揓件': 'bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold',
   }
   return classes[status] || 'bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold'
 }
@@ -276,3 +303,4 @@ const getStatusText = (status) => {
   return status
 }
 </script>
+

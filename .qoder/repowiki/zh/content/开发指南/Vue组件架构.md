@@ -30,7 +30,7 @@
 - 完善管理门户的订单工作流导航体系
 - 新增完整的物流下单功能和工厂生产监控界面
 - 增强邮件模板的联动模式和订单生成能力
-- **更新**：OrdersPending.vue组件重大重设计，采用三行布局结构、侧边预览面板、效果图片管理和邮件工作流程集成
+- **更新**：OrdersPending.vue组件重大重设计，采用统一的两列布局结构，移除了针对待创建标签页的特殊布局处理，统一了左右比例分配和响应式行为
 - **新增**：改进了订单状态管理组件，增强了生产文档同步功能
 - **新增**：更新了物流下单组件功能，实现了4PX物流渠道的完整集成
 - **新增**：增强了前端设计器组件，完善了SVG数据处理和状态管理
@@ -347,7 +347,7 @@ OrdersCompleted --> ReviewSystem : "管理"
 
 ### 待确认订单组件 OrdersPending.vue
 
-**更新** 待确认订单组件经过重大重设计，采用三行布局结构、侧边预览面板、效果图片管理和邮件工作流程集成：
+**更新** 待确认订单组件经过重大重设计，采用统一的两列布局结构，移除了针对待创建标签页的特殊布局处理，统一了左右比例分配和响应式行为：
 
 ```mermaid
 classDiagram
@@ -387,21 +387,34 @@ OrdersPending --> EmailTemplates : "集成"
 **图表来源**
 - [frontend/src/views/Admin/OrdersPending.vue:194-350](file://frontend/src/views/Admin/OrdersPending.vue#L194-L350)
 
-#### 三行布局结构
+#### 统一两列布局结构
 
-OrdersPending.vue采用了创新的三行布局设计：
+OrdersPending.vue采用了创新的统一两列布局设计：
 
-1. **第一行**：订单列表 + 订单详情（左侧）+ 设计器/邮件撰写区域（右侧）
-2. **第二行**：效果图预览 + 邮件预览（左右结构）
-3. **第三行**：操作按钮（复制链接、复制邮件、前往物流下单）
+1. **左侧主区域**：订单列表 + 设计器/邮件撰写区域（flex-1）
+2. **右侧订单详情**：固定宽度320px的侧边面板
 
-#### 侧边预览面板
+#### 左侧区域统一处理
 
-右侧侧边面板包含：
+左侧区域不再区分不同标签页的特殊布局，而是：
+- **新订单标签页**：显示效果图设计器（iframe）
+- **邮件撰写标签页**：显示邮件撰写区域（中英文对照编辑器）
+- **待创建标签页**：显示效果图预览和邮件预览并排布局
+
+#### 右侧区域统一设计
+
+右侧区域包含：
 - **订单详情**：产品图片、订单信息、正背面内容
-- **效果图预览**：实时预览生成的效果图
-- **邮件预览**：英文版本邮件内容预览
-- **发送面板**：复制链接、复制邮件、前往物流下单操作
+- **发送面板**：根据当前标签页显示不同的操作面板
+  - 邮件撰写标签页：效果图预览 + 确认邮件预览
+  - 待创建标签页：邮件预览 + 发送给客户操作面板
+
+#### 响应式行为统一
+
+组件实现了统一的响应式行为：
+- 左右两列布局在所有标签页中保持一致
+- 固定宽度的右侧面板确保操作区域的一致性
+- 统一的比例分配提升了用户体验的连贯性
 
 #### 邮件工作流程集成
 
@@ -413,7 +426,7 @@ OrdersPending.vue采用了创新的三行布局设计：
 - **发送功能**：保存邮件记录并更新订单状态
 
 **章节来源**
-- [frontend/src/views/Admin/OrdersPending.vue:1-1233](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1233)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1120](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1120)
 - [frontend/src/config/email-templates.json:1-374](file://frontend/src/config/email-templates.json#L1-L374)
 
 ### 邮件模板组件 AdminEffects.vue
@@ -455,7 +468,7 @@ AdminEffects --> EmailTemplateSystem : "重构"
 - [frontend/src/views/Admin/OrdersShipping.vue:1-687](file://frontend/src/views/Admin/OrdersShipping.vue#L1-L687)
 - [frontend/src/views/Admin/FactoryOverview.vue:1-279](file://frontend/src/views/Admin/FactoryOverview.vue#L1-L279)
 - [frontend/src/views/Admin/OrdersCompleted.vue:1-463](file://frontend/src/views/Admin/OrdersCompleted.vue#L1-L463)
-- [frontend/src/views/Admin/OrdersPending.vue:1-1233](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1233)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1120](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1120)
 - [frontend/src/views/Admin/AdminEffects.vue:1-434](file://frontend/src/views/Admin/AdminEffects.vue#L1-L434)
 
 ## 状态管理架构
@@ -615,6 +628,7 @@ A --> D[管理门户路由]
 B --> B1[/ - 仪表盘总览]
 B --> B2[/pending - 待确认订单]
 B --> B3[/production - 生产中订单]
+B --> B4[/completed - 已完成订单]
 C --> C1[/store/login - 店铺登录]
 C --> C2[/store/:shopCode/orders - 店铺订单]
 C --> C3[/store/:shopCode/effects - 效果图管理]
@@ -836,7 +850,7 @@ L[email-templates.json] --> M[OrdersPending.vue]
 3. **懒加载路由**: 路由组件按需加载，减少初始包大小
 4. **多store隔离**: 不同门户使用独立store，避免状态污染
 5. **生产文档同步**: saveEffectImage方法同时更新orders表和production_documents表，确保数据一致性
-6. **三行布局优化**: OrdersPending.vue的三行布局减少了不必要的DOM层级，提升渲染性能
+6. **统一两列布局优化**: OrdersPending.vue的统一两列布局减少了不必要的DOM层级，提升渲染性能
 
 ### 数据加载策略
 
@@ -887,7 +901,7 @@ L[email-templates.json] --> M[OrdersPending.vue]
 - **解决**: 检查数据库权限，确认表存在且可写入
 
 #### OrdersPending.vue布局问题
-- **症状**: 三行布局显示异常或侧边面板不显示
+- **症状**: 两列布局显示异常或侧边面板不显示
 - **原因**: CSS样式冲突或组件状态管理问题
 - **解决**: 检查Tailwind CSS类名，确认响应式断点设置
 
@@ -912,7 +926,7 @@ L[email-templates.json] --> M[OrdersPending.vue]
 5. **权限控制**: 完整的用户权限和数据隔离机制
 6. **路由系统**: 基于Vue Router的SPA架构
 7. **功能完整性**: 新增物流下单、工厂监控、邮件模板等核心功能
-8. **用户体验优化**: OrdersPending.vue的三行布局设计提升了操作效率
+8. **用户体验优化**: OrdersPending.vue的统一两列布局设计提升了操作效率
 
 ### 技术亮点
 1. **现代化工具链**: Vite提供快速开发体验
@@ -923,7 +937,7 @@ L[email-templates.json] --> M[OrdersPending.vue]
 6. **实时监控**: FactoryOverview.vue提供工厂生产实时监控
 7. **自动化流程**: OrdersCompleted.vue支持自动邮件发送功能
 8. **数据一致性**: 增强的生产文档同步确保数据完整性
-9. **创新布局**: OrdersPending.vue的三行布局设计提升了用户体验
+9. **创新布局**: OrdersPending.vue的统一两列布局设计提升了用户体验
 10. **邮件工作流**: 完整的邮件生成、翻译、发送工作流程
 
 ### 改进建议
@@ -936,4 +950,4 @@ L[email-templates.json] --> M[OrdersPending.vue]
 7. **响应式优化**: 进一步优化移动端显示效果
 8. **缓存策略**: 实现更智能的数据缓存和更新机制
 
-该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件进一步完善了系统的功能完整性，特别是物流下单和工厂监控功能，为电商订单管理提供了全方位的解决方案。OrdersPending.vue的重大重设计更是体现了现代前端开发的创新思维，通过三行布局和侧边预览面板显著提升了用户的操作效率和体验质量。
+该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件进一步完善了系统的功能完整性，特别是物流下单和工厂监控功能，为电商订单管理提供了全方位的解决方案。OrdersPending.vue的重大重设计更是体现了现代前端开发的创新思维，通过统一的两列布局和侧边面板设计显著提升了用户的操作效率和体验质量。

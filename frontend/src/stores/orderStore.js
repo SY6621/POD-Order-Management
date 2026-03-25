@@ -493,26 +493,32 @@ export const useOrderStore = defineStore('order', () => {
     }
   }
 
-  // 保存效果图（从设计器获取SVG数据并上传到存储）
-  const saveEffectImage = async (orderId, svgData) => {
+  // 保存效果图（从设计器获取文字转路径SVG并上传到存储）
+  const saveEffectImage = async (orderId, imageData) => {
     loading.value = true
     error.value = null
     
     try {
-      // 1. 将SVG转换为Blob
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml' })
+      // SVG 格式（文字已转路径，无字体依赖）
+      const fileBlob = new Blob([imageData], { type: 'image/svg+xml' })
       const fileName = `effect_${orderId}_${Date.now()}.svg`
+      const contentType = 'image/svg+xml'
+      console.log('📤 开始上传效果图:', fileName)
       
       // 2. 上传到Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase
         .storage
         .from('effect-images')
-        .upload(fileName, svgBlob, {
-          contentType: 'image/svg+xml',
+        .upload(fileName, fileBlob, {
+          contentType: contentType,
           upsert: true
         })
       
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('❌ Storage上传失败:', uploadError)
+        throw new Error(`Storage上传失败: ${uploadError.message}`)
+      }
+      console.log('✅ Storage上传成功:', uploadData)
       
       // 3. 获取公开URL
       const { data: urlData } = supabase
@@ -521,8 +527,10 @@ export const useOrderStore = defineStore('order', () => {
         .getPublicUrl(fileName)
       
       const publicUrl = urlData.publicUrl
+      console.log('🔗 获取到公开URL:', publicUrl)
       
       // 4. 更新订单记录
+      console.log('📝 开始更新订单记录:', orderId)
       const { data, error: updateError } = await supabase
         .from('orders')
         .update({ 
@@ -532,46 +540,55 @@ export const useOrderStore = defineStore('order', () => {
         .eq('id', orderId)
         .select()
       
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('❌ 订单更新失败:', updateError)
+        throw new Error(`订单更新失败: ${updateError.message}`)
+      }
+      console.log('✅ 订单更新成功:', data)
       
-      // 5. 【新增】同步保存到 production_documents 表（生产文档PDF依赖此表）
-      const { data: existingDoc } = await supabase
-        .from('production_documents')
-        .select('id')
-        .eq('order_id', orderId)
-        .single()
-      
-      if (existingDoc) {
-        // 更新已有记录
-        const { error: docUpdateError } = await supabase
+      // 5. 【可选】同步保存到 production_documents 表（生产文档PDF依赖此表）
+      // 注意：此操作可能因RLS策略失败，但不影响主流程
+      try {
+        const { data: existingDoc } = await supabase
           .from('production_documents')
-          .update({ 
-            effect_svg_url: publicUrl,
-            updated_at: new Date().toISOString()
-          })
+          .select('id')
           .eq('order_id', orderId)
+          .single()
         
-        if (docUpdateError) {
-          console.warn('⚠️ production_documents 更新失败:', docUpdateError)
+        if (existingDoc) {
+          // 更新已有记录
+          const { error: docUpdateError } = await supabase
+            .from('production_documents')
+            .update({ 
+              effect_svg_url: publicUrl,
+              updated_at: new Date().toISOString()
+            })
+            .eq('order_id', orderId)
+          
+          if (docUpdateError) {
+            console.warn('⚠️ production_documents 更新失败:', docUpdateError)
+          } else {
+            console.log('✅ production_documents 更新成功')
+          }
         } else {
-          console.log('✅ production_documents 更新成功')
+          // 插入新记录
+          const { error: docInsertError } = await supabase
+            .from('production_documents')
+            .insert({
+              order_id: orderId,
+              effect_svg_url: publicUrl,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          
+          if (docInsertError) {
+            console.warn('⚠️ production_documents 插入失败:', docInsertError)
+          } else {
+            console.log('✅ production_documents 插入成功')
+          }
         }
-      } else {
-        // 插入新记录
-        const { error: docInsertError } = await supabase
-          .from('production_documents')
-          .insert({
-            order_id: orderId,
-            effect_svg_url: publicUrl,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-        
-        if (docInsertError) {
-          console.warn('⚠️ production_documents 插入失败:', docInsertError)
-        } else {
-          console.log('✅ production_documents 插入成功')
-        }
+      } catch (docError) {
+        console.warn('⚠️ production_documents 操作失败（可忽略）:', docError.message)
       }
       
       // 6. 更新本地缓存

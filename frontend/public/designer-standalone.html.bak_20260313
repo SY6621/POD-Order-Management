@@ -1,9 +1,10 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>效果图设计器 - 独立版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
         
@@ -405,6 +406,13 @@
 
         <!-- 操作按钮 -->
         <div class="action-btns">
+            <button class="btn-ghost" onclick="edCopyParams()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                </svg>
+                复制参数
+            </button>
             <button class="btn-ghost" onclick="edDownload()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -413,13 +421,13 @@
                 </svg>
                 下载 SVG
             </button>
-            <button class="btn-ghost" onclick="edSaveDefaults()">
+            <button class="btn-ghost" onclick="edSaveDraft()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                     <polyline points="17 21 17 13 7 13 7 21"/>
                     <polyline points="7 3 7 8 15 8"/>
                 </svg>
-                保存为默认值
+                保存草稿
             </button>
             <button class="btn-primary" onclick="edSendToParent()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -452,38 +460,43 @@
       const loadedFonts = new Set(['F-04', 'back_standard']);
       
       // 动态加载字体（返回Promise，支持await）
-      // 各字体对应的正确文件格式（避免盲目尝试ttf导致otf载入失败）
-      const FONT_EXT = {
-        'F-01': 'ttf', 'F-02': 'otf', 'F-03': 'otf',
-        'F-04': 'ttf', 'F-05': 'otf', 'F-06': 'ttf',
-        'F-07': 'otf', 'F-08': 'ttf', 'back_standard': 'ttf'
-      };
-
       async function loadFont(fontName) {
         if (loadedFonts.has(fontName)) return;
         
-        // 直接使用已知格式，无需尝试
-        const ext = FONT_EXT[fontName] || 'ttf';
-        const formatType = ext === 'ttf' ? 'truetype' : 'opentype';
-        const fontUrl = `http://localhost:8000/fonts/${fontName}.${ext}`;
+        // 尝试 .ttf 格式，如果不存在则尝试 .otf
+        const formats = ['ttf', 'otf'];
+        let loaded = false;
         
-        try {
-          const style = document.createElement('style');
-          style.textContent = `
-            @font-face {
-              font-family: '${fontName}';
-              src: url('${fontUrl}') format('${formatType}');
-              font-weight: normal;
-              font-style: normal;
-            }
-          `;
-          document.head.appendChild(style);
-          await document.fonts.load(`12px "${fontName}"`);
-          loadedFonts.add(fontName);
-          console.log(`字体 ${fontName}.${ext} 已加载完成`);
-        } catch (e) {
-          console.warn(`字体 ${fontName} 加载失败:`, e);
-          loadedFonts.add(fontName); // 避免重复尝试
+        for (const ext of formats) {
+          try {
+            const fontUrl = `http://localhost:8000/fonts/${fontName}.${ext}`;
+            const style = document.createElement('style');
+            const formatType = ext === 'ttf' ? 'truetype' : 'opentype';
+            style.textContent = `
+              @font-face {
+                font-family: '${fontName}';
+                src: url('${fontUrl}') format('${formatType}');
+                font-weight: normal;
+                font-style: normal;
+              }
+            `;
+            document.head.appendChild(style);
+            
+            // 等待字体加载完成
+            await document.fonts.load(`12px "${fontName}"`);
+            loadedFonts.add(fontName);
+            console.log(`字体 ${fontName}.${ext} 已加载完成`);
+            loaded = true;
+            break;
+          } catch (e) {
+            // 尝试下一个格式
+            continue;
+          }
+        }
+        
+        if (!loaded) {
+          console.warn(`字体 ${fontName} 加载失败，使用后备字体`);
+          loadedFonts.add(fontName); // 即使失败也标记为已加载，避免重复尝试
         }
       }
 
@@ -703,7 +716,7 @@
       };
 
       window.edSaveDraft = function() {
-        // 备用：保存当前参数到 localStorage
+        // 保存当前参数到 localStorage
         const params = {
           shape: document.getElementById('ed-shape').value,
           color: document.getElementById('ed-color').value,
@@ -724,190 +737,6 @@
         localStorage.setItem('designerDraft', JSON.stringify(params));
         alert('草稿已保存！');
       };
-
-      // 获取背面类型：背面文字包含英文字母则为 text+phone，否则为 phone_only
-      function getBackType() {
-        const backText = (document.getElementById('ed-bc1').value || '').trim();
-        return /[a-zA-Z]/.test(backText) ? 'text+phone' : 'phone_only';
-      }
-
-      // 生成存储key：形状 + 正面字体 + 背面类型
-      function getDefaultsKey() {
-        const shape    = document.getElementById('ed-shape').value || 'heart';
-        const font     = document.getElementById('ed-ff').value || 'F-04';
-        const backType = getBackType();
-        return 'designerDefaults_' + shape + '_' + font + '_' + backType;
-      }
-
-      // 保存为默认值：按「形状_字体_背面类型」分组
-      window.edSaveDefaults = function() {
-        const shape    = document.getElementById('ed-shape').value || 'heart';
-        const font     = document.getElementById('ed-ff').value || 'F-04';
-        const backType = getBackType();
-        const key = getDefaultsKey();
-        const defaults = {
-          frontFont: font,
-          frontSize: document.getElementById('ed-fs').value,
-          frontY:    document.getElementById('ed-fy').value,
-          backFont:  document.getElementById('ed-bf').value,
-          backSize:  document.getElementById('ed-bs1').value,
-          backY:     document.getElementById('ed-by1').value,
-          phoneFont: document.getElementById('ed-pf').value,
-          phoneSize: document.getElementById('ed-bs2').value,
-          phoneY:    document.getElementById('ed-by2').value,
-          savedAt:   new Date().toLocaleString('zh-CN')
-        };
-        localStorage.setItem(key, JSON.stringify(defaults));
-        const backLabel = backType === 'text+phone' ? '英文+数字' : '纯数字';
-        alert('✅ 已保存为默认值\n形状: ' + shape + ' | 字体: ' + font + ' | 背面: ' + backLabel + '\n\nkey: ' + key + '\n\n下次载入相同形状+字体+背面类型的订单时将自动应用此排版');
-      };
-
-      // 自动加载默认值（不覆盖文字内容）
-      // shape: 形状字符串，font: 订单关联字体，backText: 背面文字内容
-      function applyDefaults(shape, font, backText) {
-        const backType = /[a-zA-Z]/.test(backText || '') ? 'text+phone' : 'phone_only';
-        const key = 'designerDefaults_' + shape + '_' + font + '_' + backType;
-        const saved = localStorage.getItem(key);
-        if (!saved) {
-          console.log('⚠️ 无匹配默认值 [' + key + ']，保持原始设置');
-          return;
-        }
-        try {
-          const d = JSON.parse(saved);
-          const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
-          setVal('ed-ff',  d.frontFont);
-          setVal('ed-fs',  d.frontSize);
-          setVal('ed-fy',  d.frontY);
-          setVal('ed-bf',  d.backFont);
-          setVal('ed-bs1', d.backSize);
-          setVal('ed-by1', d.backY);
-          setVal('ed-pf',  d.phoneFont);
-          setVal('ed-bs2', d.phoneSize);
-          setVal('ed-by2', d.phoneY);
-          console.log('✅ 已自动应用默认值 [' + key + '] 保存于 ' + d.savedAt);
-        } catch(e) {
-          console.warn('加载默认值失败:', e);
-        }
-      }
-
-      // 使用 opentype.js 加载字体（缓存已加载字体）
-      const opentypeFontCache = {};
-      async function loadFontForVector(fontName) {
-        if (opentypeFontCache[fontName]) return opentypeFontCache[fontName];
-        const ext = FONT_EXT[fontName] || 'ttf';
-        const fontUrl = `http://localhost:8000/fonts/${fontName}.${ext}`;
-        const font = await opentype.load(fontUrl);
-        opentypeFontCache[fontName] = font;
-        return font;
-      }
-
-      // 文字转矢量路径（opentype.js 100%精确）
-      async function textToVectorPath(text, fontName, fontSize, x, y, textAnchor) {
-        if (!text || !text.trim()) return { d: '', transform: '', width: 0 };
-        try {
-          const font = await loadFontForVector(fontName);
-          const unitsPerEm = font.unitsPerEm || 1000;
-          const scale = fontSize / unitsPerEm;
-          const ascender = font.ascender || 800;
-          const descender = font.descender || -200;
-          const width = font.getAdvanceWidth(text, fontSize);
-          let startX = x;
-          if (textAnchor === 'middle') startX = x - width / 2;
-          else if (textAnchor === 'end') startX = x - width;
-          const xHeightRatio = 0.35;
-          const baselineY = y + (ascender * scale * xHeightRatio);
-          const path = font.getPath(text, startX, baselineY, fontSize);
-          const pathData = path.toSVG();
-          const dMatch = pathData.match(/d="([^"]+)"/);
-          if (!dMatch) return { d: '', transform: '', width };
-          return { d: dMatch[1], transform: '', width };
-        } catch (e) {
-          console.warn(`textToVectorPath 失败 [${fontName}]:`, e);
-          return { d: '', transform: '', width: 0 };
-        }
-      }
-
-      // 获取效果图（供外部调用）- opentype.js 100%精确矢量 SVG
-      window.edGetSVGData = async function() {
-        const originalSvg = document.getElementById('ed-svg');
-        if (!originalSvg) return null;
-
-        const frontFont = document.getElementById('ed-ff')?.value || 'F-04';
-        const backFont = document.getElementById('ed-bf')?.value || 'back_standard';
-        const phoneFont = document.getElementById('ed-pf')?.value || 'back_standard';
-        const tFill = TEXT_COLORS[document.getElementById('ed-color')?.value] || '#333333';
-
-        const clonedSvg = originalSvg.cloneNode(true);
-
-        // 转换正面文字
-        const ft = clonedSvg.getElementById('ed-ft');
-        if (ft && ft.textContent.trim()) {
-          // 获取所有 tspan 文字内容（处理换行）
-          const tspans = ft.querySelectorAll('tspan');
-          const lines = tspans.length > 0
-            ? Array.from(tspans).map(t => ({ text: t.textContent, y: parseFloat(t.getAttribute('y')) || parseFloat(ft.getAttribute('y')) || 54 }))
-            : [{ text: ft.textContent, y: parseFloat(ft.getAttribute('y')) || 54 }];
-          const fontSize = parseFloat(ft.getAttribute('font-size')) || 24;
-          const x = parseFloat(ft.getAttribute('x')) || 70.87;
-          const textAnchor = ft.getAttribute('text-anchor') || 'middle';
-          for (const line of lines) {
-            if (!line.text.trim()) continue;
-            const result = await textToVectorPath(line.text, frontFont, fontSize, x, line.y, textAnchor);
-            if (result.d) {
-              const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-              pathEl.setAttribute('d', result.d);
-              pathEl.setAttribute('fill', tFill);
-              ft.parentNode.insertBefore(pathEl, ft);
-            }
-          }
-          ft.parentNode.removeChild(ft);
-        }
-
-        // 转换背面文字
-        const bt1 = clonedSvg.getElementById('ed-bt1');
-        if (bt1 && bt1.textContent.trim()) {
-          const tspans = bt1.querySelectorAll('tspan');
-          const lines = tspans.length > 0
-            ? Array.from(tspans).map(t => ({ text: t.textContent, y: parseFloat(t.getAttribute('y')) || parseFloat(bt1.getAttribute('y')) || 40 }))
-            : [{ text: bt1.textContent, y: parseFloat(bt1.getAttribute('y')) || 40 }];
-          const fontSize = parseFloat(bt1.getAttribute('font-size')) || 11;
-          const x = parseFloat(bt1.getAttribute('x')) || 70.87;
-          const textAnchor = bt1.getAttribute('text-anchor') || 'middle';
-          for (const line of lines) {
-            if (!line.text.trim()) continue;
-            const result = await textToVectorPath(line.text, backFont, fontSize, x, line.y, textAnchor);
-            if (result.d) {
-              const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-              pathEl.setAttribute('d', result.d);
-              pathEl.setAttribute('fill', tFill);
-              bt1.parentNode.insertBefore(pathEl, bt1);
-            }
-          }
-          bt1.parentNode.removeChild(bt1);
-        }
-
-        // 转换电话号码
-        const bt2 = clonedSvg.getElementById('ed-bt2');
-        if (bt2 && bt2.textContent.trim()) {
-          const fontSize = parseFloat(bt2.getAttribute('font-size')) || 11;
-          const x = parseFloat(bt2.getAttribute('x')) || 70.87;
-          const y = parseFloat(bt2.getAttribute('y')) || 54;
-          const textAnchor = bt2.getAttribute('text-anchor') || 'middle';
-          const result = await textToVectorPath(bt2.textContent, phoneFont, fontSize, x, y, textAnchor);
-          if (result.d) {
-            const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            pathEl.setAttribute('d', result.d);
-            pathEl.setAttribute('fill', tFill);
-            bt2.parentNode.replaceChild(pathEl, bt2);
-          }
-        }
-
-        // 移除 defs（不再需要字体样式）
-        const defs = clonedSvg.querySelector('defs');
-        if (defs) defs.remove();
-
-        return new XMLSerializer().serializeToString(clonedSvg);
-      }
 
       window.edDownload = function() {
         // 创建一个新的 SVG，将文字转换为路径
@@ -1165,7 +994,7 @@
       });
       
       // 监听父页面发送的订单数据
-            window.addEventListener('message', async function(event) {
+      window.addEventListener('message', function(event) {
         if (event.data && event.data.type === 'loadOrder') {
           const data = event.data.data;
           console.log('📥 设计器收到订单数据:', data);
@@ -1200,13 +1029,6 @@
           
           // 重新渲染
           window.edUpdate();
-
-          // 自动应用默认值（字体/字号/Y坐标，不覆盖文字）
-          const shape = data.shape || document.getElementById('ed-shape').value || 'heart';
-          const font = data.font || document.getElementById('ed-ff').value || 'F-04';
-          const backText = data.backText || data.back_text || '';
-          applyDefaults(shape, font, backText);
-          window.edUpdate(); // 应用默认值后再渲染一次
           
           // 通知父页面加载完成
           event.source.postMessage({ type: 'designerLoaded', orderId: data.orderId }, '*');
@@ -1214,10 +1036,10 @@
         
         // 处理获取SVG请求
         if (event.data && event.data.type === 'getSVG') {
-          const svgData = window.edGetSVGData ? await window.edGetSVGData() : null;
+          const svgData = window.edGetSVGData ? window.edGetSVGData() : null;
           event.source.postMessage({ 
             type: 'svgData', 
-            svgData: svgData 
+            svg: svgData 
           }, '*');
         }
       });

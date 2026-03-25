@@ -62,10 +62,27 @@
             />
           </div>
 
-          <div class="overflow-x-auto" style="max-height: 600px;">
+          <!-- 批量操作栏 -->
+          <div class="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+              <input 
+                type="checkbox" 
+                :checked="selectedOrders.length === filteredOrders.length && filteredOrders.length > 0"
+                @change="toggleSelectAll"
+                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>全选</span>
+            </label>
+            <span class="text-xs text-slate-500">
+              已选 <span class="font-bold text-blue-600">{{ selectedOrders.length }}</span> / {{ filteredOrders.length }} 单
+            </span>
+          </div>
+
+          <div class="overflow-x-auto" style="max-height: 560px;">
             <table class="w-full text-xs text-left">
               <thead class="bg-slate-100 text-slate-500 font-medium border-b border-slate-200 sticky top-0 z-10">
                 <tr class="h-[36px]">
+                  <th class="px-2 whitespace-nowrap font-medium w-8"></th>
                   <th class="px-3 whitespace-nowrap font-medium">订单号</th>
                   <th class="px-3 whitespace-nowrap font-medium">客户</th>
                   <th class="px-3 whitespace-nowrap font-medium">SKU</th>
@@ -79,6 +96,14 @@
                   :key="order.id" 
                   :class="['hover:bg-slate-50 transition-colors h-[44px]', selectedOrder?.id === order.id ? 'bg-blue-50' : '']"
                 >
+                  <td class="px-2 whitespace-nowrap">
+                    <input 
+                      type="checkbox" 
+                      :checked="isSelected(order.id)"
+                      @change="toggleSelect(order)"
+                      class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
                   <td class="px-3 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id || order.id }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.customer_name }}</td>
                   <td class="px-3 whitespace-nowrap font-mono text-slate-500">{{ order.sku_mapping?.sku_code || order.sku_id || '-' }}</td>
@@ -86,14 +111,14 @@
                   <td class="px-3 whitespace-nowrap">
                     <button 
                       @click="selectOrder(order)" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-[10px] transition-colors"
+                      :class="['px-3 py-1 rounded text-[10px] transition-colors', selectedOrder?.id === order.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200']"
                     >
-                      选择
+                      {{ selectedOrder?.id === order.id ? '当前' : '选择' }}
                     </button>
                   </td>
                 </tr>
                 <tr v-if="filteredOrders.length === 0" class="h-[60px]">
-                  <td colspan="5" class="px-3 text-center text-slate-400 text-sm">暂无待下单订单</td>
+                  <td colspan="6" class="px-3 text-center text-slate-400 text-sm">暂无待下单订单</td>
                 </tr>
               </tbody>
             </table>
@@ -304,9 +329,11 @@
 
             <!-- 操作按钮 -->
             <div class="flex gap-3 mt-6">
+              <!-- 单订单模式 -->
               <button 
+                v-if="selectedOrders.length <= 1"
                 @click="createOrder" 
-                :disabled="submitting" 
+                :disabled="submitting || !selectedOrder" 
                 class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors"
               >
                 <svg v-if="submitting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -321,17 +348,29 @@
                 </svg>
                 {{ submitting ? '正在创建...' : '创建物流订单' }}
               </button>
+              <!-- 批量模式 -->
               <button 
-                disabled 
-                title="功能开发中" 
-                class="px-6 bg-slate-200 text-slate-400 py-2.5 rounded-lg font-medium text-sm cursor-not-allowed"
+                v-else
+                @click="createBatchOrder" 
+                :disabled="submittingBatch || selectedOrders.length === 0" 
+                class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors"
               >
-                批量下单
+                <svg v-if="submittingBatch" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/>
+                  <path d="M14 9h4l4 4v6h-4"/>
+                  <circle cx="7" cy="18" r="2"/>
+                  <circle cx="17" cy="18" r="2"/>
+                </svg>
+                {{ submittingBatch ? `正在批量下单 (${batchProgress}/${selectedOrders.length})` : `批量下单 (${selectedOrders.length}单)` }}
               </button>
             </div>
 
-            <!-- 下单结果区（成功后显示） -->
-            <div v-if="showResult && orderResult" class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <!-- 单订单结果区 -->
+            <div v-if="showResult && orderResult && selectedOrders.length <= 1" class="bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 class="text-sm font-bold text-green-700 mb-3 flex items-center gap-2">
                 <span>✅</span> 物流订单创建成功！
               </h3>
@@ -346,6 +385,50 @@
                   <span>🖨️</span> 打印面单
                 </button>
                 <button @click="continueOrder" class="flex-1 bg-white border border-green-300 text-green-700 hover:bg-green-100 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                  <span>←</span> 继续下单
+                </button>
+              </div>
+            </div>
+
+            <!-- 批量下单结果区 -->
+            <div v-if="showResult && batchResults.length > 0 && selectedOrders.length > 1" class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <span>📋</span> 批量下单结果
+                <span class="text-xs font-normal text-slate-500">
+                  (成功 {{ batchResults.filter(r => r.success).length }} / {{ batchResults.length }})
+                </span>
+              </h3>
+              <div class="max-h-[200px] overflow-y-auto space-y-2 mb-3">
+                <div 
+                  v-for="result in batchResults" 
+                  :key="result.orderId"
+                  :class="['text-xs p-2 rounded flex items-center justify-between', result.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600']"
+                >
+                  <div class="flex items-center gap-2">
+                    <span>{{ result.success ? '✅' : '❌' }}</span>
+                    <span class="font-medium">{{ result.etsyOrderId }}</span>
+                    <span v-if="result.success" class="font-mono text-[10px]">{{ result.trackingNumber }}</span>
+                    <span v-else class="text-[10px]">{{ result.error }}</span>
+                  </div>
+                  <a 
+                    v-if="result.success && result.labelUrl" 
+                    :href="result.labelUrl" 
+                    target="_blank"
+                    class="text-blue-600 hover:underline text-[10px]"
+                  >
+                    面单
+                  </a>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button 
+                  @click="downloadAllLabels" 
+                  :disabled="!batchResults.some(r => r.success && r.labelUrl)"
+                  class="flex-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:text-slate-400 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <span>📄</span> 下载全部面单
+                </button>
+                <button @click="continueOrder" class="flex-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors">
                   <span>←</span> 继续下单
                 </button>
               </div>
@@ -388,6 +471,7 @@ const loading = ref(false)
 const demoMode = ref(false)
 const orders = ref([])
 const selectedOrder = ref(null)
+const selectedOrders = ref([]) // 批量选择的订单
 const searchKeyword = ref('')
 const showAdvanced = ref(false)
 // 物流渠道固定为PX（联邮通优先挂号-普货）
@@ -396,8 +480,11 @@ const channels = ref([
 ])
 const loadingChannels = ref(false)
 const submitting = ref(false)
+const submittingBatch = ref(false)
+const batchProgress = ref(0)
 const showResult = ref(false)
 const orderResult = ref(null)
+const batchResults = ref([]) // 批量下单结果
 const todayShippedCount = ref(0)
 
 // 假数据（回退用）
@@ -559,6 +646,7 @@ const selectOrder = async (order) => {
   selectedOrder.value = order
   showResult.value = false
   orderResult.value = null
+  batchResults.value = []
   
   // 自动填充收件人信息（从orders表的shipping_*字段）
   // 优先使用 shipping_name，其次使用 customer_name
@@ -675,8 +763,150 @@ const printLabel = () => {
 // 继续下单
 const continueOrder = () => {
   selectedOrder.value = null
+  selectedOrders.value = []
   showResult.value = false
   orderResult.value = null
+  batchResults.value = []
+}
+
+// ==================== 批量操作 ====================
+
+// 判断是否已选中
+const isSelected = (orderId) => {
+  return selectedOrders.value.some(o => o.id === orderId)
+}
+
+// 切换选择
+const toggleSelect = (order) => {
+  const index = selectedOrders.value.findIndex(o => o.id === order.id)
+  if (index > -1) {
+    selectedOrders.value.splice(index, 1)
+  } else {
+    selectedOrders.value.push(order)
+  }
+  // 同步更新当前选中订单
+  if (selectedOrders.value.length === 1) {
+    selectedOrder.value = selectedOrders.value[0]
+  } else if (selectedOrders.value.length === 0) {
+    selectedOrder.value = null
+  }
+}
+
+// 全选/取消全选
+const toggleSelectAll = () => {
+  if (selectedOrders.value.length === filteredOrders.value.length) {
+    selectedOrders.value = []
+    selectedOrder.value = null
+  } else {
+    selectedOrders.value = [...filteredOrders.value]
+    if (selectedOrders.value.length > 0) {
+      selectedOrder.value = selectedOrders.value[0]
+    }
+  }
+}
+
+// 获取订单的物流表单数据
+const getOrderFormData = (order) => {
+  return {
+    order_id: order.id,
+    logistics_product_code: 'PX',
+    recipient_name: order.shipping_name || order.customer_name || '',
+    recipient_phone: generateFakePhone(),
+    recipient_email: order.customer_email || '',
+    recipient_street: order.shipping_address_line1 || '',
+    recipient_city: order.shipping_city || '',
+    recipient_state: order.shipping_state || '',
+    recipient_postcode: order.shipping_zip || '',
+    recipient_country: order.shipping_country || order.country || '',
+    weight_kg: (order.sku_mapping?.weight_g || 30) / 1000,
+    declare_value: order.total_amount || 9.99,
+    declare_currency: 'USD'
+  }
+}
+
+// 批量创建物流订单
+const createBatchOrder = async () => {
+  if (selectedOrders.value.length === 0) {
+    alert('请先选择订单')
+    return
+  }
+  
+  submittingBatch.value = true
+  batchProgress.value = 0
+  batchResults.value = []
+  
+  const results = []
+  
+  for (let i = 0; i < selectedOrders.value.length; i++) {
+    const order = selectedOrders.value[i]
+    batchProgress.value = i + 1
+    
+    try {
+      const formData = getOrderFormData(order)
+      
+      const res = await fetch(`${API_BASE}/api/shipping/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        results.push({
+          orderId: order.id,
+          etsyOrderId: order.etsy_order_id || order.id,
+          success: true,
+          trackingNumber: data.data?.tracking_number || data.data?.fpx_tracking_no,
+          labelUrl: data.data?.label_url
+        })
+        todayShippedCount.value++
+      } else {
+        results.push({
+          orderId: order.id,
+          etsyOrderId: order.etsy_order_id || order.id,
+          success: false,
+          error: data.message || data.detail || '未知错误'
+        })
+      }
+    } catch (e) {
+      results.push({
+        orderId: order.id,
+        etsyOrderId: order.etsy_order_id || order.id,
+        success: false,
+        error: e.message
+      })
+    }
+  }
+  
+  batchResults.value = results
+  showResult.value = true
+  
+  // 从列表中移除成功的订单
+  const successIds = results.filter(r => r.success).map(r => r.orderId)
+  orders.value = orders.value.filter(o => !successIds.includes(o.id))
+  selectedOrders.value = selectedOrders.value.filter(o => !successIds.includes(o.id))
+  
+  const successCount = results.filter(r => r.success).length
+  const failCount = results.filter(r => !r.success).length
+  
+  if (failCount === 0) {
+    alert(`✅ 批量下单完成！成功 ${successCount} 单`)
+  } else {
+    alert(`⚠️ 批量下单完成：成功 ${successCount} 单，失败 ${failCount} 单`)
+  }
+  
+  submittingBatch.value = false
+}
+
+// 下载所有面单（批量）
+const downloadAllLabels = () => {
+  const successResults = batchResults.value.filter(r => r.success && r.labelUrl)
+  successResults.forEach((result, index) => {
+    setTimeout(() => {
+      window.open(result.labelUrl, '_blank')
+    }, index * 500)
+  })
 }
 
 // 初始化

@@ -18,19 +18,11 @@
 	<text transform="matrix(1 0 0 1 358.0511 62.3638)" font-family="'MicrosoftYaHeiLight'" font-size="41.2062px">产</text>
 	<text transform="matrix(1 0 0 1 401.7298 62.3638)" font-family="'MicrosoftYaHeiLight'" font-size="41.2062px">文</text>
 	<text transform="matrix(1 0 0 1 445.4075 62.3638)" font-family="'MicrosoftYaHeiLight'" font-size="41.2062px">件</text>
-	<text transform="matrix(1 0 0 1 255.304 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">产</text>
-	<text transform="matrix(1 0 0 1 266.5237 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">品</text>
-	<text transform="matrix(1 0 0 1 277.7444 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">编</text>
-	<text transform="matrix(1 0 0 1 288.9642 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">号</text>
-	<text transform="matrix(1 0 0 1 300.1839 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">（</text>
-	<text transform="matrix(1 0 0 1 311.4036 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">S</text>
-	<text transform="matrix(1 0 0 1 317.973 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">K</text>
-	<text transform="matrix(1 0 0 1 325.1751 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">U</text>
-	<text transform="matrix(1 0 0 1 333.6068 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px">）</text>
+	<text transform="matrix(1 0 0 1 391.35 133.7629)" font-family="'MicrosoftYaHeiUI'" font-size="11px" text-anchor="middle">产品编号（SKU）</text>
 	
 		<image width="800" height="800" xlink:href="{{PRODUCT_PHOTO_BASE64}}" transform="matrix(0.2219 0 0 0.2219 38.0895 265.873)">
 	</image>
-	<text transform="matrix(1 0 0 1 70.3621 468.1721)" fill="#E60012" font-family="'MicrosoftYaHeiUILight'" font-size="14px">外观，颜色实拍图</text>
+	<text transform="matrix(1 0 0 1 70.3621 468.1721)" fill="#000000" font-family="'MicrosoftYaHeiUILight'" font-size="14px">外观，颜色实拍图</text>
 	<g>
 		<g>
 			
@@ -52,15 +44,15 @@
 			
 				<rect x="223.9" y="235" fill-rule="evenodd" fill="#D3D3D3" stroke="#666666" stroke-width="0.5" stroke-miterlimit="10" width="67.7" height="17.7"/>
 		</g>
-		<text transform="matrix(1 0 0 1 230.0056 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">产</text>
-		<text transform="matrix(1 0 0 1 244.2854 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">品</text>
-		<text transform="matrix(1 0 0 1 258.5657 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">（</text>
-		<text transform="matrix(1 0 0 1 272.8455 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">S</text>
-		<text transform="matrix(1 0 0 1 281.3015 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">K</text>
-		<text transform="matrix(1 0 0 1 291.1155 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">U</text>
-		<text transform="matrix(1 0 0 1 301.9797 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">）</text>
-		<text transform="matrix(1 0 0 1 316.2595 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">规</text>
-		<text transform="matrix(1 0 0 1 330.5398 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">格</text>
+		<text transform="matrix(1 0 0 1 230.0056 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">产</text>
+		<text transform="matrix(1 0 0 1 244.2854 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">品</text>
+		<text transform="matrix(1 0 0 1 258.5657 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">（</text>
+		<text transform="matrix(1 0 0 1 272.8455 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">S</text>
+		<text transform="matrix(1 0 0 1 281.3015 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">K</text>
+		<text transform="matrix(1 0 0 1 291.1155 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">U</text>
+		<text transform="matrix(1 0 0 1 301.9797 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">）</text>
+		<text transform="matrix(1 0 0 1 316.2595 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">规</text>
+		<text transform="matrix(1 0 0 1 330.5398 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">格</text>
 		<text transform="matrix(1 0 0 1 239.1968 195.6912)" font-family="'MicrosoftYaHeiUI'" font-size="11px">形状: </text>
 		<text transform="matrix(1 0 0 1 239.1968 212.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">颜色： </text>
 		<text transform="matrix(1 0 0 1 239.1968 229.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">尺寸： </text>
@@ -91,11 +83,11 @@
 			
 				<rect x="383.8" y="235" fill-rule="evenodd" fill="#D3D3D3" stroke="#666666" stroke-width="0.5" stroke-miterlimit="10" width="67.7" height="17.7"/>
 		</g>
-		<text transform="matrix(1 0 0 1 389.9548 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">定</text>
-		<text transform="matrix(1 0 0 1 404.2346 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">制</text>
-		<text transform="matrix(1 0 0 1 418.5148 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">详</text>
-		<text transform="matrix(1 0 0 1 432.7946 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">情</text>
-		<text transform="matrix(1 0 0 1 447.0749 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px"> </text>
+		<text transform="matrix(1 0 0 1 389.9548 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">定</text>
+		<text transform="matrix(1 0 0 1 404.2346 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">制</text>
+		<text transform="matrix(1 0 0 1 418.5148 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">详</text>
+		<text transform="matrix(1 0 0 1 432.7946 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">情</text>
+		<text transform="matrix(1 0 0 1 447.0749 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px"> </text>
 		<text transform="matrix(1 0 0 1 399.1459 195.6912)" font-family="'MicrosoftYaHeiUI'" font-size="11px">正面：</text>
 		<text transform="matrix(1 0 0 1 399.1459 212.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">正面字体：</text>
 		<text transform="matrix(1 0 0 1 399.1459 229.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">背面文字：</text>
@@ -104,7 +96,7 @@
 		<text transform="matrix(1 0 0 1 463.9446 212.3405)" font-family="'MicrosoftYaHeiUI'" font-size="11px">{{FRONT_FONT}}</text>
 		<text transform="matrix(1 0 0 1 463.9446 229.3405)" font-family="'MicrosoftYaHeiUI'" font-size="11px">{{BACK_TEXT}}</text>
 	</g>
-		<text transform="matrix(1 0 0 1 250.5892 117.6251)" fill="#E60012" font-family="'AlibabaPuHuiTi-Heavy'" font-size="26.3px">{{SKU}}</text>
+		<text transform="matrix(1 0 0 1 391.35 117.6251)" fill="#E60012" font-family="'AlibabaPuHuiTi-Heavy'" font-size="26.3px" text-anchor="middle">{{SKU}}</text>
 	<g>
 		
 			<rect x="401.7" y="621.1" fill-rule="evenodd" fill="none" stroke="#666666" stroke-width="0.5" stroke-miterlimit="10" width="155.5" height="17.7"/>
@@ -116,7 +108,7 @@
 		<text transform="matrix(1 0 0 1 354.4473 611.9436)" font-family="'DingTalk-JinBuTi'" font-size="14px">流</text>
 		<text transform="matrix(1 0 0 1 368.7276 611.9436)" font-family="'DingTalk-JinBuTi'" font-size="14px">信</text>
 		<text transform="matrix(1 0 0 1 383.0074 611.9436)" font-family="'DingTalk-JinBuTi'" font-size="14px">息</text>
-		<text transform="matrix(1 0 0 1 348.4126 634.9219)" fill="#E60012" font-family="'MicrosoftYaHeiUI'" font-size="11px">物流单号：</text>
+		<text transform="matrix(1 0 0 1 348.4126 634.9219)" fill="#000000" font-family="'MicrosoftYaHeiUI'" font-size="11px">物流单号：</text>
 		<text transform="matrix(1 0 0 1 414.1573 634.5712)" fill="#E60012" font-family="'AlibabaPuHuiTi-Regular'" font-size="11px">{{TRACKING_NUMBER}}</text>
 		<text transform="matrix(1 0 0 1 377.1428 669.8733)" font-family="'MicrosoftYaHeiUI'" font-size="11px">国</text>
 		<text transform="matrix(1 0 0 1 388.1428 669.8733)" font-family="'MicrosoftYaHeiUI'" font-size="11px">家</text>
@@ -183,10 +175,10 @@
 			
 				<rect x="38.1" y="235" fill-rule="evenodd" fill="#D3D3D3" stroke="#666666" stroke-width="0.5" stroke-miterlimit="10" width="67.7" height="17.7"/>
 		</g>
-		<text transform="matrix(1 0 0 1 44.2016 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">订</text>
-		<text transform="matrix(1 0 0 1 58.4814 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">单</text>
-		<text transform="matrix(1 0 0 1 72.7617 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">信</text>
-		<text transform="matrix(1 0 0 1 87.0414 172.7129)" fill="#E60012" font-family="'DingTalk-JinBuTi'" font-size="14px">息</text>
+		<text transform="matrix(1 0 0 1 44.2016 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">订</text>
+		<text transform="matrix(1 0 0 1 58.4814 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">单</text>
+		<text transform="matrix(1 0 0 1 72.7617 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">信</text>
+		<text transform="matrix(1 0 0 1 87.0414 172.7129)" fill="#000000" font-family="'DingTalk-JinBuTi'" font-size="14px">息</text>
 		<text transform="matrix(1 0 0 1 46.2439 195.6912)" font-family="'MicrosoftYaHeiUI'" font-size="11px">订单ID：</text>
 		<text transform="matrix(1 0 0 1 46.2439 212.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">客户： </text>
 		<text transform="matrix(1 0 0 1 46.2439 229.6907)" font-family="'MicrosoftYaHeiUI'" font-size="11px">订单日期： </text>
@@ -207,52 +199,6 @@
 	</g>
 	
 		<rect x="225.5" y="265.9" fill-rule="evenodd" fill="none" stroke="#000000" stroke-miterlimit="10" width="331.7" height="212.6"/>
-	<text transform="matrix(1 0 0 1 343.7417 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">F</text>
-	<text transform="matrix(1 0 0 1 349.5859 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">r</text>
-	<text transform="matrix(1 0 0 1 353.6309 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">o</text>
-	<text transform="matrix(1 0 0 1 360.623 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">n</text>
-	<text transform="matrix(1 0 0 1 367.4023 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">t</text>
-	<text transform="matrix(1 0 0 1 371.5 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px"> </text>
-	<text transform="matrix(1 0 0 1 374.7559 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">T</text>
-	<text transform="matrix(1 0 0 1 379.8359 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">e</text>
-	<text transform="matrix(1 0 0 1 386.0781 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">x</text>
-	<text transform="matrix(1 0 0 1 391.6523 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">t</text>
-	<text transform="matrix(1 0 0 1 395.75 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">:</text>
-	<text transform="matrix(1 0 0 1 398.3984 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px"> </text>
-	<text transform="matrix(1 0 0 1 401.6543 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">M</text>
-	<text transform="matrix(1 0 0 1 412.4004 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">a</text>
-	<text transform="matrix(1 0 0 1 418.4805 438.0812)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">x</text>
-	<text transform="matrix(1 0 0 1 343.7417 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">F</text>
-	<text transform="matrix(1 0 0 1 349.5859 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">o</text>
-	<text transform="matrix(1 0 0 1 356.5791 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">n</text>
-	<text transform="matrix(1 0 0 1 363.3574 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">t</text>
-	<text transform="matrix(1 0 0 1 367.4551 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">:</text>
-	<text transform="matrix(1 0 0 1 370.1035 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px"> </text>
-	<text transform="matrix(1 0 0 1 373.3584 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">F</text>
-	<text transform="matrix(1 0 0 1 379.2021 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">-</text>
-	<text transform="matrix(1 0 0 1 383.9609 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">0</text>
-	<text transform="matrix(1 0 0 1 390.4121 451.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">4</text>
-	<text transform="matrix(1 0 0 1 343.7417 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">B</text>
-	<text transform="matrix(1 0 0 1 350.6436 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">a</text>
-	<text transform="matrix(1 0 0 1 356.7236 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">c</text>
-	<text transform="matrix(1 0 0 1 362.2402 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">k</text>
-	<text transform="matrix(1 0 0 1 368.2285 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px"> </text>
-	<text transform="matrix(1 0 0 1 371.4834 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">T</text>
-	<text transform="matrix(1 0 0 1 376.5645 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">e</text>
-	<text transform="matrix(1 0 0 1 382.8057 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">x</text>
-	<text transform="matrix(1 0 0 1 388.3809 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">t</text>
-	<text transform="matrix(1 0 0 1 392.4785 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">:</text>
-	<text transform="matrix(1 0 0 1 395.127 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px"> </text>
-	<text transform="matrix(1 0 0 1 398.3818 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">0</text>
-	<text transform="matrix(1 0 0 1 404.832 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">4</text>
-	<text transform="matrix(1 0 0 1 411.2832 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">1</text>
-	<text transform="matrix(1 0 0 1 417.7344 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">2</text>
-	<text transform="matrix(1 0 0 1 424.1855 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">3</text>
-	<text transform="matrix(1 0 0 1 430.6367 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">4</text>
-	<text transform="matrix(1 0 0 1 437.0879 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">5</text>
-	<text transform="matrix(1 0 0 1 443.5391 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">6</text>
-	<text transform="matrix(1 0 0 1 449.9902 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">7</text>
-	<text transform="matrix(1 0 0 1 456.4414 464.0807)" fill="#727171" font-family="'MicrosoftYaHeiUI'" font-size="11px">8</text>
 	<!-- 宽度标注线占位符 -->
 	{{WIDTH_DIMENSION_LINES}}
 	<!-- 高度标注线占位符 -->

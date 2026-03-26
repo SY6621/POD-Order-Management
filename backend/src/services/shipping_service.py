@@ -184,7 +184,8 @@ class ShippingService:
         )
         shipping_postal = (
             raw_data.get("postal_code") or
-            raw_data.get("shipping_postal_code", "")
+            raw_data.get("shipping_postal_code") or
+            raw_data.get("shipping_zip", "")
         )
         country = (
             raw_data.get("country") or

@@ -213,7 +213,7 @@
         <!-- SVG 预览 -->
         <div class="svg-preview">
             <svg id="ed-svg" xmlns="http://www.w3.org/2000/svg"
-                 viewBox="0 0 321 134" width="700" height="240">
+                 viewBox="0 -15 321 155" width="700" height="260">
                 <defs>
                     <style>
                         .front-text { font-family: 'F-04', sans-serif; }
@@ -245,8 +245,10 @@
                           font-size="11" fill="#333">13999926688</text>
                 </g>
                 <!-- 标签 -->
-                <text x="81.8" y="129" font-family="Arial" font-size="7" fill="#94a3b8" text-anchor="middle">Front</text>
-                <text x="241" y="129" font-family="Arial" font-size="7" fill="#94a3b8" text-anchor="middle">Back</text>
+                <text x="81.8" y="135" font-family="Arial" font-size="7" fill="#94a3b8" text-anchor="middle">Front</text>
+                <text x="241" y="135" font-family="Arial" font-size="7" fill="#94a3b8" text-anchor="middle">Back</text>
+                <!-- 尺寸标注线（由 edUpdate 动态更新） -->
+                <g id="ed-dimensions"></g>
             </svg>
             
             <!-- 订制内容字段 -->
@@ -585,7 +587,104 @@
         if (capFront) capFront.textContent = fc;
         if (capBack)  capBack.textContent  = bc1;
         if (capPhone) capPhone.textContent = bc2;
+
+        // ========== 更新尺寸标注线（预览时显示）==========
+        updateDimensionLines(shape);
       };
+
+      // 更新预览界面的尺寸标注线
+      function updateDimensionLines(shape) {
+        const dimGroup = document.getElementById('ed-dimensions');
+        if (!dimGroup) return;
+        
+        // 清空旧标注
+        while (dimGroup.firstChild) dimGroup.removeChild(dimGroup.firstChild);
+        
+        const ns = 'http://www.w3.org/2000/svg';
+        const sizeKey = (currentOrderSize || 'L').toString().toUpperCase() === 'S' ? 'S' : 'L';
+        const szData = (SHAPE_SIZES[shape] || SHAPE_SIZES.heart)[sizeKey];
+        const wMM = szData.w;
+        const hMM = szData.h;
+        
+        // 形状包围盒（与保存时一致）
+        const bboxByShape = {
+          heart:  { x1: 26, y1: 14,  x2: 116, y2: 99  },
+          circle: { x1: 25, y1: 11,  x2: 117, y2: 103 },
+          bone:   { x1: 7,  y1: 20,  x2: 135, y2: 93  }
+        };
+        const bbox = bboxByShape[shape] || bboxByShape.heart;
+        
+        const dimColor  = '#ef4444';
+        const dimWeight = '0.8';
+        const tickLen   = 3;
+        const offset    = 8;
+        
+        // --- 宽度标注（上方） ---
+        const wY = bbox.y1 - offset;
+        const wX1 = bbox.x1, wX2 = bbox.x2, wMid = (wX1 + wX2) / 2;
+        
+        // 主水平线
+        const wLine = document.createElementNS(ns, 'line');
+        wLine.setAttribute('x1', wX1); wLine.setAttribute('y1', wY);
+        wLine.setAttribute('x2', wX2); wLine.setAttribute('y2', wY);
+        wLine.setAttribute('stroke', dimColor); wLine.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(wLine);
+        // 左端小竖线
+        const wT1 = document.createElementNS(ns, 'line');
+        wT1.setAttribute('x1', wX1); wT1.setAttribute('y1', wY);
+        wT1.setAttribute('x2', wX1); wT1.setAttribute('y2', wY + tickLen);
+        wT1.setAttribute('stroke', dimColor); wT1.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(wT1);
+        // 右端小竖线
+        const wT2 = document.createElementNS(ns, 'line');
+        wT2.setAttribute('x1', wX2); wT2.setAttribute('y1', wY);
+        wT2.setAttribute('x2', wX2); wT2.setAttribute('y2', wY + tickLen);
+        wT2.setAttribute('stroke', dimColor); wT2.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(wT2);
+        // 宽度文字
+        const wTxt = document.createElementNS(ns, 'text');
+        wTxt.setAttribute('x', wMid); wTxt.setAttribute('y', wY - 2);
+        wTxt.setAttribute('text-anchor', 'middle');
+        wTxt.setAttribute('font-family', 'Arial, sans-serif');
+        wTxt.setAttribute('font-size', '6');
+        wTxt.setAttribute('fill', dimColor);
+        wTxt.textContent = `${wMM}mm`;
+        dimGroup.appendChild(wTxt);
+        
+        // --- 高度标注（左侧） ---
+        const hX = bbox.x1 - offset;
+        const hY1 = bbox.y1, hY2 = bbox.y2, hMid = (hY1 + hY2) / 2;
+        
+        // 主垂直线
+        const hLine = document.createElementNS(ns, 'line');
+        hLine.setAttribute('x1', hX); hLine.setAttribute('y1', hY1);
+        hLine.setAttribute('x2', hX); hLine.setAttribute('y2', hY2);
+        hLine.setAttribute('stroke', dimColor); hLine.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(hLine);
+        // 上端小横线
+        const hT1 = document.createElementNS(ns, 'line');
+        hT1.setAttribute('x1', hX); hT1.setAttribute('y1', hY1);
+        hT1.setAttribute('x2', hX + tickLen); hT1.setAttribute('y2', hY1);
+        hT1.setAttribute('stroke', dimColor); hT1.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(hT1);
+        // 下端小横线
+        const hT2 = document.createElementNS(ns, 'line');
+        hT2.setAttribute('x1', hX); hT2.setAttribute('y1', hY2);
+        hT2.setAttribute('x2', hX + tickLen); hT2.setAttribute('y2', hY2);
+        hT2.setAttribute('stroke', dimColor); hT2.setAttribute('stroke-width', dimWeight);
+        dimGroup.appendChild(hT2);
+        // 高度文字（竖向旋转，沿左侧标注线居中）
+        const hTxt = document.createElementNS(ns, 'text');
+        hTxt.setAttribute('x', hX - 8);
+        hTxt.setAttribute('y', hMid);
+        hTxt.setAttribute('transform', `rotate(-90 ${hX - 8} ${hMid})`);
+        hTxt.setAttribute('text-anchor', 'middle');
+        hTxt.setAttribute('font-family', 'Arial, sans-serif');
+        hTxt.setAttribute('font-size', '6');
+        hTxt.setAttribute('fill', dimColor);
+        hTxt.textContent = `${hMM}mm`;
+        dimGroup.appendChild(hTxt);
+      }
 
       // ===== 自定义SVG图案功能 =====
       let customPatternDataUrl = null;
@@ -906,6 +1005,128 @@
         const defs = clonedSvg.querySelector('defs');
         if (defs) defs.remove();
 
+        // ============================================================
+        // 加入底部订制信息文字行 + 尺寸标注线
+        // ============================================================
+        const ns = 'http://www.w3.org/2000/svg';
+
+        // 扩展 viewBox，给顶部标注线和底部信息留空间
+        clonedSvg.setAttribute('viewBox', '0 -15 321 165');
+        clonedSvg.removeAttribute('width');
+        clonedSvg.removeAttribute('height');
+
+        // 读取当前表单数据
+        const frontText = document.getElementById('ed-fc')?.value || '';
+        const backText  = document.getElementById('ed-bc1')?.value || '';
+        const phone     = document.getElementById('ed-bc2')?.value || '';
+        const shape     = currentOrderShape || document.getElementById('ed-shape')?.value || 'heart';
+        const sizeKey   = (currentOrderSize || 'L').toString().toUpperCase() === 'S' ? 'S' : 'L';
+        const sizeLabel = sizeKey === 'L' ? '大' : '小';
+        const szData    = (SHAPE_SIZES[shape] || SHAPE_SIZES.heart)[sizeKey];
+        const wMM = szData.w;
+        const hMM = szData.h;
+
+        // --- 底部信息文字行（y=144，居中） ---
+        const captionParts = [];
+        if (frontText) captionParts.push(`Front: ${frontText}`);
+        if (backText)  captionParts.push(`Back: ${backText}`);
+        if (phone)     captionParts.push(`Phone: ${phone}`);
+        const captionText = captionParts.join('   |   ');
+
+        const captionEl = document.createElementNS(ns, 'text');
+        captionEl.setAttribute('x', '160.5');
+        captionEl.setAttribute('y', '148');
+        captionEl.setAttribute('text-anchor', 'middle');
+        captionEl.setAttribute('font-family', 'Arial, sans-serif');
+        captionEl.setAttribute('font-size', '7');
+        captionEl.setAttribute('fill', '#475569');
+        captionEl.textContent = captionText;
+        clonedSvg.appendChild(captionEl);
+
+        // --- 尺寸标注线（只画在正面，正面形状在 x:25~116, y:14~99 大致范围）---
+        // 根据形状计算包围盒（近似值）
+        const bboxByShape = {
+          heart:  { x1: 26, y1: 14,  x2: 116, y2: 99  },
+          circle: { x1: 25, y1: 11,  x2: 117, y2: 103 },
+          bone:   { x1: 7,  y1: 20,  x2: 135, y2: 93  }
+        };
+        const bbox = bboxByShape[shape] || bboxByShape.heart;
+
+        const dimColor  = '#ef4444';  // 红色
+        const dimWeight = '0.8';
+        const tickLen   = 3;
+        const offset    = 8;  // 标注线与形状的距离
+
+        // ========== 宽度标注线（水平，画在形状上方）==========
+        const wY  = bbox.y1 - offset;  // 形状上方
+        const wX1 = bbox.x1;
+        const wX2 = bbox.x2;
+        const wMid = (wX1 + wX2) / 2;
+
+        // 主水平线（从形状左边缘到右边缘）
+        const wLine = document.createElementNS(ns, 'line');
+        wLine.setAttribute('x1', wX1); wLine.setAttribute('y1', wY);
+        wLine.setAttribute('x2', wX2); wLine.setAttribute('y2', wY);
+        wLine.setAttribute('stroke', dimColor); wLine.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(wLine);
+        // 左端向下的小竖线
+        const wT1 = document.createElementNS(ns, 'line');
+        wT1.setAttribute('x1', wX1); wT1.setAttribute('y1', wY);
+        wT1.setAttribute('x2', wX1); wT1.setAttribute('y2', wY + tickLen);
+        wT1.setAttribute('stroke', dimColor); wT1.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(wT1);
+        // 右端向下的小竖线
+        const wT2 = document.createElementNS(ns, 'line');
+        wT2.setAttribute('x1', wX2); wT2.setAttribute('y1', wY);
+        wT2.setAttribute('x2', wX2); wT2.setAttribute('y2', wY + tickLen);
+        wT2.setAttribute('stroke', dimColor); wT2.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(wT2);
+        // 宽度文字（线上方）
+        const wTxt = document.createElementNS(ns, 'text');
+        wTxt.setAttribute('x', wMid); wTxt.setAttribute('y', wY - 2);
+        wTxt.setAttribute('text-anchor', 'middle');
+        wTxt.setAttribute('font-family', 'Arial, sans-serif');
+        wTxt.setAttribute('font-size', '6');
+        wTxt.setAttribute('fill', dimColor);
+        wTxt.textContent = `${wMM}mm`;
+        clonedSvg.appendChild(wTxt);
+
+        // ========== 高度标注线（垂直，画在形状左侧）==========
+        const hX  = bbox.x1 - offset;  // 形状左侧
+        const hY1 = bbox.y1;
+        const hY2 = bbox.y2;
+        const hMid = (hY1 + hY2) / 2;
+
+        // 主垂直线（从形状上边缘到下边缘）
+        const hLine = document.createElementNS(ns, 'line');
+        hLine.setAttribute('x1', hX); hLine.setAttribute('y1', hY1);
+        hLine.setAttribute('x2', hX); hLine.setAttribute('y2', hY2);
+        hLine.setAttribute('stroke', dimColor); hLine.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(hLine);
+        // 上端向右的小横线
+        const hT1 = document.createElementNS(ns, 'line');
+        hT1.setAttribute('x1', hX); hT1.setAttribute('y1', hY1);
+        hT1.setAttribute('x2', hX + tickLen); hT1.setAttribute('y2', hY1);
+        hT1.setAttribute('stroke', dimColor); hT1.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(hT1);
+        // 下端向右的小横线
+        const hT2 = document.createElementNS(ns, 'line');
+        hT2.setAttribute('x1', hX); hT2.setAttribute('y1', hY2);
+        hT2.setAttribute('x2', hX + tickLen); hT2.setAttribute('y2', hY2);
+        hT2.setAttribute('stroke', dimColor); hT2.setAttribute('stroke-width', dimWeight);
+        clonedSvg.appendChild(hT2);
+        // 高度文字（竖向旋转，沿左侧标注线居中）
+        const hTxt = document.createElementNS(ns, 'text');
+        hTxt.setAttribute('x', hX - 8);
+        hTxt.setAttribute('y', hMid);
+        hTxt.setAttribute('transform', `rotate(-90 ${hX - 8} ${hMid})`);
+        hTxt.setAttribute('text-anchor', 'middle');
+        hTxt.setAttribute('font-family', 'Arial, sans-serif');
+        hTxt.setAttribute('font-size', '6');
+        hTxt.setAttribute('fill', dimColor);
+        hTxt.textContent = `${hMM}mm`;
+        clonedSvg.appendChild(hTxt);
+
         return new XMLSerializer().serializeToString(clonedSvg);
       }
 
@@ -1164,11 +1385,26 @@
         await window.edUpdate();
       });
       
+      // 当前订单的形状和尺寸（供保存SVG时使用）
+      let currentOrderSize = '';   // e.g. "L" / "S"
+      let currentOrderShape = '';  // e.g. "heart" / "circle" / "bone"
+
+      // 各形状尺寸数据（与后端 SHAPE_SIZES 保持一致）
+      const SHAPE_SIZES = {
+        heart:  { L: { w: 32, h: 30 }, S: { w: 28, h: 16 } },
+        circle: { L: { w: 32, h: 32 }, S: { w: 23, h: 23 } },
+        bone:   { L: { w: 45, h: 25 }, S: { w: 28, h: 16 } }
+      };
+
       // 监听父页面发送的订单数据
             window.addEventListener('message', async function(event) {
         if (event.data && event.data.type === 'loadOrder') {
           const data = event.data.data;
           console.log('📥 设计器收到订单数据:', data);
+          
+          // 存储形状和尺寸（供保存SVG时使用）
+          currentOrderShape = data.shape || 'heart';
+          currentOrderSize  = data.size  || 'L';
           
           // 更新表单字段（使用正确的ID）
           if (data.frontText !== undefined) {

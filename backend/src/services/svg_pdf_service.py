@@ -64,11 +64,11 @@ SHAPE_SIZES = {
     # 心形
     "Heart": {
         "L": {"width_mm": 32, "height_mm": 30, "scale": 1.4},
-        "S": {"width_mm": 23, "height_mm": 21, "scale": 1.0},
+        "S": {"width_mm": 28, "height_mm": 16, "scale": 1.0},
     },
     # 骨头形
     "Bone": {
-        "L": {"width_mm": 45, "height_mm": 26, "scale": 1.0},
+        "L": {"width_mm": 45, "height_mm": 25, "scale": 1.0},
         "S": {"width_mm": 28, "height_mm": 16, "scale": 0.62},
     },
 }
@@ -568,12 +568,14 @@ class SVGPDFService:
             "骨头形": "Bone", "Bone": "Bone", "骨形": "Bone",
         }
         shape_key = shape_map.get(shape, "Bone")
-        size_key = "L" if str(size).upper() in ["L", "大"] else "S"
+        size_key = "L" if str(size).upper() in ["L", "大", "LARGE"] else "S"
         
-        # 获取形状的尺寸数据
+        # 获取形状的尺寸数据（完全依赖 SHAPE_SIZES 配置，忽略数据库传入值）
         shape_size = SHAPE_SIZES.get(shape_key, SHAPE_SIZES["Bone"]).get(size_key, {})
-        width_mm = data.get("width_mm") or shape_size.get("width_mm", 45)
-        height_mm = data.get("height_mm") or shape_size.get("height_mm", 26)
+        width_mm = shape_size.get("width_mm", 45)
+        height_mm = shape_size.get("height_mm", 25)
+        # 尺寸显示标签：中文大/小 + 毫米数值
+        size_label = "大" if size_key == "L" else "小"
         
         # Step 3: 获取效果图SVG（优先从 production_documents 读取设计器SVG）
         effect_svg_url = data.get("effect_svg_url", "")
@@ -587,10 +589,15 @@ class SVGPDFService:
             front_shape_data = self._get_effect_shape_svg(shape, color, "front", size)
             back_shape_data = self._get_effect_shape_svg(shape, color, "back", size)
         
-        # 生成尺寸标注线（仅正面需要）
-        width_lines, height_lines = self._generate_dimension_lines(
-            front_shape_data["bbox"], width_mm, height_mm
-        )
+        # 生成尺寸标注线：仅在动态生成形状时添加；设计器SVG已自带标注线则置空
+        if effect_svg_url:
+            # 设计器SVG已在源头包含尺寸标注，PDF层不再额外叠加
+            width_lines = ""
+            height_lines = ""
+        else:
+            width_lines, height_lines = self._generate_dimension_lines(
+                front_shape_data["bbox"], width_mm, height_mm
+            )
         
         # Step 4: 获取产品实拍图
         sku = data.get("sku", "B-E01A")
@@ -599,15 +606,18 @@ class SVGPDFService:
         sku_base = sku[:6] if len(sku) >= 6 else sku
         photo_base64 = self._get_product_photo_base64(sku_base, size)
         
-        # 生成居中的效果图文字
+        # 生成居中的效果图文字（仅在动态生成形状时使用；设计器SVG已含文字，则置空）
         front_text = str(data.get("front_text", ""))
         back_text = str(data.get("back_text", ""))
-        
-        # 正面文字 - 居中在形状内
-        front_text_svg = f'<text x="{front_shape_data["text_x"]}" y="{front_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'RetroAngela\'" font-size="39.637px">{front_text}</text>'
-        
-        # 背面文字 - 居中在形状内
-        back_text_svg = f'<text x="{back_shape_data["text_x"]}" y="{back_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'GenJyuuGothic-P-Heavy\'" font-size="17.9641px">{back_text}</text>'
+
+        if effect_svg_url:
+            # 设计器SVG已含文字，不再叠加
+            front_text_svg = ""
+            back_text_svg = ""
+        else:
+            # 动态生成形状时才叠加文字
+            front_text_svg = f'<text x="{front_shape_data["text_x"]}" y="{front_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'RetroAngela\'" font-size="39.637px">{front_text}</text>'
+            back_text_svg = f'<text x="{back_shape_data["text_x"]}" y="{back_shape_data["text_y"]}" text-anchor="middle" fill="#333333" font-family="\'GenJyuuGothic-P-Heavy\'" font-size="17.9641px">{back_text}</text>'
         
         # Step 5: Build replacement map using {{PLACEHOLDER}} format
         replacements = {
@@ -635,8 +645,8 @@ class SVGPDFService:
             # 产品规格（中文）
             "{{SHAPE}}": str(data.get("shape", "")),
             "{{COLOR}}": str(data.get("color", "")),
-            "{{SIZE}}": str(data.get("size", "")),
-            "{{CRAFT}}": str(data.get("craft", "抛光")),
+            "{{SIZE}}": f"{size_label} {width_mm}*{height_mm}mm",
+            "{{CRAFT}}": "抛光",
             
             # SKU
             "{{SKU}}": str(data.get("sku", "")),
@@ -774,13 +784,18 @@ class SVGPDFService:
         order_data.effect_svg_url = effect_svg_url
         order_data.label_url = label_url
         
+        # 如果调用方直接传了正确的 sku_code，覆盖 generate_sku 的重算结果
+        if raw_data.get("sku_code"):
+            order_data.sku = raw_data["sku_code"]
+            print(f"[INFO] 使用传入的 SKU: {order_data.sku}")
+        
         shipping_service.create_shipping_label(order_data)
         return self.generate_pdf(order_data)
     
     def _get_designer_svg(self, effect_svg_url: str, shape: str, color: str, size: str) -> tuple:
         """
-        从设计器SVG URL读取并解析正反面效果图
-        
+        从设计器SVG URL读取，将整体效果图缩放适配到黑框内，正反面共用同一SVG。
+
         Returns:
             (front_shape_data, back_shape_data) 格式与 _get_effect_shape_svg 相同
         """
@@ -789,39 +804,140 @@ class SVGPDFService:
             response = requests.get(effect_svg_url, timeout=30)
             if response.status_code != 200:
                 print(f"[WARN] 无法下载设计器SVG: {effect_svg_url}")
-                # 回退到动态生成
                 return (
                     self._get_effect_shape_svg(shape, color, "front", size),
                     self._get_effect_shape_svg(shape, color, "back", size)
                 )
-            
+
             svg_content = response.text
             print(f"[OK] 下载设计器SVG成功: {len(svg_content)} 字符")
-            
-            # 解析SVG获取正反面（假设设计器SVG包含正反面）
-            # 这里简化处理：将整个SVG作为正面，背面动态生成
-            # 实际应该根据设计器SVG结构解析
-            
-            # 获取默认形状数据用于定位
-            front_default = self._get_effect_shape_svg(shape, color, "front", size)
-            back_default = self._get_effect_shape_svg(shape, color, "back", size)
-            
-            # 将设计器SVG嵌入到正面区域
-            # 注意：这里需要根据实际SVG结构调整大小和位置
-            front_svg = f'<g transform="translate({front_default["bbox"][0]}, {front_default["bbox"][1]}) scale(0.8)">{svg_content}</g>'
-            
+
+            # 解析设计器SVG的viewBox，以便正确缩放
+            import re as _re
+            vb_match = _re.search(r'viewBox=["\']([^"\']+)["\']', svg_content)
+            vb_min_y = 0.0
+            if vb_match:
+                vb_parts = vb_match.group(1).split()
+                # viewBox="min_x min_y width height"
+                vb_min_y = float(vb_parts[1]) if len(vb_parts) >= 4 else 0.0
+                svg_w = float(vb_parts[2]) if len(vb_parts) >= 4 else 320.0
+                svg_h = float(vb_parts[3]) if len(vb_parts) >= 4 else 133.0
+            else:
+                # 尝试解析 width/height 属性
+                w_match = _re.search(r'\bwidth=["\']([0-9.]+)', svg_content)
+                h_match = _re.search(r'\bheight=["\']([0-9.]+)', svg_content)
+                svg_w = float(w_match.group(1)) if w_match else 320.0
+                svg_h = float(h_match.group(1)) if h_match else 133.0
+
+            # 黑框总尺寸，留 10px 内边距
+            box_x = BLACK_BOX["x"] + 10
+            box_y = BLACK_BOX["y"] + 10
+            box_w = BLACK_BOX["width"] - 20
+            box_h = BLACK_BOX["height"] - 20
+
+            # 等比例缩放适配黑框
+            scale_x = box_w / svg_w if svg_w > 0 else 1.0
+            scale_y = box_h / svg_h if svg_h > 0 else 1.0
+            scale = min(scale_x, scale_y)
+
+            # 居中偏移：注意 min_y 为负数时，translate 需要补偿偏移（-min_y * scale）
+            scaled_w = svg_w * scale
+            scaled_h = svg_h * scale
+            offset_x = box_x + (box_w - scaled_w) / 2
+            # 如果 viewBox min_y 为负（如 -15），内容会整体往上偏移 |min_y|*scale px
+            # 需要用 translate_y += |min_y| * scale 来修正，让内容从黑框顶部开始
+            offset_y = box_y + (box_h - scaled_h) / 2 - vb_min_y * scale
+
+            # 提取SVG内部内容（去掉外层<svg>标签，保留内容）
+            inner = _re.sub(r'<\?xml[^>]*\?>', '', svg_content)
+            inner = _re.sub(r'<svg[^>]*>', '', inner, count=1)
+            inner = _re.sub(r'</svg>\s*$', '', inner.strip())
+
+            # 黑框分为左右两个区域：正面(左半) 和 背面(右半)
+            # 黑框总宽度 331.7，左半到 x=397.3，右半从 x=397.3 开始
+            front_box_x = BLACK_BOX["x"] + 10
+            front_box_y = BLACK_BOX["y"] + 10
+            front_box_w = (BLACK_BOX["width"] / 2) - 20  # 左半部分宽度
+            front_box_h = BLACK_BOX["height"] - 20
+
+            back_box_x = BLACK_BOX["x"] + (BLACK_BOX["width"] / 2) + 10
+            back_box_y = BLACK_BOX["y"] + 10
+            back_box_w = (BLACK_BOX["width"] / 2) - 20
+            back_box_h = BLACK_BOX["height"] - 20
+
+            # 设计器SVG viewBox: 0 -15 321 165，宽度321，正反面各占约160
+            # 正面区域: x=0~160.5, 背面区域: x=160.5~321
+            half_svg_w = svg_w / 2  # 160.5
+
+            # 计算缩放：让半个SVG适配半个黑框
+            front_scale_x = front_box_w / half_svg_w
+            front_scale_y = front_box_h / svg_h
+            front_scale = min(front_scale_x, front_scale_y)
+
+            back_scale_x = back_box_w / half_svg_w
+            back_scale_y = back_box_h / svg_h
+            back_scale = min(back_scale_x, back_scale_y)
+
+            # 使用统一缩放，保持正反面大小一致
+            scale = min(front_scale, back_scale)
+
+            # 正面：裁剪左半部分 (x: 0 ~ half_svg_w)，平移到左黑框
+            front_scaled_w = half_svg_w * scale
+            front_scaled_h = svg_h * scale
+            front_offset_x = front_box_x + (front_box_w - front_scaled_w) / 2
+            front_offset_y = front_box_y + (front_box_h - front_scaled_h) / 2 - vb_min_y * scale
+
+            # 使用 clipPath 裁剪左半部分，并平移缩放
+            front_svg = f'''<g transform="translate({front_offset_x:.2f},{front_offset_y:.2f}) scale({scale:.4f})">
+                <defs><clipPath id="clipFront"><rect x="0" y="{vb_min_y}" width="{half_svg_w}" height="{svg_h}"/></clipPath></defs>
+                <g clip-path="url(#clipFront)">{inner}</g>
+            </g>'''
+
+            # 背面：裁剪右半部分 (x: half_svg_w ~ svg_w)，平移到右黑框
+            back_scaled_w = half_svg_w * scale
+            back_scaled_h = svg_h * scale
+            back_offset_x = back_box_x + (back_box_w - back_scaled_w) / 2
+            back_offset_y = back_box_y + (back_box_h - back_scaled_h) / 2 - vb_min_y * scale
+
+            # 背面需要向左平移 half_svg_w，让右半部分对齐到 x=0，再整体平移到右黑框
+            back_svg = f'''<g transform="translate({back_offset_x:.2f},{back_offset_y:.2f}) scale({scale:.4f})">
+                <defs><clipPath id="clipBack"><rect x="{half_svg_w}" y="{vb_min_y}" width="{half_svg_w}" height="{svg_h}"/></clipPath></defs>
+                <g clip-path="url(#clipBack)" transform="translate({-half_svg_w:.2f},0)">{inner}</g>
+            </g>'''
+
+            # 正面数据
+            front_bbox = {
+                "x": front_offset_x,
+                "y": front_offset_y,
+                "width": front_scaled_w,
+                "height": front_scaled_h,
+            }
             front_shape_data = {
                 "svg": front_svg,
-                "bbox": front_default["bbox"],
-                "text_x": front_default["text_x"],
-                "text_y": front_default["text_y"],
+                "bbox": front_bbox,
+                "text_x": front_offset_x + front_scaled_w / 2,
+                "text_y": front_offset_y + front_scaled_h / 2,
             }
-            
-            return front_shape_data, back_default
-            
+
+            # 背面数据
+            back_bbox = {
+                "x": back_offset_x,
+                "y": back_offset_y,
+                "width": back_scaled_w,
+                "height": back_scaled_h,
+            }
+            back_shape_data = {
+                "svg": back_svg,
+                "bbox": back_bbox,
+                "text_x": back_offset_x + back_scaled_w / 2,
+                "text_y": back_offset_y + back_scaled_h / 2,
+            }
+
+            print(f"[INFO] 设计器SVG拆分: 正面 scale={scale:.4f}, 背面 scale={scale:.4f}")
+            return front_shape_data, back_shape_data
+
         except Exception as e:
             print(f"[ERROR] 读取设计器SVG失败: {e}")
-            # 回退到动态生成
             return (
                 self._get_effect_shape_svg(shape, color, "front", size),
                 self._get_effect_shape_svg(shape, color, "back", size)

@@ -696,6 +696,11 @@ const selectOrder = async (order) => {
     const shape = shapeMap[order.sku_mapping?.shape] || 'heart'
     const color = colorMap[order.sku_mapping?.color] || 'Silver'
     
+    // 尺寸：映射为 L / S（供设计器保存SVG时画标注线）
+    const rawSize = order.sku_mapping?.size || order.product_size || ''
+    const sizeMap = { '大': 'L', 'L': 'L', 'Large': 'L', 'LARGE': 'L', '小': 'S', 'S': 'S', 'Small': 'S', 'SMALL': 'S' }
+    const size = sizeMap[rawSize] || 'L'
+    
     // 解析背面文字：如果包含空格，分离文字和电话
     let backText = order.back_text || ''
     let phone = ''
@@ -713,7 +718,8 @@ const selectOrder = async (order) => {
         phone: phone,
         shape: shape,
         color: color,
-        font: order.font_code || 'F-04'
+        font: order.font_code || 'F-04',
+        size: size
       }
     }, '*')
     
@@ -721,6 +727,7 @@ const selectOrder = async (order) => {
       orderId: order.etsy_order_id,
       shape: shape,
       color: color,
+      size: size,
       frontText: order.front_text,
       backText: backText,
       phone: phone

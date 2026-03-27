@@ -136,20 +136,7 @@
         <div v-if="isMainAccount" class="mt-6 pt-6 border-t border-slate-800">
           <p class="px-4 py-2 text-xs text-slate-500 uppercase tracking-wider">系统管理</p>
           
-          <!-- 8. 店铺管理 -->
-          <router-link 
-            to="/admin/shops"
-            :class="[isActive('/admin/shops') ? 'bg-blue-600' : 'hover:bg-slate-800']"
-            class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            <span>店铺管理</span>
-          </router-link>
-
-          <!-- 9. 子账号管理 -->
+          <!-- 8. 子账号与店铺管理（已合并） -->
           <router-link 
             to="/admin/users"
             :class="[isActive('/admin/users') ? 'bg-blue-600' : 'hover:bg-slate-800']"
@@ -161,10 +148,10 @@
               <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            <span>子账号管理</span>
+            <span>子账号与店铺</span>
           </router-link>
 
-          <!-- 10. 工厂管理 -->
+          <!-- 9. 工厂管理 -->
           <router-link 
             to="/admin/factories"
             :class="[isActive('/admin/factories') ? 'bg-blue-600' : 'hover:bg-slate-800']"
@@ -178,7 +165,7 @@
             <span>工厂管理</span>
           </router-link>
 
-          <!-- 11. 系统设置 -->
+          <!-- 10. 系统设置 -->
           <router-link 
             to="/admin/settings"
             :class="[isActive('/admin/settings') ? 'bg-blue-600' : 'hover:bg-slate-800']"

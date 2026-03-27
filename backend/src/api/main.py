@@ -53,6 +53,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 注册客服外链路由
+from src.api.service_link_routes import router as service_link_router
+app.include_router(service_link_router)
+
 
 # ============ 工具函数 ============
 

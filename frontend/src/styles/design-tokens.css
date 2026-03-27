@@ -1,0 +1,498 @@
+/**
+ * ETSY订单自动化系统 - Notion风格设计令牌
+ * Design Tokens v1.0
+ * 
+ * 参考：Notion 简洁、专业的视觉风格
+ * 特点：灰白色调、柔和阴影、清晰层级、细腻交互
+ */
+
+/* ============================================
+   1. 颜色系统 (Color System)
+   ============================================ */
+
+:root {
+  /* 主色调 - Notion蓝 */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  /* 中性色 - Notion灰 */
+  --color-gray-0: #ffffff;
+  --color-gray-25: #fbfbfa;      /* 页面背景 */
+  --color-gray-50: #f7f6f3;      /* 卡片背景 */
+  --color-gray-100: #f1f1ef;     /* 悬停背景 */
+  --color-gray-200: #e3e2e0;     /* 边框 */
+  --color-gray-300: #d3d1cb;     /* 分隔线 */
+  --color-gray-400: #9ca3af;     /* 次要文字 */
+  --color-gray-500: #6b7280;     /* 辅助文字 */
+  --color-gray-600: #4b5563;     /* 正文 */
+  --color-gray-700: #37352f;     /* 标题 */
+  --color-gray-800: #1f2937;     /* 深色标题 */
+  --color-gray-900: #111827;     /* 最深色 */
+
+  /* 功能色 */
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-danger: #ef4444;
+  --color-danger-light: #fee2e2;
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+
+  /* 特殊背景 */
+  --color-bg-page: #fbfbfa;           /* 页面背景 */
+  --color-bg-card: #ffffff;           /* 卡片背景 */
+  --color-bg-hover: #f7f6f3;          /* 悬停背景 */
+  --color-bg-selected: #f1f1ef;       /* 选中背景 */
+  --color-bg-code: #f7f6f3;           /* 代码块背景 */
+
+  /* ============================================
+     2. 字体系统 (Typography)
+     ============================================ */
+  
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+
+  /* 字体大小 - Notion 风格 */
+  --font-size-xs: 12px;       /* 辅助文字、标签 */
+  --font-size-sm: 13px;       /* 小字、说明 */
+  --font-size-base: 14px;     /* 正文 */
+  --font-size-md: 15px;       /* 稍大正文 */
+  --font-size-lg: 16px;       /* 小标题 */
+  --font-size-xl: 18px;       /* 副标题 */
+  --font-size-2xl: 20px;      /* 页面标题 */
+  --font-size-3xl: 24px;      /* 大标题 */
+
+  /* 字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ============================================
+     3. 间距系统 (Spacing)
+     ============================================ */
+  
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ============================================
+     4. 圆角系统 (Border Radius)
+     ============================================ */
+  
+  --radius-none: 0;
+  --radius-sm: 4px;           /* 小元素：标签、徽章 */
+  --radius-md: 6px;           /* 按钮、输入框 */
+  --radius-lg: 8px;           /* 卡片、弹窗 */
+  --radius-xl: 12px;          /* 大卡片 */
+  --radius-full: 9999px;      /* 圆形 */
+
+  /* ============================================
+     5. 阴影系统 (Shadows)
+     ============================================ */
+  
+  /* Notion 风格的柔和阴影 */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.06), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* 悬停阴影 */
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
+  /* 弹窗阴影 */
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+
+  /* ============================================
+     6. 边框系统 (Borders)
+     ============================================ */
+  
+  --border-width-none: 0;
+  --border-width-thin: 1px;
+  --border-width-thick: 2px;
+  
+  --border-color-default: var(--color-gray-200);
+  --border-color-hover: var(--color-gray-300);
+  --border-color-focus: var(--color-primary-500);
+
+  /* ============================================
+     7. 过渡动画 (Transitions)
+     ============================================ */
+  
+  --transition-fast: 100ms ease;
+  --transition-normal: 150ms ease;
+  --transition-slow: 250ms ease;
+  
+  --transition-colors: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+  --transition-transform: transform var(--transition-normal);
+  --transition-shadow: box-shadow var(--transition-normal);
+  --transition-all: all var(--transition-normal);
+
+  /* ============================================
+     8. Z-Index 层级
+     ============================================ */
+  
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+
+  /* ============================================
+     9. Element Plus 主题覆盖
+     ============================================ */
+  
+  /* 主色 */
+  --el-color-primary: var(--color-primary-600);
+  --el-color-primary-light-3: var(--color-primary-500);
+  --el-color-primary-light-5: var(--color-primary-100);
+  --el-color-primary-light-7: var(--color-primary-50);
+  --el-color-primary-light-8: var(--color-primary-50);
+  --el-color-primary-light-9: var(--color-primary-50);
+  --el-color-primary-dark-2: var(--color-primary-700);
+
+  /* 成功色 */
+  --el-color-success: var(--color-success);
+  --el-color-success-light-9: var(--color-success-light);
+
+  /* 警告色 */
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-9: var(--color-warning-light);
+
+  /* 危险色 */
+  --el-color-danger: var(--color-danger);
+  --el-color-danger-light-9: var(--color-danger-light);
+
+  /* 信息色 */
+  --el-color-info: var(--color-gray-500);
+
+  /* 文字颜色 */
+  --el-text-color-primary: var(--color-gray-700);
+  --el-text-color-regular: var(--color-gray-600);
+  --el-text-color-secondary: var(--color-gray-500);
+  --el-text-color-placeholder: var(--color-gray-400);
+
+  /* 边框颜色 */
+  --el-border-color: var(--color-gray-200);
+  --el-border-color-light: var(--color-gray-100);
+  --el-border-color-lighter: var(--color-gray-50);
+
+  /* 填充颜色 */
+  --el-fill-color: var(--color-gray-50);
+  --el-fill-color-light: var(--color-gray-25);
+  --el-fill-color-blank: var(--color-gray-0);
+
+  /* 背景颜色 */
+  --el-bg-color: var(--color-bg-page);
+  --el-bg-color-page: var(--color-bg-page);
+  --el-bg-color-overlay: var(--color-bg-card);
+
+  /* 圆角 */
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-round: var(--radius-full);
+
+  /* 字体 */
+  --el-font-size-base: var(--font-size-base);
+  --el-font-size-small: var(--font-size-sm);
+  --el-font-size-large: var(--font-size-lg);
+
+  /* 组件大小 */
+  --el-component-size: 36px;
+  --el-component-size-small: 28px;
+  --el-component-size-large: 44px;
+}
+
+/* ============================================
+   通用样式类
+   ============================================ */
+
+/* 页面容器 */
+.notion-page {
+  background-color: var(--color-bg-page);
+  min-height: 100vh;
+  padding: var(--space-8);
+}
+
+/* 卡片容器 - Notion风格 */
+.notion-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  transition: var(--transition-shadow);
+}
+
+.notion-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* 卡片头部 */
+.notion-card-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-gray-100);
+  background-color: var(--color-gray-25);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* 手风琴头部 */
+.notion-accordion-header {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-gray-25);
+  border-bottom: 1px solid var(--color-gray-200);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.notion-accordion-header:hover {
+  background-color: var(--color-gray-50);
+}
+
+/* 统计卡片 */
+.notion-stat-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: var(--transition-all);
+}
+
+.notion-stat-card:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 店铺卡片 */
+.notion-shop-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  transition: var(--transition-all);
+}
+
+.notion-shop-card:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* 按钮样式 - Notion风格 */
+.notion-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.notion-btn-primary {
+  background-color: var(--color-primary-600);
+  color: white;
+  border-color: var(--color-primary-600);
+}
+
+.notion-btn-primary:hover {
+  background-color: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+.notion-btn-secondary {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border-color: var(--color-gray-200);
+}
+
+.notion-btn-secondary:hover {
+  background-color: var(--color-gray-200);
+}
+
+.notion-btn-ghost {
+  background-color: transparent;
+  color: var(--color-gray-600);
+  border-color: var(--color-gray-200);
+}
+
+.notion-btn-ghost:hover {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-700);
+}
+
+/* 标签样式 */
+.notion-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-full);
+}
+
+.notion-badge-success {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.notion-badge-warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.notion-badge-danger {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.notion-badge-info {
+  background-color: var(--color-info-light);
+  color: var(--color-info);
+}
+
+.notion-badge-default {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+/* 输入框样式 */
+.notion-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  transition: var(--transition-colors);
+}
+
+.notion-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-50);
+}
+
+.notion-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* 链接样式 */
+.notion-link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: var(--transition-colors);
+}
+
+.notion-link:hover {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+}
+
+/* 提示框样式 */
+.notion-tip {
+  background-color: var(--color-info-light);
+  border: 1px solid var(--color-primary-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.notion-tip-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-700);
+  margin-bottom: var(--space-2);
+}
+
+.notion-tip-content {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-600);
+  line-height: var(--line-height-relaxed);
+}
+
+/* 头像样式 */
+.notion-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+}
+
+.notion-avatar-sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--font-size-xs);
+}
+
+.notion-avatar-md {
+  width: 36px;
+  height: 36px;
+  font-size: var(--font-size-sm);
+}
+
+.notion-avatar-lg {
+  width: 44px;
+  height: 44px;
+  font-size: var(--font-size-base);
+}
+
+/* 分隔线 */
+.notion-divider {
+  height: 1px;
+  background-color: var(--color-gray-200);
+  margin: var(--space-4) 0;
+}
+
+/* 空状态 */
+.notion-empty {
+  text-align: center;
+  padding: var(--space-12) var(--space-8);
+  color: var(--color-gray-400);
+}
+
+.notion-empty-text {
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-2);
+}
+
+/* 动画 */
+@keyframes notion-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notion-fade-in {
+  animation: notion-fade-in 200ms ease;
+}

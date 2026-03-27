@@ -36,8 +36,6 @@ confirmed（物流下单页面处理）
 
 **左侧区域**：
 - 订单列表（点击选中）
-- 设计器iframe（`/designer-standalone.html`）
-
 **右侧区域**：
 - 订单详情（实拍图、SKU信息、正背面文字）
 

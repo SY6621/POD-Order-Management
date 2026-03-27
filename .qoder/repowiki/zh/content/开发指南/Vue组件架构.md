@@ -11,6 +11,7 @@
 - [frontend/src/views/Admin/FactoryOverview.vue](file://frontend/src/views/Admin/FactoryOverview.vue)
 - [frontend/src/views/Admin/OrdersCompleted.vue](file://frontend/src/views/Admin/OrdersCompleted.vue)
 - [frontend/src/views/Admin/OrdersPending.vue](file://frontend/src/views/Admin/OrdersPending.vue)
+- [frontend/src/views/Admin/OrdersProducing.vue](file://frontend/src/views/Admin/OrdersProducing.vue)
 - [frontend/src/views/Admin/OrdersShipping.vue](file://frontend/src/views/Admin/OrdersShipping.vue)
 - [frontend/src/stores/orderStore.js](file://frontend/src/stores/orderStore.js)
 - [frontend/src/stores/adminStore.js](file://frontend/src/stores/adminStore.js)
@@ -33,12 +34,15 @@
 
 ## 更新摘要
 **所做更改**
-- 新增设计师独立HTML组件的重大增强功能
-- 集成opentype.js字体转换引擎，实现精确文本向量转换
-- 实现字体管理改进，支持多种字体格式和动态加载
-- 增强EffectDesigner.vue组件的字体处理能力
-- 新增独立设计器的矢量导出功能
-- 完善字体特性管理和SKU字体映射系统
+- OrdersPending.vue组件重大重设计：采用统一两列布局结构，移除特殊布局处理
+- 统一左右比例分配和响应式行为，新增邮件工作流程集成
+- 新增生产中订单管理组件OrdersProducing.vue，替代原有共享AdminOrders组件
+- 在路由系统中新增生产中订单路由配置
+- 在管理布局中新增生产中订单导航项
+- 完善生产文档生成功能，支持PDF生产文档的查看、下载和打印
+- 增强订单状态管理，支持生产中订单的专门处理流程
+- 字体管理系统全面增强：opentype.js集成、精确文本向量转换、字体缓存机制
+- 独立设计器HTML文件集成完整的字体处理和向量转换功能
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -261,96 +265,49 @@ D --> D3[无系统设置权限]
 
 ## 新增核心组件
 
-### 设计师独立HTML组件
+### 生产中订单管理组件 OrdersProducing.vue
 
-**更新** 设计师独立HTML组件是本次重大增强的核心，提供了完全独立的字体处理和文本向量转换功能：
-
-```mermaid
-classDiagram
-class DesignerStandalone {
-+String designerUrl
-+Object fontCache
-+Object loadedFonts
-+Array supportedFonts
-+Boolean fontLoadingComplete
-+loadFont(fontName) Promise~void~
-+textToVectorPath(text, fontName, fontSize, x, y) Promise~Object~
-+edGetSVGData() Promise~String~
-+edDownload() void
-+applyDefaults(shape, font, backText) void
-}
-class OpenTypeJS {
-+load(fontUrl) Promise~Font~
-+getPath(text, x, y, fontSize) Path~
-+getAdvanceWidth(text, fontSize) Number~
-}
-class FontManager {
-+Array fontMappings
-+Object fontCache
-+loadFont(fontName) Promise~Font~
-+validateFont(fontName) Boolean~
-}
-DesignerStandalone --> OpenTypeJS : "使用"
-DesignerStandalone --> FontManager : "集成"
-```
-
-**图表来源**
-- [frontend/public/designer-standalone.html:530-562](file://frontend/public/designer-standalone.html#L530-L562)
-- [backend/scripts/create_standalone_designer_v2.py:560-611](file://backend/scripts/create_standalone_designer_v2.py#L560-L611)
-
-**更新** 独立设计器组件实现了以下核心功能：
-
-1. **opentype.js集成**：使用opentype.js库实现精确的字体加载和文本向量转换
-2. **动态字体加载**：支持多种字体格式（TTF、OTF）的动态加载和缓存
-3. **矢量文本转换**：将SVG文本元素转换为精确的SVG路径数据
-4. **字体缓存机制**：避免重复加载相同的字体文件
-5. **默认值管理**：支持按形状、字体、背面类型分组的默认值保存
-6. **独立运行**：无需后端服务即可运行的完全独立HTML文件
-
-### EffectDesigner.vue组件增强
-
-**更新** EffectDesigner.vue组件现在集成了增强的字体处理功能：
+**更新** 新增的OrdersProducing.vue组件专门用于管理生产中的订单，替代了原有的共享AdminOrders组件，提供了更加专业和完整的生产订单管理功能：
 
 ```mermaid
 classDiagram
-class EffectDesigner {
-+Object shape
-+Object color
-+String frontText
-+Number frontSize
-+Number frontY
-+String backText
-+Number backTextSize
-+Number backTextY
-+String backPhone
-+Number backPhoneSize
-+Number backPhoneY
-+wrapSVGText(textEl, rawText, fontSize, startY, maxWidth, lineH) Number
-+updateDesign() void
-+copyParams() void
-+confirmDesign() void
-+downloadSVG() void
-+edGetSVGData() Promise~String~
+class OrdersProducing {
++Array orders
++Boolean loading
++Number expandedId
++Number generatingId
++loadOrders() Promise~Array~
++toggleExpand(id) void
++generatePdf(order) Promise~void~
++viewPdf(order) void
++downloadPdf(order) void
++printPdf(order) void
++formatDate(str) String
 }
-class FontProcessor {
-+Object fontCache
-+Object fontMappings
-+loadFont(fontName) Promise~Font~
-+convertTextToPath(text, fontName, fontSize, x, y) Promise~Object~
+class ProductionDocument {
++String production_pdf_url
++String order_id
++generateAndUpload() Promise~Object~
 }
-EffectDesigner --> FontProcessor : "增强"
+class OrderService {
++getOrdersByStatus(status) Promise~Array~
++updateOrderStatus(id, status) Promise~Object~
+}
+OrdersProducing --> ProductionDocument : "管理"
+OrdersProducing --> OrderService : "使用"
 ```
 
 **图表来源**
-- [frontend/src/components/EffectDesigner.vue:182-255](file://frontend/src/components/EffectDesigner.vue#L182-L255)
+- [frontend/src/views/Admin/OrdersProducing.vue:157-243](file://frontend/src/views/Admin/OrdersProducing.vue#L157-L243)
 
-**更新** EffectDesigner.vue的字体处理增强包括：
+**更新** OrdersProducing.vue组件的主要功能包括：
 
-1. **自动换行功能**：支持多行文本的智能换行和定位
-2. **字体映射系统**：支持多种字体样式的自动映射
-3. **颜色适配**：根据背景颜色自动调整文字颜色
-4. **精确测量**：使用Canvas API进行精确的文字尺寸测量
-5. **响应式更新**：实时响应字体变化和参数调整
+1. **专门的生产订单管理**：专注于状态为"producing"的订单
+2. **生产文档管理**：支持生产文档的生成、查看、下载和打印
+3. **展开详情视图**：支持点击订单行展开详细信息面板
+4. **批量操作支持**：支持单个订单的PDF生成和管理
+5. **实时状态更新**：生成PDF后自动更新订单状态和显示URL
+6. **友好的用户界面**：提供清晰的订单信息展示和操作按钮
 
 ### 物流下单组件 OrdersShipping.vue
 
@@ -458,7 +415,7 @@ OrdersCompleted --> ReviewSystem : "管理"
 
 ### 待确认订单组件 OrdersPending.vue
 
-**更新** 待确认订单组件经过重大重设计，采用统一的两列布局结构，移除了针对待创建标签页的特殊布局处理，统一了左右比例分配和响应式行为：
+**更新** OrdersPending.vue组件经过重大重设计，采用统一的两列布局结构，移除了针对待创建标签页的特殊布局处理，统一了左右比例分配和响应式行为：
 
 ```mermaid
 classDiagram
@@ -549,7 +506,7 @@ OrdersPending --> EmailTemplates : "集成"
 6. **批量操作支持**：支持一键跳转到物流下单页面
 
 **章节来源**
-- [frontend/src/views/Admin/OrdersPending.vue:1-1122](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1122)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1129](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1129)
 - [frontend/src/config/email-templates.json:1-374](file://frontend/src/config/email-templates.json#L1-L374)
 
 ### 邮件模板组件 AdminEffects.vue
@@ -600,7 +557,7 @@ AdminEffects --> EmailTemplateSystem : "重构"
 - [frontend/src/views/Admin/OrdersShipping.vue:1-917](file://frontend/src/views/Admin/OrdersShipping.vue#L1-L917)
 - [frontend/src/views/Admin/FactoryOverview.vue:1-279](file://frontend/src/views/Admin/FactoryOverview.vue#L1-L279)
 - [frontend/src/views/Admin/OrdersCompleted.vue:1-463](file://frontend/src/views/Admin/OrdersCompleted.vue#L1-L463)
-- [frontend/src/views/Admin/OrdersPending.vue:1-1122](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1122)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1129](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1129)
 - [frontend/src/views/Admin/AdminEffects.vue:1-434](file://frontend/src/views/Admin/AdminEffects.vue#L1-L434)
 
 ## 字体管理系统
@@ -895,10 +852,17 @@ D --> D5[/admin/orders/shipping - 物流下单]
 D --> D6[/admin/orders/completed - 已完成订单]
 D --> D7[/admin/factory-overview - 工厂生产总览]
 D --> D8[/admin/templates - 邮件模板]
+D --> D9[/admin/orders/producing - 生产中订单]
 ```
 
 **图表来源**
 - [frontend/src/router/index.js:5-157](file://frontend/src/router/index.js#L5-L157)
+
+**更新** 路由系统现在包含专门的生产中订单路由配置：
+
+1. **新增生产中订单路由**：`/admin/orders/producing` 专门用于OrdersProducing.vue组件
+2. **路由重定向**：原有的`/admin/orders`路由重定向到待确认订单页面
+3. **统一的订单工作流**：7个核心订单工作流导航项，包括生产中订单管理
 
 **章节来源**
 - [frontend/src/router/index.js:1-212](file://frontend/src/router/index.js#L1-L212)
@@ -1054,6 +1018,8 @@ R[utils/supabase.js]
 S[utils/api.js]
 T[components/EffectDesigner.vue]
 U[public/designer-standalone.html]
+V[views/Admin/OrdersProducing.vue]
+W[views/Admin/AdminOrders.vue]
 end
 L --> A
 L --> B
@@ -1073,6 +1039,8 @@ L --> G
 M --> G
 T --> G
 U --> G
+V --> G
+W --> G
 L -.-> I
 M -.-> J
 N -.-> J
@@ -1083,6 +1051,8 @@ R -.-> J
 S -.-> J
 T -.-> J
 U -.-> J
+V -.-> J
+W -.-> J
 ```
 
 **图表来源**
@@ -1101,19 +1071,21 @@ A --> G[utils/supabase.js]
 A --> H[utils/api.js]
 A --> I[components/EffectDesigner.vue]
 A --> J[public/designer-standalone.html]
-K[views/*] --> D
-K --> E
-K --> F
-L[components/*] --> D
-L --> E
-L --> F
-M[utils/api.js] --> N[后端API]
-O[utils/supabase.js] --> P[Supabase客户端]
-Q[stores/orderStore.js] --> R[字体处理]
-S[public/designer-standalone.html] --> T[opentype.js]
-U[components/EffectDesigner.vue] --> T
-V[字体特性清单] --> W[SKU字体映射]
-X[SKU字体映射] --> Y[字体注册]
+A --> K[views/Admin/OrdersProducing.vue]
+A --> L[views/Admin/AdminOrders.vue]
+M[views/*] --> D
+M --> E
+M --> F
+N[components/*] --> D
+N --> E
+N --> F
+O[utils/api.js] --> P[后端API]
+Q[utils/supabase.js] --> R[Supabase客户端]
+S[stores/orderStore.js] --> T[字体处理]
+U[public/designer-standalone.html] --> V[opentype.js]
+W[components/EffectDesigner.vue] --> V
+X[字体特性清单] --> Y[SKU字体映射]
+Z[SKU字体映射] --> AA[字体注册]
 ```
 
 **图表来源**
@@ -1128,6 +1100,7 @@ X[SKU字体映射] --> Y[字体注册]
 4. **路由依赖**：路由系统管理组件间的导航
 5. **字体依赖**：EffectDesigner.vue和独立设计器都依赖opentype.js字体处理
 6. **配置依赖**：字体特性清单和SKU映射配置支持字体管理
+7. **新增生产组件依赖**：OrdersProducing.vue组件依赖Supabase进行订单查询和PDF生成
 
 **章节来源**
 - [frontend/package.json:1-31](file://frontend/package.json#L1-L31)
@@ -1140,28 +1113,33 @@ X[SKU字体映射] --> Y[字体注册]
 2. **计算属性缓存**: 利用computed属性避免重复计算
 3. **懒加载路由**: 路由组件按需加载，减少初始包大小
 4. **多store隔离**: 不同门户使用独立store，避免状态污染
-5. **生产文档同步**: saveEffectImage方法同时更新orders表和production_documents表，确保数据一致性
-6. **统一两列布局优化**: OrdersPending.vue的统一两列布局减少了不必要的DOM层级，提升渲染性能
-7. **批量操作优化**: OrdersShipping.vue的批量下单功能支持异步处理，避免阻塞UI
-8. **本地存储优化**: 邮件设置使用localStorage缓存，减少服务器请求
-9. **字体缓存优化**: opentype.js字体缓存避免重复加载，Canvas像素扫描结果缓存
-10. **独立设计器优化**: 完全独立的HTML文件减少后端依赖，提升加载速度
+5. **生产文档同步**：saveEffectImage方法同时更新orders表和production_documents表，确保数据一致性
+6. **统一两列布局优化**：OrdersPending.vue的统一两列布局减少了不必要的DOM层级，提升渲染性能
+7. **批量操作优化**：OrdersShipping.vue的批量下单功能支持异步处理，避免阻塞UI
+8. **本地存储优化**：邮件设置使用localStorage缓存，减少服务器请求
+9. **字体缓存优化**：opentype.js字体缓存避免重复加载，Canvas像素扫描结果缓存
+10. **独立设计器优化**：完全独立的HTML文件减少后端依赖，提升加载速度
+11. **生产中订单优化**：OrdersProducing.vue采用按需加载和缓存机制，提升大数据量下的性能表现
+12. **字体处理优化**：opentype.js引擎集成，字体文件缓存机制，精确的文本向量转换算法
 
 ### 数据加载策略
 
-1. **批量数据获取**: 统一通过store.fetchOrders()获取所有订单数据
-2. **本地缓存**: 在store中维护订单数据副本，避免重复网络请求
-3. **错误处理**: 完善的错误捕获和用户反馈机制
-4. **门户隔离**: 店铺门户数据与管理门户数据完全隔离
-5. **邮件模板缓存**: email-templates.json文件在组件挂载时一次性加载
-6. **字体文件缓存**: 字体文件在首次加载后缓存到浏览器
+1. **批量数据获取**：统一通过store.fetchOrders()获取所有订单数据
+2. **本地缓存**：在store中维护订单数据副本，避免重复网络请求
+3. **错误处理**：完善的错误捕获和用户反馈机制
+4. **门户隔离**：店铺门户数据与管理门户数据完全隔离
+5. **邮件模板缓存**：email-templates.json文件在组件挂载时一次性加载
+6. **字体文件缓存**：字体文件在首次加载后缓存到浏览器
+7. **生产文档缓存**：PDF URL缓存到订单对象中，避免重复生成
+8. **字体缓存机制**：opentype.js字体缓存，避免重复加载相同字体文件
 
 ### 构建优化
 
-1. **Tree Shaking**: Vite支持现代ES模块，启用Tree Shaking优化
-2. **代码分割**: 路由级别的代码分割
-3. **资源压缩**: 自动的CSS和JavaScript压缩
-4. **字体文件优化**: 字体文件使用Base64编码嵌入HTML，减少HTTP请求数量
+1. **Tree Shaking**：Vite支持现代ES模块，启用Tree Shaking优化
+2. **代码分割**：路由级别的代码分割
+3. **资源压缩**：自动的CSS和JavaScript压缩
+4. **字体文件优化**：字体文件使用Base64编码嵌入HTML，减少HTTP请求数量
+5. **静态资源优化**：独立设计器HTML文件内联字体处理脚本
 
 ## 故障排除指南
 
@@ -1232,6 +1210,36 @@ X[SKU字体映射] --> Y[字体注册]
 - **原因**: HTML文件路径错误或字体加载失败
 - **解决**: 检查HTML文件路径，确认字体文件正确嵌入
 
+#### 生产中订单加载异常
+- **症状**: 生产中订单列表为空或加载缓慢
+- **原因**: Supabase查询异常或网络延迟
+- **解决**: 检查Supabase连接状态，确认查询条件正确
+
+#### 生产文档生成失败
+- **症状**: 点击生成PDF按钮无响应或显示错误
+- **原因**: 后端API调用失败或网络超时
+- **解决**: 检查API服务状态，确认网络连接正常
+
+#### 字体缓存问题
+- **症状**: 字体切换时显示异常或加载缓慢
+- **原因**: opentype.js字体缓存失效或字体文件损坏
+- **解决**: 清除浏览器缓存，重新加载字体文件
+
+#### 精确向量转换问题
+- **症状**: 文字向量路径不准确或显示错位
+- **原因**: opentype.js度量信息计算错误或基线对齐问题
+- **解决**: 检查字体度量配置，调整基线偏移参数
+
+#### 字体注册失败
+- **症状**: 自定义字体无法使用或显示为方块
+- **原因**: 字体文件路径错误或字体注册过程异常
+- **解决**: 检查字体文件路径，确认字体文件存在且可访问
+
+#### 字体映射错误
+- **症状**: 产品类型对应的字体不正确
+- **原因**: SKU字体映射配置错误或字体映射逻辑异常
+- **解决**: 检查字体映射配置，确认产品类型与字体的对应关系
+
 **章节来源**
 - [frontend/src/utils/supabase.js:7-10](file://frontend/src/utils/supabase.js#L7-L10)
 - [frontend/src/stores/orderStore.js:68-75](file://frontend/src/stores/orderStore.js#L68-L75)
@@ -1251,6 +1259,7 @@ X[SKU字体映射] --> Y[字体注册]
 8. **用户体验优化**: OrdersPending.vue的统一两列布局设计提升了操作效率
 9. **字体处理增强**: 独立设计器集成opentype.js实现精确文本向量转换
 10. **字体管理系统**: 完整的字体特性配置和SKU映射系统
+11. **专业化生产管理**: 新增OrdersProducing.vue组件提供专业的生产中订单管理
 
 ### 技术亮点
 1. **现代化工具链**: Vite提供快速开发体验
@@ -1268,6 +1277,9 @@ X[SKU字体映射] --> Y[字体注册]
 13. **字体处理**: opentype.js集成实现精确的文本向量转换
 14. **字体管理**: 完整的字体特性配置和SKU映射系统
 15. **独立运行**: 完全独立的设计器HTML文件减少后端依赖
+16. **专业化组件**: OrdersProducing.vue提供专门的生产中订单管理功能
+17. **字体缓存机制**: opentype.js字体缓存避免重复加载
+18. **精确向量转换**: Canvas像素扫描算法确保字体转换精度
 
 ### 改进建议
 1. **类型安全**: 可以考虑添加TypeScript支持
@@ -1282,7 +1294,14 @@ X[SKU字体映射] --> Y[字体注册]
 10. **字体优化**: 实现字体文件的智能加载和缓存策略
 11. **向量转换优化**: 优化Canvas像素扫描算法提升转换性能
 12. **字体验证**: 添加字体文件的完整性验证机制
+13. **生产文档优化**: 优化PDF生成和缓存机制，提升大订单量下的性能表现
+14. **字体缓存持久化**: 实现字体缓存的持久化存储
+15. **字体处理并发优化**: 优化多字体同时处理的性能表现
 
 该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件和字体处理系统的进一步完善，特别是物流下单和工厂监控功能，为电商订单管理提供了全方位的解决方案。OrdersPending.vue的重大重设计、OrdersShipping.vue的批量处理功能以及独立设计器的opentype.js集成，都体现了现代前端开发的创新思维，通过统一的布局设计、高效的批量操作和精确的字体处理显著提升了用户的操作效率和体验质量。
 
+新增的OrdersProducing.vue组件专门用于管理生产中的订单，提供了专业的生产文档生成功能，包括PDF生成、查看、下载和打印等完整功能。这个组件的引入标志着系统在生产管理方面的专业化程度大幅提升，为工厂生产和订单跟踪提供了更加完善的解决方案。
+
 字体处理系统的完整实现，包括opentype.js引擎的集成、Canvas像素扫描算法的应用、字体缓存机制的建立，以及SKU字体映射系统的完善，为整个系统提供了强大的字体处理能力。这种从设计到生产的完整字体处理流程，确保了订单生产过程中字体的一致性和准确性，为电商订单管理提供了可靠的技术支撑。
+
+通过这次更新，系统不仅在功能上更加完善，在架构设计上也更加专业化，为未来的扩展和维护奠定了坚实的基础。

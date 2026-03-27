@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>子账号与店铺管理 - 整合设计</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .shop-card { transition: all 0.2s; }
+    .shop-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <header class="bg-white border-b border-slate-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center">
+          <span class="text-white font-bold text-lg">管</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-800">管理系统</h1>
+          <p class="text-xs text-slate-500">Management Panel</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-slate-600">管理员</span>
+        <button class="text-sm text-slate-500 hover:text-slate-700">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto flex">
+    <!-- 左侧导航 -->
+    <aside class="w-64 bg-slate-900 text-white min-h-screen p-4">
+      <div class="mb-6">
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">订单工作流</p>
+        <nav class="space-y-1">
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>📊</span> 仪表盘总览
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>📋</span> 待确认订单
+            <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">32</span>
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>🚚</span> 物流下单
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>🏭</span> 生产中订单
+            <span class="ml-auto bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">18</span>
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>✅</span> 已完成订单
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>✉️</span> 邮件模板
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>🏭</span> 工厂生产总览
+          </a>
+        </nav>
+      </div>
+
+      <div>
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">系统管理</p>
+        <nav class="space-y-1">
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-600 text-white">
+            <span>👥</span> 子账号与店铺
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>🏭</span> 工厂管理
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800">
+            <span>⚙️</span> 系统设置
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="flex-1 p-8">
+      <!-- 页面头部 -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">子账号与店铺管理</h1>
+            <p class="text-slate-500">管理运营子账号及其负责的店铺，配置客服外链</p>
+          </div>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            + 创建运营账号
+          </button>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-4 gap-4 mt-6">
+          <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <p class="text-sm text-slate-500">运营账号</p>
+            <p class="text-2xl font-bold text-slate-800">3</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <p class="text-sm text-slate-500">管理店铺</p>
+            <p class="text-2xl font-bold text-blue-600">5</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <p class="text-sm text-slate-500">已启用外链</p>
+            <p class="text-2xl font-bold text-green-600">4</p>
+          </div>
+          <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <p class="text-sm text-slate-500">待生成外链</p>
+            <p class="text-2xl font-bold text-amber-600">1</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 运营账号列表（手风琴式展开） -->
+      <div class="space-y-4">
+        
+        <!-- 运营A -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <!-- 运营账号头部 -->
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <span class="font-bold text-purple-600 text-lg">A</span>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800">运营A</h3>
+                <p class="text-sm text-slate-500">A运营 · a@example.com</p>
+              </div>
+              <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">正常</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-sm text-slate-500">管理 <strong class="text-slate-800">2</strong> 间店铺</span>
+              <button class="text-sm text-blue-600 hover:underline">分配店铺</button>
+              <button class="text-sm text-slate-500 hover:underline">编辑</button>
+              <button class="text-slate-400 hover:text-slate-600">
+                <span class="transform rotate-180 inline-block">▼</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 展开的店铺列表 -->
+          <div class="p-4">
+            <div class="grid grid-cols-2 gap-4">
+              <!-- 店铺1：US -->
+              <div class="shop-card bg-white border border-slate-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span class="font-bold text-blue-600">US</span>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-slate-800">美国店铺</h4>
+                      <p class="text-xs text-slate-500">North America · us123</p>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">正常</span>
+                </div>
+                
+                <!-- 客服外链 -->
+                <div class="bg-slate-50 rounded-lg p-3 mb-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium text-slate-600">客服外链</span>
+                    <span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px]">已启用</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input 
+                      value="http://localhost:5173/service/us?token=abc123..."
+                      readonly
+                      class="flex-1 text-xs bg-white border border-slate-200 rounded px-2 py-1 font-mono text-slate-600"
+                    >
+                    <button class="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">复制</button>
+                  </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex items-center gap-2">
+                  <button class="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 text-xs rounded hover:bg-blue-100">刷新Token</button>
+                  <button class="flex-1 px-3 py-1.5 bg-slate-100 text-slate-600 text-xs rounded hover:bg-slate-200">禁用</button>
+                  <button class="px-3 py-1.5 text-slate-400 hover:text-slate-600 text-xs">访问链接</button>
+                </div>
+              </div>
+
+              <!-- 店铺2：EU -->
+              <div class="shop-card bg-white border border-slate-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <span class="font-bold text-indigo-600">EU</span>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-slate-800">欧洲店铺</h4>
+                      <p class="text-xs text-slate-500">Europe · eu123</p>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">正常</span>
+                </div>
+                
+                <!-- 客服外链 -->
+                <div class="bg-slate-50 rounded-lg p-3 mb-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium text-slate-600">客服外链</span>
+                    <span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">未生成</span>
+                  </div>
+                  <button class="w-full px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                    生成客服外链
+                  </button>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex items-center gap-2">
+                  <button class="flex-1 px-3 py-1.5 text-slate-400 text-xs rounded cursor-not-allowed">刷新Token</button>
+                  <button class="flex-1 px-3 py-1.5 text-slate-400 text-xs rounded cursor-not-allowed">禁用</button>
+                  <button class="px-3 py-1.5 text-slate-400 hover:text-slate-600 text-xs">访问链接</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 运营B -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                <span class="font-bold text-amber-600 text-lg">B</span>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800">运营B</h3>
+                <p class="text-sm text-slate-500">B运营 · b@example.com</p>
+              </div>
+              <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">正常</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-sm text-slate-500">管理 <strong class="text-slate-800">2</strong> 间店铺</span>
+              <button class="text-sm text-blue-600 hover:underline">分配店铺</button>
+              <button class="text-sm text-slate-500 hover:underline">编辑</button>
+              <button class="text-slate-400 hover:text-slate-600">▼</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 运营C -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
+                <span class="font-bold text-rose-600 text-lg">C</span>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800">运营C</h3>
+                <p class="text-sm text-slate-500">C运营 · c@example.com</p>
+              </div>
+              <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">已禁用</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-sm text-slate-500">管理 <strong class="text-slate-800">1</strong> 间店铺</span>
+              <button class="text-sm text-blue-600 hover:underline">分配店铺</button>
+              <button class="text-sm text-slate-500 hover:underline">编辑</button>
+              <button class="text-slate-400 hover:text-slate-600">▼</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底部说明 -->
+      <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <h4 class="text-sm font-medium text-blue-800 mb-2">💡 使用说明</h4>
+        <ul class="text-sm text-blue-700 space-y-1">
+          <li>• 每个运营账号可管理多个店铺，点击"分配店铺"进行配置</li>
+          <li>• 客服外链是店铺专属链接，发送给对应店铺的客服人员</li>
+          <li>• 刷新Token后旧链接立即失效，客服需使用新链接登录</li>
+          <li>• 禁用外链后客服无法访问，但数据不会丢失</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

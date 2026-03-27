@@ -64,6 +64,20 @@ const routes = [
     component: () => import('../views/StorePortal/StoreDownload.vue'),
     meta: { title: '效果图下载' }
   },
+  // 客服外链 - 沟通链接
+  {
+    path: '/service/:shopCode',
+    name: 'ServiceLink',
+    component: () => import('../views/ServiceLink/ServiceLink.vue'),
+    meta: { title: '店铺订单中心' }
+  },
+  // 客服外链 - 设计链接
+  {
+    path: '/design/:shopCode',
+    name: 'DesignLink',
+    component: () => import('../views/DesignLink/DesignLink.vue'),
+    meta: { title: '设计修改中心' }
+  },
   // 中央管理系统
   {
     path: '/admin/login',

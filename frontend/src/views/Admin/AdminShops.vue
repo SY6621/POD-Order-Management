@@ -3,7 +3,7 @@
     <div class="mb-8 flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-slate-800">店铺管理</h1>
-        <p class="text-slate-500">管理所有店铺信息和访问链接</p>
+        <p class="text-slate-500">管理所有店铺信息和客服外链</p>
       </div>
       <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
         + 添加店铺
@@ -18,6 +18,7 @@
             <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">地区</th>
             <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">访问密码</th>
             <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">状态</th>
+            <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">客服外链</th>
             <th class="text-left py-3 px-4 text-sm font-semibold text-slate-600">操作</th>
           </tr>
         </thead>
@@ -52,15 +53,59 @@
               </span>
             </td>
             <td class="py-4 px-4">
+              <!-- 客服外链状态 -->
+              <div v-if="!shop.service_token" class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">未生成</span>
+                <button 
+                  @click="generateServiceLink(shop)"
+                  class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+                >
+                  生成外链
+                </button>
+              </div>
+              <div v-else class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span 
+                    class="px-2 py-0.5 rounded-full text-xs font-medium"
+                    :class="shop.service_link_enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                  >
+                    {{ shop.service_link_enabled ? '已启用' : '已禁用' }}
+                  </span>
+                  <button 
+                    @click="toggleServiceLink(shop)"
+                    class="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    {{ shop.service_link_enabled ? '禁用' : '启用' }}
+                  </button>
+                </div>
+                <div class="text-xs text-slate-500 truncate max-w-[200px]">
+                  {{ getServiceLinkUrl(shop) }}
+                </div>
+              </div>
+            </td>
+            <td class="py-4 px-4">
               <div class="flex items-center gap-3">
                 <button 
-                  @click="copyAccessLink(shop)"
+                  v-if="shop.service_token"
+                  @click="copyServiceLink(shop)"
                   class="text-sm text-blue-600 hover:underline"
                 >
-                  复制访问链接
+                  复制外链
+                </button>
+                <button 
+                  v-if="shop.service_token"
+                  @click="refreshServiceToken(shop)"
+                  class="text-sm text-amber-600 hover:underline"
+                >
+                  刷新Token
+                </button>
+                <button 
+                  @click="copyAccessLink(shop)"
+                  class="text-sm text-slate-500 hover:underline"
+                >
+                  访问链接
                 </button>
                 <button class="text-sm text-slate-500 hover:underline">编辑</button>
-                <button class="text-sm text-slate-500 hover:underline">查看订单</button>
               </div>
             </td>
           </tr>
@@ -219,6 +264,85 @@ async function copyLinkToClipboard() {
     setTimeout(() => linkCopied.value = false, 2000)
   } catch (err) {
     console.error('复制失败:', err)
+  }
+}
+
+// ============ 客服外链功能 ============
+
+// 获取客服外链URL
+function getServiceLinkUrl(shop) {
+  if (!shop.service_token) return ''
+  const baseUrl = window.location.origin
+  return `${baseUrl}/service/${shop.code}?token=${shop.service_token}`
+}
+
+// 生成客服外链
+async function generateServiceLink(shop) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/service-link/generate-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shop_id: shop.id, enabled: true })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      // 更新本地数据
+      shop.service_token = data.service_token
+      shop.service_link_enabled = data.service_link_enabled
+      shop.service_link_created_at = data.created_at
+      
+      // 自动复制到剪贴板
+      await navigator.clipboard.writeText(data.service_link_url)
+      alert(`客服外链已生成并复制到剪贴板：\n${data.service_link_url}`)
+    } else {
+      alert('生成外链失败')
+    }
+  } catch (err) {
+    console.error('生成外链失败:', err)
+    alert('生成外链失败，请检查网络连接')
+  }
+}
+
+// 复制客服外链
+async function copyServiceLink(shop) {
+  const url = getServiceLinkUrl(shop)
+  try {
+    await navigator.clipboard.writeText(url)
+    alert('客服外链已复制到剪贴板')
+  } catch (err) {
+    console.error('复制失败:', err)
+  }
+}
+
+// 刷新Token
+async function refreshServiceToken(shop) {
+  if (!confirm('刷新Token后，旧链接将失效，客服需要使用新链接访问。\n\n确定要刷新吗？')) {
+    return
+  }
+  
+  await generateServiceLink(shop)
+}
+
+// 启用/禁用外链
+async function toggleServiceLink(shop) {
+  const newEnabled = !shop.service_link_enabled
+  const action = newEnabled ? '启用' : '禁用'
+  
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/service-link/shops/${shop.id}/toggle?enabled=${newEnabled}`, {
+      method: 'POST'
+    })
+    
+    if (response.ok) {
+      shop.service_link_enabled = newEnabled
+      alert(`客服外链已${action}`)
+    } else {
+      alert(`${action}外链失败`)
+    }
+  } catch (err) {
+    console.error(`${action}外链失败:`, err)
+    alert(`${action}外链失败，请检查网络连接`)
   }
 }
 </script>

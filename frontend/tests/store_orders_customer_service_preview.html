@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>店铺订单中心 - 客服操作页面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .effect-preview {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+    .email-content {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <header class="bg-white border-b border-slate-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+          <span class="font-bold text-blue-600">PET</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-800">PetTagStudio</h1>
+          <p class="text-sm text-slate-500">店铺订单中心</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="text-sm text-slate-500 hover:text-slate-700">退出登录</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-5 gap-4 mb-6">
+      <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <p class="text-sm text-slate-500">全部订单</p>
+        <p class="text-2xl font-bold text-slate-800">12</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <p class="text-sm text-slate-500">待确认</p>
+        <p class="text-2xl font-bold text-orange-600">3</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <p class="text-sm text-slate-500">生产中</p>
+        <p class="text-2xl font-bold text-purple-600">5</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <p class="text-sm text-slate-500">已完成</p>
+        <p class="text-2xl font-bold text-green-600">4</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <p class="text-sm text-slate-500">需修改</p>
+        <p class="text-2xl font-bold text-pink-600">1</p>
+      </div>
+    </div>
+
+    <div class="flex gap-4">
+      <!-- 左侧：订单列表（固定320px） -->
+      <div class="w-[320px] flex-shrink-0">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="font-bold text-slate-800">订单列表</h2>
+            <span class="text-xs text-slate-400">点击订单查看详情</span>
+          </div>
+          
+          <div class="divide-y divide-slate-100">
+            <!-- 订单1：已发送邮件，待客户确认 -->
+            <div class="p-2.5 hover:bg-slate-50 cursor-pointer bg-blue-50/50 border-l-3 border-blue-500">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-semibold text-slate-800 text-sm">4002217518</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">已发送</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                <span>心形 - 金色</span>
+              </div>
+              <div class="text-[11px] text-slate-500 truncate">
+                正面: KYLA | 背面: If Lost 13999926688
+              </div>
+            </div>
+
+            <!-- 订单2：草稿状态，需要处理 -->
+            <div class="p-2.5 hover:bg-slate-50 cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-semibold text-slate-800 text-sm">3986891868</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">草稿</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                <span>圆形 - 银色</span>
+              </div>
+              <div class="text-[11px] text-slate-500 truncate">
+                正面: TOM | 背面: 13800138000
+              </div>
+            </div>
+
+            <!-- 订单3：客户需修改 -->
+            <div class="p-2.5 hover:bg-slate-50 cursor-pointer border-l-3 border-pink-500 bg-pink-50/30">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-semibold text-slate-800 text-sm">4002234567</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-pink-100 text-pink-700">需修改</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-700"></span>
+                <span>骨头形 - 玫瑰金</span>
+              </div>
+              <div class="text-[11px] text-slate-500 truncate">
+                正面: LUNA | 背面: 13987654321
+              </div>
+            </div>
+
+            <!-- 订单4：生产中 -->
+            <div class="p-2.5 hover:bg-slate-50 cursor-pointer opacity-60">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-semibold text-slate-800 text-sm">4002200001</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-700">生产中</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                <span>心形 - 金色</span>
+              </div>
+              <div class="text-[11px] text-slate-500 truncate">
+                正面: MAX | 背面: 13811112222
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：订单详情与客服操作（自适应剩余宽度） -->
+      <div class="flex-1 min-w-0">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <!-- 详情头部 -->
+          <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-slate-800">订单详情</h3>
+              <span class="text-xs text-slate-500">4002217518</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">邮件已发送</span>
+          </div>
+
+          <div class="p-4">
+            <div class="grid grid-cols-2 gap-4">
+              <!-- 左侧：效果图预览 -->
+              <div>
+                <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <span>📷</span> 效果图预览
+                </h4>
+                <div class="effect-preview rounded-lg border border-slate-200 p-4 aspect-square flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="w-32 h-32 mx-auto mb-3 relative">
+                      <!-- 简化的效果图示意 -->
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <path d="M50 15 C30 15 15 30 15 50 C15 75 50 90 50 90 C50 90 85 75 85 50 C85 30 70 15 50 15Z" 
+                              fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="50" y="45" text-anchor="middle" font-size="14" fill="#374151" font-family="cursive">KYLA</text>
+                        <circle cx="50" cy="25" r="4" fill="#e5e7eb"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs text-slate-500">心形 - 金色 · 正面</p>
+                  </div>
+                </div>
+                
+                <!-- 产品信息 -->
+                <div class="mt-4 space-y-1.5 text-sm">
+                  <div class="text-slate-600">
+                    <span class="text-slate-400">客户：</span>Jessica Head
+                  </div>
+                  <div class="text-slate-600">
+                    <span class="text-slate-400">产品：</span>B-G01B
+                  </div>
+                  <div class="text-slate-600">
+                    <span class="text-slate-400">尺寸：</span>L (32mm)
+                  </div>
+                  <div class="text-slate-600">
+                    <span class="text-slate-400">时间：</span>2025/03/25 14:32
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右侧：邮件内容与操作 -->
+              <div class="flex flex-col h-full">
+                <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <span>📧</span> 邮件内容
+                </h4>
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 email-content text-sm text-slate-700 mb-3 flex-1 overflow-y-auto">
+                  <p class="mb-2">Hi Jessica!</p>
+                  <p class="mb-2">Thank you for your order! Here is the preview of your custom pet tag:</p>
+                  <p class="mb-2"><strong>Front:</strong> KYLA</p>
+                  <p class="mb-2"><strong>Back:</strong> If Lost 13999926688</p>
+                  <p class="mb-2">Please confirm the design looks correct, or let us know if you need any changes.</p>
+                  <p>Best regards,<br>Customer Support Team</p>
+                </div>
+
+                <!-- 客服操作按钮组 -->
+                <div class="space-y-2">
+                  <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <span>🔘</span> 客服操作
+                  </h4>
+                  
+                  <!-- 主操作按钮 -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <button class="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
+                      <span>✉️</span> 我已发送邮件
+                    </button>
+                    <button class="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5">
+                      <span>✓</span> 客户已确认
+                    </button>
+                  </div>
+                  
+                  <!-- 修改按钮 -->
+                  <button class="w-full px-3 py-2 bg-pink-50 text-pink-600 border border-pink-200 text-sm font-medium rounded-lg hover:bg-pink-100 transition-colors flex items-center justify-center gap-1.5">
+                    <span>📝</span> 客户需修改
+                  </button>
+
+                  <!-- 修改要求输入框（默认隐藏，点击展开） -->
+                  <div class="border border-pink-200 rounded-lg p-2.5 bg-pink-50/30">
+                    <p class="text-xs text-pink-600 mb-1.5 font-medium">请填写客户修改要求：</p>
+                    <textarea 
+                      class="w-full bg-white border border-slate-200 rounded p-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-1 focus:ring-pink-500/20 focus:border-pink-500"
+                      rows="3"
+                      placeholder="例如：&#10;1. 正面文字改为 Luna&#10;2. 背面电话改为 +61 4xx xxx xxx"
+                    ></textarea>
+                    <div class="mt-1.5 flex justify-end">
+                      <button class="px-3 py-1 bg-pink-600 text-white text-xs font-medium rounded hover:bg-pink-700 transition-colors">
+                        提交修改要求
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <span>📋</span> 操作历史
+              </h4>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-400">14:32</span>
+                  <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">邮件</span>
+                  <span class="text-slate-600">客服发送确认邮件给客户</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-400">14:30</span>
+                  <span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">设计</span>
+                  <span class="text-slate-600">设计师生成效果图</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-400">14:15</span>
+                  <span class="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">订单</span>
+                  <span class="text-slate-600">订单创建，等待处理</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部说明 -->
+  <footer class="max-w-7xl mx-auto px-6 py-4 text-center text-xs text-slate-400">
+    StorePortal 客服操作中心 · 邮件状态流转：草稿 → 已发送 → 客户已确认 / 客户需修改
+  </footer>
+</body>
+</html>

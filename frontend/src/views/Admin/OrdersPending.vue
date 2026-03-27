@@ -30,6 +30,7 @@
           <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-3 text-xs">
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">新订单 {{ newOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'email' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-slate-500'" @click="orderTab = 'email'">邮件撰写 {{ emailOrdersCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'modify' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-slate-500'" @click="orderTab = 'modify'">客户修改 {{ modifyCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allOrdersCount }}</button>
           </div>
@@ -104,7 +105,43 @@
           </div>
         </div>
       
-      <!-- 版剗2：效果图+邮件预览并排（只在待创建Tab显示，与设计器/邮件撰写同位置） -->
+      <!-- 版剗2：客户修改Tab（静态布局，仅用于预览效果） -->
+        <div v-if="orderTab === 'modify'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm">客户修改</h3>
+            <span class="text-xs text-slate-500" v-if="selectedOrder">
+              <span class="mr-6">订单ID: <span class="text-red-500 font-medium">{{ selectedOrder.etsy_order_id }}</span></span>
+              <span class="mr-6">客户: {{ selectedOrder.customer_name }}</span>
+              <span>SKU: {{ selectedOrder.sku_mapping?.sku_code || selectedOrder.sku_id || '-' }}</span>
+            </span>
+          </div>
+          <div class="p-3 bg-slate-50" style="height: 950px; overflow-y: auto;">
+            <!-- 客户修改Tab：只显示设计器，邮件内容在右侧订单详情区域 -->
+            <div class="h-full flex flex-col gap-3">
+
+              <!-- 效果图设计器 -->
+              <div class="bg-white rounded-lg border border-slate-200 flex-1 flex flex-col overflow-hidden">
+                <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span class="text-base">🎨</span>
+                    <span>效果图设计器</span>
+                  </div>
+                  <span class="text-[10px] text-slate-400">自动加载订单数据</span>
+                </div>
+                <div class="flex-1 bg-slate-50">
+                  <iframe 
+                    ref="modifyDesignerFrame" 
+                    :src="designerUrl" 
+                    class="w-full h-full border-0" 
+                    @load="onModifyDesignerLoad"
+                  ></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+   108→      <!-- 版剗2：效果图+邮件预览并排（只在待创建Tab显示，与设计器/邮件撰写同位置） -->
         <div v-if="orderTab === 'pending'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -395,7 +432,105 @@
           </div>
         </div>
 
+        <!-- 客户修改Tab专用：邮件/修改/回复面板 -->
+        <div v-if="orderTab === 'modify' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
+            <h3 class="font-bold text-slate-800 text-sm">📧 邮件与回复</h3>
+          </div>
+          <div class="p-3 space-y-3 text-[11px]">
+            <!-- 上次发送的邮件 -->
+            <div class="border border-slate-200 rounded-lg p-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-slate-500 font-medium">上次发送的邮件</span>
+                <span class="text-[10px] text-slate-400">只读</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded p-2 h-24 overflow-y-auto whitespace-pre-wrap text-slate-700">
+Hi {{ selectedOrder?.customer_name?.split(' ')[0] || 'there' }}!
 
+Here is the preview of your custom pet tag (Version 1).
+Please check the name, phone number and layout.
+
+Best,
+Customer Support Team
+              </div>
+            </div>
+
+            <!-- 上次发送的效果图 -->
+            <div class="border border-slate-200 rounded-lg p-2">
+              <div class="w-full aspect-[4/3] rounded bg-slate-100 border border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                <img v-if="selectedOrder?.effect_image_url" :src="selectedOrder.effect_image_url" class="w-full h-full object-contain" />
+                <span v-else class="text-[10px] text-slate-400">效果图预览</span>
+              </div>
+            </div>
+
+            <!-- 客户修改要求 -->
+            <div class="border border-slate-200 rounded-lg p-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-slate-500 font-medium flex items-center gap-1">
+                  <span>💬</span> 客户修改要求
+                </span>
+                <span class="text-[10px] text-green-500">StorePortal</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded p-2 min-h-[60px] text-slate-700 whitespace-pre-wrap">
+1. 正面文字由 "Kyla" 改为 "Luna"
+2. 背面电话替换为 "+61 4xx xxx xxx"
+3. 其它保持不变
+              </div>
+            </div>
+
+            <!-- 邮件/信息回复 -->
+            <div class="border border-slate-200 rounded-lg p-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-slate-500 font-medium flex items-center gap-1">
+                  <span>✉️</span> 回复
+                </span>
+                <button 
+                  @click="generateReplyEmail"
+                  class="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-800 text-white hover:bg-blue-900 transition-colors"
+                >
+                  ✨ AI生成
+                </button>
+              </div>
+              <textarea 
+                v-model="replyContent" 
+                class="w-full bg-slate-50 border border-slate-200 rounded p-2 min-h-[160px] text-[11px] text-slate-700 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="在此输入回复内容..."
+              ></textarea>
+              <div class="flex items-center justify-between text-[10px] mt-1">
+                <span class="text-slate-400">收件人: {{ selectedOrder?.customer_name?.split(' ')[0] || 'Customer' }}</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-400">落款:</span>
+                  <select 
+                    v-model="replySenderName" 
+                    class="bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] text-slate-700"
+                  >
+                    <option v-for="name in senderOptions" :key="name" :value="name">{{ name }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="border border-slate-200 rounded-lg">
+              <button class="w-full px-2 py-1.5 flex items-center justify-between text-[11px] text-slate-500" @click="showHistory = !showHistory">
+                <span class="flex items-center gap-1">
+                  <span>📜</span> 历史记录
+                </span>
+                <svg :class="['w-3 h-3 transition-transform', showHistory ? 'rotate-180' : '']" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div v-if="showHistory" class="px-2 pb-2 max-h-32 overflow-y-auto text-[10px] text-slate-600 space-y-1">
+                <div>2026-03-24 10:15 · 系统邮件 V1</div>
+                <div>2026-03-24 23:01 · 客户修改：请把名字改成 LUNA</div>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2 pt-2">
+              <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm">保存草稿</button>
+              <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm">标记已处理</button>
+            </div>
+          </div>
+        </div>
 
           <!-- 发送给客户操作面板（待创建Tab显示） -->
           <div v-if="orderTab === 'pending' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -437,6 +572,8 @@ const router = useRouter()
 const store = useOrderStore()
 const designerFrame = ref(null)
 const designerUrl = ref('/designer-standalone.html')
+const modifyDesignerFrame = ref(null)
+const modifyDesignerUrl = ref('') // 客户修改Tab的设计器URL（懒加载）
 const activeAccount = ref('all')
 const orderTab = ref('new')
 const selectedOrder = ref(null)
@@ -450,6 +587,9 @@ const pendingEmailContent = ref('') // 待创建Tab的邮件预览内容（从 e
 const isTranslating = ref(false)
 const showCustomerNote = ref(false) // 客户需求折叠状态
 const settingsSaved = ref(false) // 设置保存状态
+const showHistory = ref(false) // 客户修改Tab：历史记录折叠状态
+const replyContent = ref('') // 客户修改Tab：邮件/信息回复内容
+const replySenderName = ref('Customer Support Team') // 客户修改Tab：回复邮件落款人
 
 // 邮件风格控制（新增）
 const emailTone = ref('casual') // 语气：formal(正式) / casual(随和) / lively(活泼)
@@ -652,6 +792,13 @@ const emailOrdersCount = computed(() => {
       email_sent: o.email_sent
     }))
   })
+  if (activeAccount.value !== 'all') {
+    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
+  }
+  return orders.length
+})
+const modifyCount = computed(() => {
+  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status === 'needs_change')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
@@ -1124,5 +1271,84 @@ const goToShipping = () => {
     path: '/admin/shipping',
     query: { orderId: selectedOrder.value.id }
   })
+}
+
+// 客户修改Tab：加载设计器
+const loadDesignToModifyTab = () => {
+  modifyDesignerUrl.value = '/designer-standalone.html'
+  console.log('📌 客户修改Tab：开始加载设计器')
+}
+
+// 客户修改Tab：设计器加载完成
+const onModifyDesignerLoad = () => {
+  if (selectedOrder.value && modifyDesignerFrame.value) {
+    // 从 sku_mapping 获取 shape 和 color
+    const shapeMap = { '心形': 'heart', '圆形': 'circle', '骨头形': 'bone' }
+    const colorMap = { '金色': 'Gold', '银色': 'Silver', '玫瑰金': 'RoseGold', '黑色': 'Black' }
+    
+    const shape = shapeMap[selectedOrder.value.sku_mapping?.shape] || 'heart'
+    const color = colorMap[selectedOrder.value.sku_mapping?.color] || 'Silver'
+    
+    // 尺寸：映射为 L / S
+    const rawSize = selectedOrder.value.sku_mapping?.size || selectedOrder.value.product_size || ''
+    const sizeMap = { '大': 'L', 'L': 'L', 'Large': 'L', 'LARGE': 'L', '小': 'S', 'S': 'S', 'Small': 'S', 'SMALL': 'S' }
+    const size = sizeMap[rawSize] || 'L'
+    
+    // 解析背面文字
+    let backText = selectedOrder.value.back_text || ''
+    let phone = ''
+    if (backText.includes(' ')) {
+      const parts = backText.split(' ')
+      backText = parts[0]
+      phone = parts.slice(1).join(' ')
+    }
+    
+    modifyDesignerFrame.value.contentWindow.postMessage({
+      type: 'loadOrder',
+      data: {
+        frontText: selectedOrder.value.front_text || '',
+        backText: backText,
+        phone: phone,
+        shape: shape,
+        color: color,
+        font: selectedOrder.value.font_code || 'F-04',
+        size: size
+      }
+    }, '*')
+    
+    console.log('📤 客户修改Tab：发送订单数据到设计器:', {
+      orderId: selectedOrder.value.etsy_order_id,
+      shape, color, size,
+      frontText: selectedOrder.value.front_text,
+      backText, phone
+    })
+  }
+}
+
+// 客户修改Tab：AI生成回复邮件（占位函数）
+const generateReplyEmail = () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  
+  const customerName = selectedOrder.value.customer_name?.split(' ')[0] || 'there'
+  const sender = replySenderName.value
+  
+  // 简单的模板回复（后期接入AI）
+  const template = `Hi ${customerName}!
+
+Thank you for your feedback. We have updated the design according to your requirements:
+
+✅ Front text changed to: "${selectedOrder.value.front_text || 'Luna'}"
+✅ Back phone number updated
+
+Please check the new preview below and let us know if everything looks good!
+
+Best regards,
+${sender}`
+  
+  replyContent.value = template
+  console.log('✨ AI生成回复邮件完成')
 }
 </script>

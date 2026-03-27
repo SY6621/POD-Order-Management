@@ -21,6 +21,11 @@ class DatabaseService:
             if not settings.validate_supabase():
                 raise ValueError("Supabase 配置无效")
             self._client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+    
+    @property
+    def supabase(self):
+        """提供 supabase 属性访问，兼容现有代码"""
+        return self._client
 
     # ---- 数据库 CRUD ----
 

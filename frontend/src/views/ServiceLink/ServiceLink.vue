@@ -47,38 +47,76 @@
     <!-- 主内容 -->
     <main class="main-content">
       <!-- 左侧：订单列表 -->
-      <aside class="order-list-panel">
-        <div class="panel-header">
-          <h3>订单列表</h3>
-          <span class="panel-hint">点击订单查看详情</span>
+      <aside class="order-list-panel notion-style">
+        <!-- 头部 -->
+        <div class="header">
+          <h1>订单列表</h1>
+          <p>点击订单查看详情</p>
         </div>
-        <div class="order-list">
+
+        <!-- 新订单分组 -->
+        <div class="section-tag tag-new">新订单</div>
+        <div class="order-list notion-list">
           <div
-            v-for="order in orders"
+            v-for="order in newOrders"
             :key="order.id"
-            class="order-item"
-            :class="{ active: selectedOrder?.id === order.id }"
+            class="order-card"
+            :class="{ highlight: selectedOrder?.id === order.id }"
             @click="selectOrder(order)"
           >
-            <div class="order-header">
-              <span class="order-id">{{ order.etsy_order_id }}</span>
-              <el-tag :type="getEmailStatusType(order.email_status)" size="small">
-                {{ getEmailStatusText(order.email_status) }}
-              </el-tag>
-            </div>
-            <div class="order-product">
-              <span class="product-shape">{{ order.product_shape }}</span>
-              <span class="product-color">{{ order.product_color }}</span>
-            </div>
-            <div class="order-text">
-              正面: {{ order.front_text }} | 背面: {{ order.back_text }}
-            </div>
-            <div class="order-time">
-              <el-icon><Clock /></el-icon>
-              下单: {{ formatTime(order.etsy_order_time) }}
+            <span class="status-badge badge-red">新订单</span>
+            <div class="user-link">{{ order.customer_name }}</div>
+            <div class="order-number"># {{ order.etsy_order_id }}</div>
+            <div class="flex gap-3">
+              <div class="flex-shrink-0">
+                <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path :d="getShapeIconPath(order.product_shape)"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex-1">
+                <span class="item-tag">Personalisable</span>
+                <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                <div class="item-meta">Color + Size: <span class="meta-bold">Gold Large</span></div>
+                <div class="item-meta">Engraving Side: <span class="meta-bold">Double-sided</span></div>
+                <div class="item-meta">Personalization <span class="meta-bold">Front: Luna (F-04) Back: 416.456.3524</span></div>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- 已发送效果图分组 -->
+        <div class="section-tag tag-sent">已发送效果图</div>
+        <div class="order-list notion-list">
+          <div
+            v-for="order in sentOrders"
+            :key="order.id"
+            class="order-card"
+            :class="{ highlight: selectedOrder?.id === order.id }"
+            @click="selectOrder(order)"
+          >
+            <span class="status-badge badge-blue">待确认</span>
+            <div class="user-link">{{ order.customer_name }}</div>
+            <div class="order-number"># {{ order.etsy_order_id }}</div>
+            <div class="flex gap-3">
+              <div class="flex-shrink-0">
+                <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path :d="getShapeIconPath(order.product_shape)"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="flex-1">
+                <span class="item-tag">Personalisable</span>
+                <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部留白 -->
+        <div class="h-8"></div>
       </aside>
 
       <!-- 中间：订单详情 -->
@@ -111,7 +149,10 @@
                       <text x="50" y="50" text-anchor="middle" font-size="16" fill="#374151" dy=".3em">{{ selectedOrder.front_text }}</text>
                     </svg>
                   </div>
-                  <el-button size="small" class="download-btn">下载 JPG</el-button>
+                  <!-- 右下角按钮组 -->
+                  <div class="preview-actions">
+                    <el-button size="small" class="action-btn gray-btn" @click="downloadImage">下载 JPG</el-button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,7 +222,7 @@
                   <el-icon class="btn-arrow" :class="{ rotate: showDesignPanel }"><ArrowDown /></el-icon>
                 </el-button>
               </div>
-              <!-- 当前订单信息 - 在按钮下方 -->
+              <!-- 当前订单信息 -->
               <div class="current-order-info">
                 当前订单：{{ selectedOrder.etsy_order_id }} 客户：{{ selectedOrder.customer_name }}
               </div>
@@ -475,6 +516,21 @@ function getColorStroke(color) {
   return colors[color] || '#f59e0b'
 }
 
+// 订单分组
+const newOrders = computed(() => orders.value.filter(o => o.email_status === 'pending' || !o.email_status))
+const sentOrders = computed(() => orders.value.filter(o => ['sent', 'confirmed', 'modify'].includes(o.email_status)))
+
+// 获取图标路径（用于小图标）
+function getShapeIconPath(shape) {
+  const paths = {
+    '心形': 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+    '圆形': 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
+    '骨头形': 'M7 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-5 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+    '方形': 'M3 3h18v18H3z'
+  }
+  return paths[shape] || paths['圆形']
+}
+
 // 获取邮件状态类型
 function getEmailStatusType(status) {
   const map = {
@@ -484,6 +540,17 @@ function getEmailStatusType(status) {
     modify: 'danger'
   }
   return map[status] || 'info'
+}
+
+// 获取状态角标样式类
+function getStatusBadgeClass(status) {
+  const map = {
+    pending: 'badge-red',
+    sent: 'badge-blue',
+    confirmed: 'badge-green',
+    modify: 'badge-orange'
+  }
+  return map[status] || 'badge-red'
 }
 
 // 获取邮件状态文本
@@ -711,6 +778,364 @@ onMounted(() => {
   gap: 4px;
 }
 
+/* ========== Notion风格左侧栏样式（原封不动来自客服外链左侧栏.html） ========== */
+.order-list-panel.notion-style {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.order-list-panel.notion-style .header {
+  padding: 24px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.order-list-panel.notion-style .header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.order-list-panel.notion-style .header p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* 分类装饰标签 */
+.order-list-panel.notion-style .section-tag {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 20px 20px 10px;
+}
+
+.order-list-panel.notion-style .tag-new {
+  background-color: #dcc296;
+  color: white;
+}
+
+.order-list-panel.notion-style .tag-sent {
+  background-color: #c0c0c0;
+  color: white;
+}
+
+/* 订单列表 */
+.order-list-panel.notion-style .notion-list {
+  padding: 0 16px;
+}
+
+/* 订单卡片 */
+.order-list-panel.notion-style .order-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: white;
+}
+
+.order-list-panel.notion-style .order-card:hover {
+  border-color: #d1d5db;
+  background-color: #fafafa;
+}
+
+.order-list-panel.notion-style .order-card.highlight {
+  background-color: #f0f7ff;
+  border-color: #bfdbfe;
+}
+
+/* 状态角标 */
+.order-list-panel.notion-style .status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.order-list-panel.notion-style .badge-red {
+  background-color: #ef4444;
+  color: white;
+}
+
+.order-list-panel.notion-style .badge-blue {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.order-list-panel.notion-style .user-link {
+  font-size: 14px;
+  color: #374151;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.order-list-panel.notion-style .order-number {
+  font-size: 16px;
+  color: #dc2626;
+  font-weight: 600;
+  margin: 2px 0 10px;
+}
+
+.order-list-panel.notion-style .product-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  object-fit: cover;
+  background-color: #f3f4f6;
+}
+
+.order-list-panel.notion-style .item-tag {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+/* 核心修改：缩窄行高 */
+.order-list-panel.notion-style .item-desc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.order-list-panel.notion-style .item-meta {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.order-list-panel.notion-style .meta-bold {
+  color: #111827;
+  font-weight: 600;
+}
+
+.order-list-panel.notion-style .h-8 {
+  height: 32px;
+}
+
+/* flex工具类 */
+.order-list-panel.notion-style .flex {
+  display: flex;
+}
+
+.order-list-panel.notion-style .gap-3 {
+  gap: 12px;
+}
+
+.order-list-panel.notion-style .flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.order-list-panel.notion-style .flex-1 {
+  flex: 1;
+}
+
+.order-list-panel.notion-style .items-center {
+  align-items: center;
+}
+
+.order-list-panel.notion-style .justify-center {
+  justify-content: center;
+}
+
+.order-list-panel.notion-style .border {
+  border-width: 1px;
+}
+
+.order-list-panel.notion-style .border-gray-100 {
+  border-color: #f3f4f6;
+}
+
+.order-list-panel.notion-style .text-gray-300 {
+  color: #d1d5db;
+}
+
+/* ========== 新版左侧订单列表样式 ========== */
+.order-list-panel-new {
+  width: 380px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header-new {
+  padding: 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.panel-header-new h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.panel-header-new p {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 4px 0 0 0;
+}
+
+/* 分类装饰标签 */
+.section-tag {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 16px 16px 10px;
+}
+
+.tag-new {
+  background-color: #dcc296;
+  color: white;
+}
+
+.tag-sent {
+  background-color: #c0c0c0;
+  color: white;
+}
+
+/* 订单列表 */
+.order-list-new {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px;
+}
+
+/* 订单卡片 */
+.order-card-new {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: #ffffff;
+}
+
+.order-card-new:hover {
+  border-color: #d1d5db;
+  background-color: #fafafa;
+}
+
+.order-card-new.highlight {
+  background-color: #f0f7ff;
+  border-color: #bfdbfe;
+}
+
+/* 状态角标 */
+.status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.badge-red {
+  background-color: #ef4444;
+  color: white;
+}
+
+.badge-blue {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.user-link {
+  font-size: 14px;
+  color: #374151;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.order-number {
+  font-size: 16px;
+  color: #dc2626;
+  font-weight: 600;
+  margin: 2px 0 10px;
+}
+
+.order-card-content {
+  display: flex;
+  gap: 12px;
+}
+
+.product-img-wrapper-new {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.product-svg-new {
+  width: 50px;
+  height: 50px;
+}
+
+.order-info-new {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-tag {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.item-desc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.meta-bold {
+  color: #111827;
+  font-weight: 600;
+}
+
 /* 中间面板 - 订单详情 */
 .detail-panel {
   flex: 1;
@@ -788,7 +1213,39 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  position: relative;
+}
+
+/* 右下角按钮组 */
+.preview-actions {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* 灰色按钮样式 */
+.gray-btn {
+  background: #9ca3af !important;
+  border-color: #9ca3af !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.gray-btn:hover {
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
+}
+
+.gray-btn .btn-arrow {
+  margin-left: 4px;
+  transition: transform 0.3s;
+}
+
+.gray-btn .btn-arrow.rotate {
+  transform: rotate(180deg);
 }
 
 .preview-image {
@@ -817,13 +1274,6 @@ onMounted(() => {
 .preview-image.hero-image .preview-svg {
   width: 180px;
   height: 180px;
-}
-
-.download-btn {
-  background: #ffffff !important;
-  border: 1px solid #d1d5db !important;
-  color: #374151 !important;
-  border-radius: 4px;
 }
 
 /* 订单信息块样式 - 红框：紧凑版本 */
@@ -1113,6 +1563,21 @@ onMounted(() => {
   align-items: center;
 }
 
+/* 当前订单信息 */
+.current-order-info {
+  padding: 0 16px 12px;
+  font-size: 12px;
+  color: #666666;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 绿色按钮行 */
+.design-button-row {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+
 .design-toggle-btn {
   background: #22c55e !important;
   border-color: #22c55e !important;
@@ -1136,14 +1601,6 @@ onMounted(() => {
 
 .btn-arrow.rotate {
   transform: rotate(180deg);
-}
-
-/* 当前订单信息 - 在按钮下方 */
-.current-order-info {
-  padding: 0 16px 12px;
-  font-size: 12px;
-  color: #666666;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .design-content {

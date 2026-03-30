@@ -1,184 +1,264 @@
 <template>
-  <div class="h-full overflow-auto bg-slate-50 p-4">
+  <div class="producing-page">
     <!-- 页面标题 -->
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">生产中订单</h1>
-        <p class="text-sm text-slate-500 mt-1">按【生产文档】进行生产，点击查看或下载PDF</p>
+    <header class="page-header">
+      <div class="header-left">
+        <h1>生产任务</h1>
+        <p class="page-desc">下载生产文档 → 生产 → 确认完成</p>
       </div>
-      <div class="flex items-center gap-2">
-        <button @click="loadOrders" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          刷新
-        </button>
-        <span class="text-sm text-slate-500">共 <span class="font-bold text-slate-700">{{ orders.length }}</span> 单</span>
+      <div class="header-right">
+        <span class="task-count">共 {{ totalCount }} 单待生产</span>
       </div>
-    </div>
+    </header>
 
     <!-- 加载状态 -->
-    <div v-if="loading" class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-      <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-      <p class="text-slate-500 text-sm">加载中...</p>
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <span>加载中...</span>
     </div>
 
-    <!-- 订单列表 -->
-    <div v-else class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <table class="w-full text-sm text-left">
-        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-          <tr class="h-[44px]">
-            <th class="px-4 whitespace-nowrap font-medium">订单号</th>
-            <th class="px-4 whitespace-nowrap font-medium">客户</th>
-            <th class="px-4 whitespace-nowrap font-medium">产品</th>
-            <th class="px-4 whitespace-nowrap font-medium">SKU</th>
-            <th class="px-4 whitespace-nowrap font-medium">物流单号</th>
-            <th class="px-4 whitespace-nowrap font-medium">下单时间</th>
-            <th class="px-4 whitespace-nowrap font-medium text-center">生产文档</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <template v-for="order in orders" :key="order.id">
-            <!-- 主行 -->
-            <tr
-              @click="toggleExpand(order.id)"
-              class="h-[52px] hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <td class="px-4 whitespace-nowrap font-mono font-semibold text-blue-600">{{ order.etsy_order_id }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-700">{{ order.customer_name || '-' }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">
-                {{ order.sku_mappings?.shape || order.product_shape || '-' }} -
-                {{ order.sku_mappings?.color || order.product_color || '-' }}
-              </td>
-              <td class="px-4 whitespace-nowrap font-mono text-xs text-slate-500">{{ order.sku_mappings?.sku_code || '-' }}</td>
-              <td class="px-4 whitespace-nowrap font-mono text-xs text-slate-500">
-                {{ order.logistics?.[0]?.tracking_number || '-' }}
-              </td>
-              <td class="px-4 whitespace-nowrap text-slate-500">{{ formatDate(order.created_at) }}</td>
-              <td class="px-4 whitespace-nowrap text-center">
-                <div v-if="order.production_pdf_url" class="flex items-center justify-center gap-1">
-                  <button
-                    @click.stop="viewPdf(order)"
-                    class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium flex items-center gap-1 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    查看PDF
-                  </button>
-                  <button
-                    @click.stop="downloadPdf(order)"
-                    class="px-2.5 py-1 bg-slate-700 hover:bg-slate-800 text-white rounded text-xs font-medium flex items-center gap-1 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                    下载
-                  </button>
+    <!-- 任务列表 -->
+    <div v-else class="task-groups">
+      <!-- 今日任务 -->
+      <section class="task-group">
+        <div class="group-header" @click="toggleGroup('today')">
+          <div class="group-title">
+            <span class="group-icon">📅</span>
+            <span>今日任务</span>
+            <span class="group-count">{{ todayOrders.length }}</span>
+          </div>
+          <span class="expand-icon" :class="{ expanded: expandedGroups.today }">▼</span>
+        </div>
+        <div v-show="expandedGroups.today" class="group-content">
+          <div v-if="todayOrders.length === 0" class="empty-hint">
+            暂无今日任务
+          </div>
+          <div v-else class="task-list">
+            <div v-for="order in todayOrders" :key="order.id" class="task-card">
+              <div class="task-main">
+                <!-- 产品图 -->
+                <div class="product-preview">
+                  <svg viewBox="0 0 100 100" class="preview-svg">
+                    <path :d="getShapePath(order.product_shape)" 
+                          :fill="getColorHex(order.product_color)" 
+                          stroke="#d1d5db" stroke-width="2"/>
+                  </svg>
                 </div>
-                <div v-else class="flex items-center justify-center gap-1">
-                  <button
-                    @click.stop="generatePdf(order)"
-                    :disabled="generatingId === order.id"
-                    class="px-2.5 py-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded text-xs font-medium flex items-center gap-1 transition-colors"
-                  >
-                    <svg v-if="generatingId === order.id" class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                    {{ generatingId === order.id ? '生成中...' : '生成PDF' }}
-                  </button>
+                <!-- 订单信息 -->
+                <div class="task-info">
+                  <div class="task-id">#{{ order.etsy_order_id }}</div>
+                  <div class="task-product">
+                    {{ order.product_shape }} · {{ order.product_color }} · {{ order.product_size || '大号' }}
+                  </div>
+                  <div class="task-customer">{{ order.customer_name }}</div>
                 </div>
-              </td>
-            </tr>
+              </div>
+              <!-- 操作按钮 -->
+              <div class="task-actions">
+                <button 
+                  v-if="order.production_pdf_url"
+                  class="btn-download"
+                  @click="downloadPdf(order)"
+                >
+                  <span class="btn-icon">📥</span>
+                  下载生产文档
+                </button>
+                <button v-else class="btn-generate" @click="generatePdf(order)" :disabled="generatingId === order.id">
+                  <span class="btn-icon">{{ generatingId === order.id ? '⏳' : '📄' }}</span>
+                  {{ generatingId === order.id ? '生成中...' : '生成文档' }}
+                </button>
+                <button class="btn-complete" @click="confirmComplete(order)">
+                  <span class="btn-icon">✅</span>
+                  确认完成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <!-- 展开详情行 -->
-            <tr v-if="expandedId === order.id" class="bg-slate-50/80">
-              <td colspan="7" class="px-4 py-4">
-                <div class="grid grid-cols-3 gap-4">
-                  <!-- 左：订单信息 -->
-                  <div>
-                    <p class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">订单信息</p>
-                    <div class="space-y-1 text-xs text-slate-600">
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">形状</span><span>{{ order.sku_mappings?.shape || order.product_shape || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">颜色</span><span>{{ order.sku_mappings?.color || order.product_color || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">尺寸</span><span>{{ order.sku_mappings?.size || order.product_size || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">工艺</span><span>{{ order.sku_mappings?.craft || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">数量</span><span>{{ order.quantity || 1 }}</span></div>
-                    </div>
-                  </div>
-                  <!-- 中：物流信息 -->
-                  <div>
-                    <p class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">物流信息</p>
-                    <div class="space-y-1 text-xs text-slate-600">
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">物流单号</span><span class="font-mono">{{ order.logistics?.[0]?.tracking_number || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">收件人</span><span>{{ order.logistics?.[0]?.recipient_name || order.shipping_name || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">地址</span><span>{{ order.logistics?.[0]?.street_address || order.shipping_address_line1 || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">城市</span><span>{{ order.logistics?.[0]?.city || order.shipping_city || '-' }}</span></div>
-                      <div class="flex gap-2"><span class="text-slate-400 w-16">国家</span><span>{{ order.logistics?.[0]?.country || order.shipping_country || '-' }}</span></div>
-                    </div>
-                  </div>
-                  <!-- 右：生产文档预览 -->
-                  <div>
-                    <p class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">生产文档</p>
-                    <div v-if="order.production_pdf_url" class="bg-white rounded-lg border border-slate-200 p-3">
-                      <div class="bg-slate-100 rounded h-20 flex items-center justify-center mb-2">
-                        <div class="text-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" class="mx-auto mb-1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                          <p class="text-xs text-slate-400">POD_{{ order.etsy_order_id }}.pdf</p>
-                        </div>
-                      </div>
-                      <div class="flex gap-1.5">
-                        <button @click="viewPdf(order)" class="flex-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">查看</button>
-                        <button @click="downloadPdf(order)" class="flex-1 px-2 py-1 bg-slate-700 hover:bg-slate-800 text-white rounded text-xs font-medium transition-colors">下载</button>
-                        <button @click="printPdf(order)" class="flex-1 px-2 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded text-xs font-medium transition-colors">打印</button>
-                      </div>
-                    </div>
-                    <div v-else class="bg-orange-50 rounded-lg border border-orange-200 p-3 text-center">
-                      <p class="text-orange-600 text-xs font-medium mb-2">尚未生成生产文档</p>
-                      <button
-                        @click="generatePdf(order)"
-                        :disabled="generatingId === order.id"
-                        class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded text-xs font-medium transition-colors"
-                      >
-                        {{ generatingId === order.id ? '生成中...' : '立即生成PDF' }}
-                      </button>
-                    </div>
-                  </div>
+      <!-- 昨日任务 -->
+      <section class="task-group">
+        <div class="group-header" @click="toggleGroup('yesterday')">
+          <div class="group-title">
+            <span class="group-icon">📋</span>
+            <span>昨日任务</span>
+            <span class="group-count">{{ yesterdayOrders.length }}</span>
+          </div>
+          <span class="expand-icon" :class="{ expanded: expandedGroups.yesterday }">▼</span>
+        </div>
+        <div v-show="expandedGroups.yesterday" class="group-content">
+          <div v-if="yesterdayOrders.length === 0" class="empty-hint">
+            暂无昨日任务
+          </div>
+          <div v-else class="task-list">
+            <div v-for="order in yesterdayOrders" :key="order.id" class="task-card">
+              <div class="task-main">
+                <div class="product-preview">
+                  <svg viewBox="0 0 100 100" class="preview-svg">
+                    <path :d="getShapePath(order.product_shape)" 
+                          :fill="getColorHex(order.product_color)" 
+                          stroke="#d1d5db" stroke-width="2"/>
+                  </svg>
                 </div>
-              </td>
-            </tr>
-          </template>
+                <div class="task-info">
+                  <div class="task-id">#{{ order.etsy_order_id }}</div>
+                  <div class="task-product">
+                    {{ order.product_shape }} · {{ order.product_color }} · {{ order.product_size || '大号' }}
+                  </div>
+                  <div class="task-customer">{{ order.customer_name }}</div>
+                </div>
+              </div>
+              <div class="task-actions">
+                <button 
+                  v-if="order.production_pdf_url"
+                  class="btn-download"
+                  @click="downloadPdf(order)"
+                >
+                  <span class="btn-icon">📥</span>
+                  下载生产文档
+                </button>
+                <button v-else class="btn-generate" @click="generatePdf(order)" :disabled="generatingId === order.id">
+                  <span class="btn-icon">{{ generatingId === order.id ? '⏳' : '📄' }}</span>
+                  {{ generatingId === order.id ? '生成中...' : '生成文档' }}
+                </button>
+                <button class="btn-complete" @click="confirmComplete(order)">
+                  <span class="btn-icon">✅</span>
+                  确认完成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <tr v-if="!loading && orders.length === 0">
-            <td colspan="7" class="px-4 py-12 text-center text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mx-auto mb-3 opacity-30"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <p class="text-sm">暂无生产中订单</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- 更早任务 -->
+      <section class="task-group" v-if="olderOrders.length > 0">
+        <div class="group-header" @click="toggleGroup('older')">
+          <div class="group-title">
+            <span class="group-icon">📦</span>
+            <span>更早任务</span>
+            <span class="group-count">{{ olderOrders.length }}</span>
+          </div>
+          <span class="expand-icon" :class="{ expanded: expandedGroups.older }">▼</span>
+        </div>
+        <div v-show="expandedGroups.older" class="group-content">
+          <div class="task-list">
+            <div v-for="order in olderOrders" :key="order.id" class="task-card overdue">
+              <div class="task-main">
+                <div class="product-preview">
+                  <svg viewBox="0 0 100 100" class="preview-svg">
+                    <path :d="getShapePath(order.product_shape)" 
+                          :fill="getColorHex(order.product_color)" 
+                          stroke="#d1d5db" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="task-info">
+                  <div class="task-id">#{{ order.etsy_order_id }}</div>
+                  <div class="task-product">
+                    {{ order.product_shape }} · {{ order.product_color }} · {{ order.product_size || '大号' }}
+                  </div>
+                  <div class="task-customer">{{ order.customer_name }}</div>
+                  <div class="task-date">{{ formatDate(order.created_at) }}</div>
+                </div>
+              </div>
+              <div class="task-actions">
+                <button 
+                  v-if="order.production_pdf_url"
+                  class="btn-download"
+                  @click="downloadPdf(order)"
+                >
+                  <span class="btn-icon">📥</span>
+                  下载生产文档
+                </button>
+                <button v-else class="btn-generate" @click="generatePdf(order)" :disabled="generatingId === order.id">
+                  <span class="btn-icon">{{ generatingId === order.id ? '⏳' : '📄' }}</span>
+                  {{ generatingId === order.id ? '生成中...' : '生成文档' }}
+                </button>
+                <button class="btn-complete" @click="confirmComplete(order)">
+                  <span class="btn-icon">✅</span>
+                  确认完成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 空状态 -->
+      <div v-if="!loading && totalCount === 0" class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-text">暂无生产任务</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import supabase from '../../utils/supabase'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 const orders = ref([])
 const loading = ref(false)
-const expandedId = ref(null)
 const generatingId = ref(null)
+const expandedGroups = ref({
+  today: true,
+  yesterday: false,
+  older: false
+})
 
 onMounted(() => loadOrders())
+
+// 按日期分组
+const todayOrders = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return orders.value.filter(o => {
+    const d = new Date(o.created_at)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime() === today.getTime()
+  })
+})
+
+const yesterdayOrders = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  return orders.value.filter(o => {
+    const d = new Date(o.created_at)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime() === yesterday.getTime()
+  })
+})
+
+const olderOrders = computed(() => {
+  const yesterday = new Date()
+  yesterday.setHours(0, 0, 0, 0)
+  yesterday.setDate(yesterday.getDate() - 1)
+  return orders.value.filter(o => {
+    const d = new Date(o.created_at)
+    d.setHours(0, 0, 0, 0)
+    return d.getTime() < yesterday.getTime()
+  })
+})
+
+const totalCount = computed(() => orders.value.length)
 
 async function loadOrders() {
   loading.value = true
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, sku_mappings:sku_mapping(*), logistics(*)`)
-      .eq('status', 'producing')
+      .select(`*, sku_mappings:sku_mapping(*)`)
+      .in('status', ['confirmed', 'producing'])
       .order('created_at', { ascending: false })
 
     if (error) throw error
     orders.value = data || []
-    console.log(`✅ 生产中订单加载: ${orders.value.length} 条`)
+    console.log(`✅ 生产中订单: ${orders.value.length} 条`)
   } catch (e) {
     console.error('❌ 加载失败:', e)
   } finally {
@@ -186,8 +266,8 @@ async function loadOrders() {
   }
 }
 
-function toggleExpand(id) {
-  expandedId.value = expandedId.value === id ? null : id
+function toggleGroup(group) {
+  expandedGroups.value[group] = !expandedGroups.value[group]
 }
 
 async function generatePdf(order) {
@@ -200,9 +280,8 @@ async function generatePdf(order) {
     })
     const data = await res.json()
     if (data.success) {
-      // 更新本地数据
       const idx = orders.value.findIndex(o => o.id === order.id)
-      if (idx !== -1) orders.value[idx] = { ...orders.value[idx], production_pdf_url: data.production_pdf_url }
+      if (idx !== -1) orders.value[idx].production_pdf_url = data.production_pdf_url
       alert('✅ 生产文档生成成功！')
     } else {
       alert('❌ 生成失败: ' + (data.detail || data.message || '未知错误'))
@@ -214,10 +293,6 @@ async function generatePdf(order) {
   }
 }
 
-function viewPdf(order) {
-  if (order.production_pdf_url) window.open(order.production_pdf_url, '_blank')
-}
-
 function downloadPdf(order) {
   if (order.production_pdf_url) {
     const a = document.createElement('a')
@@ -227,16 +302,336 @@ function downloadPdf(order) {
   }
 }
 
-function printPdf(order) {
-  if (order.production_pdf_url) {
-    const w = window.open(order.production_pdf_url, '_blank')
-    w.onload = () => w.print()
+async function confirmComplete(order) {
+  if (!confirm(`确认订单 #${order.etsy_order_id} 已完成生产？`)) return
+  
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+
+    if (error) throw error
+    
+    // 从列表移除
+    orders.value = orders.value.filter(o => o.id !== order.id)
+    alert('✅ 已标记为完成！')
+  } catch (e) {
+    alert('❌ 操作失败: ' + e.message)
   }
 }
 
 function formatDate(str) {
-  if (!str) return '-'
+  if (!str) return ''
   const d = new Date(str)
-  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+// 产品形状路径映射
+function getShapePath(shape) {
+  const shapes = {
+    '圆形': 'M50,10 A40,40 0 1,1 50,90 A40,40 0 1,1 50,10',
+    '心形': 'M50,85 C20,60 5,35 25,20 C40,10 50,25 50,25 C50,25 60,10 75,20 C95,35 80,60 50,85',
+    '骨头形': 'M25,35 A15,15 0 1,1 25,65 M75,35 A15,15 0 1,1 75,65 M25,50 L75,50',
+    '方形': 'M15,15 L85,15 L85,85 L15,85 Z'
+  }
+  return shapes[shape] || shapes['圆形']
+}
+
+// 颜色映射
+function getColorHex(color) {
+  const colors = {
+    '银色': '#C0C0C0',
+    '金色': '#FFD700',
+    '玫瑰金': '#B76E79',
+    '黑色': '#2D2D2D',
+    '蓝色': '#4169E1'
+  }
+  return colors[color] || '#C0C0C0'
 }
 </script>
+
+<style scoped>
+/* 页面容器 */
+.producing-page {
+  min-height: 100%;
+  background: #fafafa;
+  padding: 32px 40px;
+}
+
+/* 页面标题 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.header-left h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.page-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.task-count {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 任务分组 */
+.task-groups {
+  max-width: 900px;
+}
+
+.task-group {
+  margin-bottom: 16px;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.group-header:hover {
+  background: #f9fafb;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.group-icon {
+  font-size: 18px;
+}
+
+.group-count {
+  background: #e5e7eb;
+  color: #4b5563;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.expand-icon {
+  color: #9ca3af;
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.group-content {
+  margin-top: 8px;
+}
+
+.empty-hint {
+  padding: 24px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* 任务列表 */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 任务卡片 */
+.task-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: box-shadow 0.2s;
+}
+
+.task-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.task-card.overdue {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.task-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+/* 产品预览 */
+.product-preview {
+  width: 64px;
+  height: 64px;
+  background: #f9fafb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.preview-svg {
+  width: 48px;
+  height: 48px;
+}
+
+/* 任务信息 */
+.task-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-id {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.task-product {
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 2px;
+}
+
+.task-customer {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.task-date {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* 操作按钮 */
+.task-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-download,
+.btn-generate,
+.btn-complete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-download {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.btn-download:hover {
+  background: #374151;
+}
+
+.btn-generate {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.btn-generate:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-complete {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.btn-complete:hover {
+  background: #16a34a;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #6b7280;
+}
+</style>

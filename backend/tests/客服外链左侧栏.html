@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单列表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 顶部标题 */
+        .header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .header p {
+            font-size: 14px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        /* 分类装饰标签 */
+        .section-tag {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 20px 20px 10px;
+        }
+        .tag-new {
+            background-color: #dcc296;
+            color: white;
+        }
+        .tag-sent {
+            background-color: #c0c0c0;
+            color: white;
+        }
+
+        /* 订单卡片 */
+        .order-card {
+            margin: 0 16px 12px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            position: relative;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .order-card:hover {
+            border-color: #d1d5db;
+            background-color: #fafafa;
+        }
+        .order-card.highlight {
+            background-color: #f0f7ff;
+            border-color: #bfdbfe;
+        }
+
+        /* 状态角标 */
+        .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .badge-red {
+            background-color: #ef4444;
+            color: white;
+        }
+        .badge-blue {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .user-link {
+            font-size: 14px;
+            color: #374151;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        .order-number {
+            font-size: 16px;
+            color: #dc2626;
+            font-weight: 600;
+            margin: 2px 0 10px;
+        }
+
+        .product-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            object-fit: cover;
+            background-color: #f3f4f6;
+        }
+
+        .item-tag {
+            background-color: #e5e7eb;
+            color: #6b7280;
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+
+        /* 核心修改：缩窄行高 */
+        .item-desc {
+            font-size: 13px;
+            color: #4b5563;
+            line-height: 1.2; /* 缩窄行距 */
+            margin-bottom: 4px;
+        }
+
+        .item-meta {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.2; /* 缩窄行距 */
+            margin-top: 2px;  /* 缩小行间距 */
+        }
+        .meta-bold {
+            color: #111827;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>订单列表</h1>
+            <p>点击订单查看详情</p>
+        </div>
+
+        <!-- 新订单部分 -->
+        <div class="section-tag tag-new">新订单</div>
+        
+        <!-- 订单 1 -->
+        <div class="order-card highlight">
+            <span class="status-badge badge-red">新订单</span>
+            <div class="user-link">Marinella Nesso</div>
+            <div class="order-number"># 3986891868</div>
+            <div class="flex gap-3">
+                <div class="flex-shrink-0">
+                    <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <span class="item-tag">Personalisable</span>
+                    <!-- 红框区域内容 -->
+                    <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                    <div class="item-meta">Color + Size: <span class="meta-bold">Gold Large</span></div>
+                    <div class="item-meta">Engraving Side: <span class="meta-bold">Double-sided</span></div>
+                    <div class="item-meta">Personalization <span class="meta-bold">Front: Luna (F-04) Back: 416.456.3524</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单 2 -->
+        <div class="order-card">
+            <span class="status-badge badge-red">新订单</span>
+            <div class="user-link">Marinella Nesso</div>
+            <div class="order-number"># 3986891868</div>
+            <div class="flex gap-3">
+                <div class="flex-shrink-0">
+                    <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <span class="item-tag">Personalisable</span>
+                    <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                    <div class="item-meta">Color + Size: <span class="meta-bold">Gold Large</span></div>
+                    <div class="item-meta">Engraving Side: <span class="meta-bold">Double-sided</span></div>
+                    <div class="item-meta">Personalization <span class="meta-bold">Front: Luna (F-04) Back: 416.456.3524</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已发送效果图部分 -->
+        <div class="section-tag tag-sent">已发送效果图</div>
+
+        <!-- 订单 3 -->
+        <div class="order-card">
+            <span class="status-badge badge-blue">待确认</span>
+            <div class="user-link">Marinella Nesso</div>
+            <div class="order-number"># 3986891868</div>
+            <div class="flex gap-3">
+                <div class="flex-shrink-0">
+                    <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <span class="item-tag">Personalisable</span>
+                    <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部留白 -->
+        <div class="h-8"></div>
+    </div>
+
+</body>
+</html>

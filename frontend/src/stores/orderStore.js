@@ -149,51 +149,134 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   // 获取生产中订单
-  // 统一调用 fetchOrders 写入 store.orders，让各页面 computed 过滤生效
+  // 查询状态为 confirmed 或 producing 的订单，关联SKU和物流信息
   const getProducingOrders = async () => {
-    return await fetchOrders()
-  }
-
-  // 获取已完成订单（30天内）
-  const getCompletedOrders = async () => {
     loading.value = true
     error.value = null
     
     try {
-      // 先查询订单（不使用关联，避免权限问题）
+      // 查询订单（不使用关联，避免权限问题）
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .in('status', ['confirmed', 'producing'])
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      console.log('✅ 生产中订单原始数据:', data?.length)
+
+      if (data && data.length > 0) {
+        // 获取所有SKU ID和订单ID
+        const skuIds = data.map(o => o.sku_id).filter(Boolean)
+        const orderIds = data.map(o => o.id)
+
+        // 并行查询SKU和物流信息
+        const [skuResult, logisticsResult] = await Promise.all([
+          skuIds.length > 0 
+            ? supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds)
+            : { data: [] },
+          supabase.from('logistics').select('order_id, tracking_number, carrier').in('order_id', orderIds)
+        ])
+
+        // 构建SKU Map
+        const skuMap = skuResult.data
+          ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+          : {}
+
+        // 构建物流Map
+        const logisticsMap = {}
+        if (logisticsResult.data) {
+          logisticsResult.data.forEach(l => {
+            logisticsMap[l.order_id] = l
+          })
+        }
+
+        // 组装订单数据
+        const ordersWithDetails = data.map(order => ({
+          ...order,
+          sku_mapping: skuMap[order.sku_id] || null,
+          logistics: logisticsMap[order.id] || null
+        }))
+
+        orders.value = ordersWithDetails
+        console.log('✅ 生产中订单（含SKU和物流）:', ordersWithDetails.length)
+        return ordersWithDetails
+      }
+
+      orders.value = data || []
+      return data || []
+    } catch (err) {
+      error.value = err.message
+      console.error('❌ 生产中订单查询失败:', err)
+      return []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 获取已完成订单（30天内）
+  // 关联 sku_mapping 和 logistics 表，获取产品信息和物流发货时间
+  const getCompletedOrders = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+      // 查询订单（不使用关联，避免权限问题）
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
         .eq('status', 'delivered')
         .order('created_at', { ascending: false })
-      
+
       if (fetchError) {
         console.error('Supabase 查询错误:', fetchError)
         throw fetchError
       }
-      
+
       console.log('✅ 已完成订单原始数据:', data?.length)
-      
-      // 如果有订单，再单独查询 sku_mapping
+
       if (data && data.length > 0) {
-        const ordersWithSku = await Promise.all(
-          data.map(async (order) => {
-            if (order.sku_id) {
-              const { data: skuData } = await supabase
-                .from('sku_mapping')
-                .select('*')
-                .eq('id', order.sku_id)
-                .single()
-              return { ...order, sku_mapping: skuData || {} }
-            }
-            return { ...order, sku_mapping: {} }
+        // 获取所有 SKU ID 和订单 ID
+        const skuIds = data.map(o => o.sku_id).filter(Boolean)
+        const orderIds = data.map(o => o.id)
+
+        // 并行查询 SKU 和物流信息
+        const [skuResult, logisticsResult] = await Promise.all([
+          skuIds.length > 0
+            ? supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds)
+            : { data: [] },
+          supabase.from('logistics').select('order_id, tracking_number, shipped_at, delivered_at, delivery_status').in('order_id', orderIds)
+        ])
+
+        // 构建 SKU Map
+        const skuMap = skuResult.data
+          ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+          : {}
+
+        // 构建物流 Map
+        const logisticsMap = {}
+        if (logisticsResult.data) {
+          logisticsResult.data.forEach(l => {
+            logisticsMap[l.order_id] = l
           })
-        )
-        orders.value = ordersWithSku
-        console.log('✅ 已完成订单（含SKU）:', ordersWithSku.length)
-        return ordersWithSku
+        }
+
+        // 组装订单数据
+        const ordersWithDetails = data.map(order => ({
+          ...order,
+          sku_mapping: skuMap[order.sku_id] || null,
+          logistics: logisticsMap[order.id] || null,
+          // 从 logistics 中提取便捷字段
+          tracking_number: logisticsMap[order.id]?.tracking_number || null,
+          shipped_at: logisticsMap[order.id]?.shipped_at || null
+        }))
+
+        orders.value = ordersWithDetails
+        console.log('✅ 已完成订单（含SKU和物流）:', ordersWithDetails.length)
+        return ordersWithDetails
       }
-      
+
       orders.value = data || []
       return data || []
     } catch (err) {

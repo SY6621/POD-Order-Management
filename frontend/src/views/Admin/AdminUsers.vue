@@ -205,7 +205,29 @@
       </el-form>
       <template #footer>
         <el-button @click="showCreateModal = false">取消</el-button>
-        <el-button type="primary" @click="createSubAccount" :disabled="!newUser.username || !newUser.password">创建</el-button>
+        <el-button type="primary" @click="createSubAccount" :loading="loading" :disabled="!newUser.username || !newUser.password">创建</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑子账号弹窗 -->
+    <el-dialog v-model="showEditModal" title="编辑子账号" width="480px" destroy-on-close>
+      <el-form :model="editingUser" label-position="top">
+        <el-form-item label="用户名">
+          <el-input v-model="editingUser.username" disabled placeholder="用户名不可修改" />
+        </el-form-item>
+        <el-form-item label="显示名称">
+          <el-input v-model="editingUser.display_name" placeholder="输入显示名称" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="editingUser.email" placeholder="输入邮箱" />
+        </el-form-item>
+        <el-form-item label="电话">
+          <el-input v-model="editingUser.phone" placeholder="输入电话" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditModal = false">取消</el-button>
+        <el-button type="primary" @click="updateSubAccount" :loading="loading">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -213,18 +235,25 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, CircleCheck, CircleClose, DocumentCopy, Link, Refresh, Clock, Lock, Edit, TopRight } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, CircleCheck, CircleClose, DocumentCopy, Link, Refresh, Clock, Lock, Edit, TopRight, Delete } from '@element-plus/icons-vue'
+import { useAdminStore } from '@/stores/adminStore'
+
+// Store
+const adminStore = useAdminStore()
 
 // 数据
 const subAccounts = ref([])
 const allShops = ref([])
 const activeTab = ref('')
 const selectedShop = ref(null)
+const loading = ref(false)
 
 // 弹窗
 const showCreateModal = ref(false)
+const showEditModal = ref(false)
 const newUser = ref({ username: '', display_name: '', email: '', password: '' })
+const editingUser = ref({ id: '', username: '', display_name: '', email: '', phone: '' })
 
 // 显示店铺
 const displayShops = computed(() => {
@@ -295,17 +324,68 @@ function openDesignLink(shop) {
   window.open(`${window.location.origin}/design/${shop.code}?token=${shop.design_token}`, '_blank')
 }
 async function generateServiceToken(shop) {
-  shop.service_token = Math.random().toString(36).substring(2, 34)
-  shop.service_link_enabled = true
-  ElMessage.success('沟通链接已生成')
+  const newToken = generateSecureToken()
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      service_token: newToken,
+      service_link_enabled: true
+    })
+    
+    if (result.success) {
+      shop.service_token = newToken
+      shop.service_link_enabled = true
+      ElMessage.success('沟通链接已生成')
+    } else {
+      ElMessage.error(result.message || '生成失败')
+    }
+  } catch (err) {
+    ElMessage.error('生成失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
+
 async function toggleServiceLink(shop) {
-  shop.service_link_enabled = !shop.service_link_enabled
-  ElMessage.success(shop.service_link_enabled ? '沟通链接已启用' : '沟通链接已禁用')
+  const newStatus = !shop.service_link_enabled
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      service_link_enabled: newStatus
+    })
+    
+    if (result.success) {
+      shop.service_link_enabled = newStatus
+      ElMessage.success(newStatus ? '沟通链接已启用' : '沟通链接已禁用')
+    } else {
+      ElMessage.error(result.message || '操作失败')
+    }
+  } catch (err) {
+    ElMessage.error('操作失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
+
 async function refreshServiceToken(shop) {
-  shop.service_token = Math.random().toString(36).substring(2, 34)
-  ElMessage.success('沟通链接Token已刷新')
+  const newToken = generateSecureToken()
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      service_token: newToken
+    })
+    
+    if (result.success) {
+      shop.service_token = newToken
+      ElMessage.success('沟通链接Token已刷新')
+    } else {
+      ElMessage.error(result.message || '刷新失败')
+    }
+  } catch (err) {
+    ElMessage.error('刷新失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
 
 // 设计链接相关
@@ -325,18 +405,77 @@ function openDesignPortal(shop) {
   if (!shop.design_token) return ElMessage.warning('请先生成设计链接')
   window.open(`${window.location.origin}/design/${shop.code}?token=${shop.design_token}`, '_blank')
 }
+
 async function generateDesignToken(shop) {
-  shop.design_token = Math.random().toString(36).substring(2, 34)
-  shop.design_link_enabled = true
-  ElMessage.success('设计链接已生成')
+  const newToken = generateSecureToken()
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      design_token: newToken,
+      design_link_enabled: true
+    })
+    
+    if (result.success) {
+      shop.design_token = newToken
+      shop.design_link_enabled = true
+      ElMessage.success('设计链接已生成')
+    } else {
+      ElMessage.error(result.message || '生成失败')
+    }
+  } catch (err) {
+    ElMessage.error('生成失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
+
 async function toggleDesignLink(shop) {
-  shop.design_link_enabled = !shop.design_link_enabled
-  ElMessage.success(shop.design_link_enabled ? '设计链接已启用' : '设计链接已禁用')
+  const newStatus = !shop.design_link_enabled
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      design_link_enabled: newStatus
+    })
+    
+    if (result.success) {
+      shop.design_link_enabled = newStatus
+      ElMessage.success(newStatus ? '设计链接已启用' : '设计链接已禁用')
+    } else {
+      ElMessage.error(result.message || '操作失败')
+    }
+  } catch (err) {
+    ElMessage.error('操作失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
 }
+
 async function refreshDesignToken(shop) {
-  shop.design_token = Math.random().toString(36).substring(2, 34)
-  ElMessage.success('设计链接Token已刷新')
+  const newToken = generateSecureToken()
+  loading.value = true
+  try {
+    const result = await adminStore.updateShop(shop.id, {
+      design_token: newToken
+    })
+    
+    if (result.success) {
+      shop.design_token = newToken
+      ElMessage.success('设计链接Token已刷新')
+    } else {
+      ElMessage.error(result.message || '刷新失败')
+    }
+  } catch (err) {
+    ElMessage.error('刷新失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 生成安全Token
+function generateSecureToken() {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 // 切换运营
@@ -349,32 +488,151 @@ function switchOperator(userId) {
 function selectShop(shop) {
   selectedShop.value = shop
 }
-function createSubAccount() {
-  const newId = Date.now().toString()
-  subAccounts.value.unshift({
-    id: newId, username: newUser.value.username,
-    display_name: newUser.value.display_name || newUser.value.username,
-    email: newUser.value.email, status: 'active', shops: []
-  })
-  activeTab.value = newId
-  showCreateModal.value = false
-  newUser.value = { username: '', display_name: '', email: '', password: '' }
-  ElMessage.success('运营账号创建成功')
+
+// 创建子账号 - 对接 adminStore
+async function createSubAccount() {
+  if (!newUser.value.username || !newUser.value.password) {
+    ElMessage.warning('请填写用户名和密码')
+    return
+  }
+  
+  loading.value = true
+  try {
+    const result = await adminStore.createSubAccount({
+      username: newUser.value.username,
+      display_name: newUser.value.display_name || newUser.value.username,
+      email: newUser.value.email,
+      password_hash: newUser.value.password  // 注意：实际应加密，这里简化处理
+    })
+    
+    if (result.success) {
+      ElMessage.success('运营账号创建成功')
+      showCreateModal.value = false
+      newUser.value = { username: '', display_name: '', email: '', password: '' }
+      // 刷新列表
+      await loadSubAccounts()
+    } else {
+      ElMessage.error(result.message || '创建失败')
+    }
+  } catch (err) {
+    ElMessage.error('创建失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 编辑子账号
+function openEditModal(user) {
+  editingUser.value = {
+    id: user.id,
+    username: user.username,
+    display_name: user.display_name || '',
+    email: user.email || '',
+    phone: user.phone || ''
+  }
+  showEditModal.value = true
+}
+
+async function updateSubAccount() {
+  if (!editingUser.value.display_name) {
+    ElMessage.warning('请填写显示名称')
+    return
+  }
+  
+  loading.value = true
+  try {
+    const result = await adminStore.updateSubAccount(editingUser.value.id, {
+      display_name: editingUser.value.display_name,
+      email: editingUser.value.email,
+      phone: editingUser.value.phone
+    })
+    
+    if (result.success) {
+      ElMessage.success('子账号信息已更新')
+      showEditModal.value = false
+      await loadSubAccounts()
+    } else {
+      ElMessage.error(result.message || '更新失败')
+    }
+  } catch (err) {
+    ElMessage.error('更新失败: ' + err.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 删除子账号
+async function deleteSubAccount(user) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除子账号 "${user.display_name || user.username}" 吗？此操作不可恢复。`,
+      '确认删除',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    )
+    
+    loading.value = true
+    // 直接通过 Supabase 删除
+    const supabase = (await import('@/utils/supabase')).default
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', user.id)
+    
+    if (error) throw error
+    
+    ElMessage.success('子账号已删除')
+    await loadSubAccounts()
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElMessage.error('删除失败: ' + err.message)
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载子账号数据
+async function loadSubAccounts() {
+  loading.value = true
+  try {
+    const data = await adminStore.fetchSubAccounts()
+    subAccounts.value = data
+    if (data.length > 0 && !activeTab.value) {
+      activeTab.value = data[0].id
+    }
+  } catch (err) {
+    console.error('加载子账号失败:', err)
+    ElMessage.error('加载子账号数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载店铺数据
+async function loadShops() {
+  try {
+    const data = await adminStore.fetchShops()
+    allShops.value = data
+    // 如果没有选中店铺，默认选中第一个
+    if (data.length > 0 && !selectedShop.value) {
+      selectedShop.value = data[0]
+    }
+  } catch (err) {
+    console.error('加载店铺失败:', err)
+  }
 }
 
 // 初始化数据
-onMounted(() => {
-  // 模拟数据 - 只保留一个店铺（美国店铺）
-  subAccounts.value = [
-    { id: '1', username: 'operator_a', display_name: 'A运营', email: 'a@example.com', status: 'active',
-      shops: [
-        { id: '1', name: '美国店铺', code: 'us', region: 'North America', password: 'US2025', status: 'active', service_token: 'abc123xyz789', service_link_enabled: true, design_token: 'dsg_us_001', design_link_enabled: true, updated_at: '2025-03-22T14:30:00Z' }
-      ]
-    }
-  ]
-  allShops.value = subAccounts.value.flatMap(u => u.shops)
-  activeTab.value = '1'
-  selectedShop.value = subAccounts.value[0].shops[0]
+onMounted(async () => {
+  await Promise.all([
+    loadSubAccounts(),
+    loadShops()
+  ])
+  
+  // 如果有数据，设置默认选中
+  if (allShops.value.length > 0) {
+    selectedShop.value = allShops.value[0]
+  }
 })
 </script>
 

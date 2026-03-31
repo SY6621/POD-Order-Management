@@ -19,6 +19,13 @@
         <form @submit.prevent="handleLogin">
           <div class="mb-4">
             <input 
+              v-model="factoryCode"
+              type="text"
+              placeholder="工厂代码"
+              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all text-center text-lg mb-3"
+              :class="{ 'border-red-500': loginError }"
+            >
+            <input 
               v-model="password"
               type="password"
               placeholder="输入密码"
@@ -30,7 +37,7 @@
           
           <button 
             type="submit"
-            :disabled="!password || loginLoading"
+            :disabled="!factoryCode || !password || loginLoading"
             class="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {{ loginLoading ? '验证中...' : '进入系统' }}
@@ -544,8 +551,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useOrderStore } from '../../stores/orderStore'
+import supabase from '../../utils/supabase'
+import { ElMessage } from 'element-plus'
 
 const store = useOrderStore()
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
 // 状态
 const activeTab = ref('production')
@@ -606,18 +616,38 @@ function verifyOrder() {
   }
 }
 
-function confirmPickup() {
-  showSuccessModal.value = true
+async function confirmPickup() {
+  if (!selectedOrder.value) return
+  
+  try {
+    // 更新订单状态为 delivered（已发货）
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'delivered',
+        confirmed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', selectedOrder.value.id)
+    
+    if (error) throw error
+    
+    showSuccessModal.value = true
+  } catch (error) {
+    console.error('揽件确认失败:', error)
+    ElMessage.error('揽件确认失败：' + error.message)
+  }
 }
 
-function closeModal() {
+async function closeModal() {
   showSuccessModal.value = false
   // 将订单移到已完成列表
   if (selectedOrder.value) {
-    selectedOrder.value.status = 'shipped'
-    selectedOrder.value.completed_at = new Date().toISOString()
-    completedOrders.value.push(selectedOrder.value)
-    pickupOrders.value = pickupOrders.value.filter(o => o.id !== selectedOrder.value.id)
+    const order = selectedOrder.value
+    order.status = 'delivered'
+    order.confirmed_at = new Date().toISOString()
+    completedOrders.value.unshift(order)
+    pickupOrders.value = pickupOrders.value.filter(o => o.id !== order.id)
     selectedOrder.value = null
   }
   activeTab.value = 'completed'
@@ -627,20 +657,35 @@ function closeModal() {
 async function rollbackToProduction() {
   if (!selectedOrder.value) return
   
-  if (!confirm(`确定将订单 ${selectedOrder.value.etsy_order_id} 回退到「生产文档」阶段吗？\n\n注意：此操作会将订单状态重置为「待生产」`)) {
+  if (!confirm(`确定将订单 ${selectedOrder.value.etsy_order_id} 回退到「生产文档」阶段吗？\n\n注意：此操作会将订单状态重置为「生产中」`)) {
     return
   }
   
   try {
-    await store.updateOrderStatus(selectedOrder.value.id, 'confirmed')
+    // 更新订单状态为 producing
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'producing',
+        completed_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', selectedOrder.value.id)
+    
+    if (error) throw error
+    
     // 将订单从揽件列表移回生产列表
-    selectedOrder.value.status = 'confirmed'
-    productionOrders.value.push(selectedOrder.value)
-    pickupOrders.value = pickupOrders.value.filter(o => o.id !== selectedOrder.value.id)
+    const order = selectedOrder.value
+    order.status = 'producing'
+    order.completed_at = null
+    productionOrders.value.push(order)
+    pickupOrders.value = pickupOrders.value.filter(o => o.id !== order.id)
     selectedOrder.value = null
-    alert('订单已回退到「生产文档」阶段')
+    
+    ElMessage.success('订单已回退到「生产文档」阶段')
   } catch (error) {
-    alert('回退失败：' + error.message)
+    console.error('回退失败:', error)
+    ElMessage.error('回退失败：' + error.message)
   }
 }
 
@@ -649,17 +694,38 @@ function unselectOrder() {
   selectedOrder.value = null
 }
 
-function downloadPdf(order) {
+async function downloadPdf(order) {
   if (order.production_pdf_url) {
     window.open(order.production_pdf_url, '_blank')
-  } else {
-    alert('生产文档PDF生成中，请稍后重试')
+    return
+  }
+  
+  // 如果没有PDF，调用后端生成
+  try {
+    ElMessage.info('正在生成生产文档PDF...')
+    const res = await fetch(`${API_BASE}/api/pdf/generate-and-upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: order.id })
+    })
+    
+    const data = await res.json()
+    if (data.success && data.production_pdf_url) {
+      order.production_pdf_url = data.production_pdf_url
+      window.open(data.production_pdf_url, '_blank')
+      ElMessage.success('PDF生成成功')
+    } else {
+      throw new Error(data.message || 'PDF生成失败')
+    }
+  } catch (error) {
+    console.error('PDF生成失败:', error)
+    ElMessage.error('PDF生成失败：' + error.message)
   }
 }
 
 function downloadSvg(order) {
-  // 优先下载背面SVG（如果有），否则下载正面
-  const svgUrl = order.effect_image_back_url || order.effect_image_url
+  // 优先使用效果图SVG URL
+  const svgUrl = order.effect_svg_url || order.effect_image_url
   if (svgUrl) {
     // 创建临时链接下载
     const link = document.createElement('a')
@@ -670,41 +736,144 @@ function downloadSvg(order) {
     link.click()
     document.body.removeChild(link)
   } else {
-    alert('SVG文件生成中，请稍后重试')
+    ElMessage.warning('SVG文件尚未生成')
   }
 }
 
 function printDocument(order) {
-  alert(`打印订单 ${order.etsy_order_id} 的生产文档`)
+  if (order.production_pdf_url) {
+    // 打开PDF在新窗口，用户可以自行打印
+    window.open(order.production_pdf_url, '_blank')
+    ElMessage.info('请在打开的PDF页面中使用打印功能')
+  } else {
+    ElMessage.warning('请先生成PDF文档')
+  }
 }
 
 async function startProduction(order) {
   try {
-    // 更新订单状态为 producing
-    await store.updateOrderStatus(order.id, 'producing')
+    // 更新订单状态为 completed（生产完成，待揽件）
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', order.id)
+    
+    if (error) throw error
+    
     // 从生产列表移到揽件列表
-    order.status = 'producing'
-    pickupOrders.value.push(order)
+    order.status = 'completed'
+    order.completed_at = new Date().toISOString()
+    pickupOrders.value.push({ ...order, verifyStatus: 'pending' })
     productionOrders.value = productionOrders.value.filter(o => o.id !== order.id)
-    alert(`订单 ${order.etsy_order_id} 开始生产，已流转到「揽件确认」`)
+    
+    ElMessage.success(`订单 ${order.etsy_order_id} 已标记为生产完成`)
   } catch (error) {
-    alert('操作失败：' + error.message)
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败：' + error.message)
   }
 }
 
-// 加载订单数据
+// 加载订单数据 - 从Supabase获取真实数据
 async function loadOrders() {
   try {
-    const orders = await store.fetchOrders()
+    loading.value = true
     
-    // 分类订单
-    productionOrders.value = orders.filter(o => o.status === 'confirmed' || o.status === 'pending')
-    pickupOrders.value = orders.filter(o => o.status === 'producing').map(o => ({...o, verifyStatus: 'pending'}))
-    completedOrders.value = orders.filter(o => o.status === 'shipped' || o.status === 'delivered')
+    // 1. 获取生产中订单 (status = 'producing')
+    const { data: producingData, error: producingError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        sku_mapping(*)
+      `)
+      .eq('status', 'producing')
+      .order('created_at', { ascending: false })
+    
+    if (producingError) throw producingError
+    
+    // 2. 获取待揽件订单 (status = 'completed')
+    const { data: completedData, error: completedError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        sku_mapping(*),
+        logistics(*)
+      `)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+    
+    if (completedError) throw completedError
+    
+    // 3. 获取已发货订单 (status = 'delivered')
+    const { data: deliveredData, error: deliveredError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        sku_mapping(*)
+      `)
+      .eq('status', 'delivered')
+      .order('completed_at', { ascending: false })
+      .limit(50)
+    
+    if (deliveredError) throw deliveredError
+    
+    // 处理生产文档订单数据
+    productionOrders.value = (producingData || []).map(order => ({
+      ...order,
+      etsy_order_id: order.order_number,
+      product_shape: order.sku_mapping?.shape || '-',
+      product_color: order.sku_mapping?.color || '-',
+      product_size: order.sku_mapping?.size || '-',
+      product_craft: order.sku_mapping?.craft || '抛光',
+      front_text: order.custom_text_front || '-',
+      back_text: order.custom_text_back || '-',
+      font_code: order.font_code || '-'
+    }))
+    
+    // 处理揽件订单数据
+    pickupOrders.value = (completedData || []).map(order => ({
+      ...order,
+      etsy_order_id: order.order_number,
+      product_shape: order.sku_mapping?.shape || '-',
+      product_color: order.sku_mapping?.color || '-',
+      product_size: order.sku_mapping?.size || '-',
+      product_craft: order.sku_mapping?.craft || '抛光',
+      front_text: order.custom_text_front || '-',
+      back_text: order.custom_text_back || '-',
+      font_code: order.font_code || '-',
+      tracking_number: order.logistics?.tracking_number || '',
+      verifyStatus: 'pending'
+    }))
+    
+    // 处理已完成订单数据
+    completedOrders.value = (deliveredData || []).map(order => ({
+      ...order,
+      etsy_order_id: order.order_number,
+      product_shape: order.sku_mapping?.shape || '-',
+      product_color: order.sku_mapping?.color || '-',
+      product_size: order.sku_mapping?.size || '-',
+      front_text: order.custom_text_front || '-',
+      back_text: order.custom_text_back || '-',
+      font_code: order.font_code || '-'
+    }))
+    
+    console.log('✅ 订单数据加载成功:', {
+      producing: productionOrders.value.length,
+      pickup: pickupOrders.value.length,
+      completed: completedOrders.value.length
+    })
   } catch (error) {
-    console.error('加载订单失败:', error)
+    console.error('❌ 加载订单失败:', error)
+    ElMessage.error('加载订单数据失败: ' + error.message)
+  } finally {
+    loading.value = false
   }
 }
+
+const loading = ref(false)
 
 // ==================== 工厂登录相关 ====================
 const isAuthenticated = ref(false)
@@ -712,12 +881,7 @@ const password = ref('')
 const loginLoading = ref(false)
 const loginError = ref('')
 const currentFactory = ref(null)
-
-// 支持的工厂配置
-const factories = [
-  { id: 'factory1', name: '主工厂', password: 'factory123' },
-  { id: 'factory2', name: '分工厂A', password: 'factory456' }
-]
+const factoryCode = ref('') // 工厂代码输入
 
 // 检查登录状态
 function checkAuth() {
@@ -726,45 +890,59 @@ function checkAuth() {
     const authData = JSON.parse(auth)
     // 检查是否过期（8小时）
     if (Date.now() - authData.timestamp < 8 * 60 * 60 * 1000) {
-      const factory = factories.find(f => f.id === authData.factoryId)
-      if (factory) {
-        currentFactory.value = factory
-        isAuthenticated.value = true
-        return true
-      }
+      currentFactory.value = authData.factory
+      isAuthenticated.value = true
+      return true
     }
     localStorage.removeItem('factory_auth')
   }
   return false
 }
 
-// 登录处理
-function handleLogin() {
-  if (!password.value) return
+// 登录处理 - 对接后端API
+async function handleLogin() {
+  if (!factoryCode.value || !password.value) {
+    loginError.value = '请输入工厂代码和密码'
+    return
+  }
   
   loginLoading.value = true
   loginError.value = ''
   
-  // 验证密码
-  const factory = factories.find(f => f.password === password.value)
-  
-  if (factory) {
-    currentFactory.value = factory
-    isAuthenticated.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/factories/verify-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: factoryCode.value,
+        password: password.value
+      })
+    })
     
-    // 保存登录状态
-    localStorage.setItem('factory_auth', JSON.stringify({
-      factoryId: factory.id,
-      timestamp: Date.now()
-    }))
+    const result = await res.json()
     
-    // 加载订单
-    loadOrders()
-  } else {
-    loginError.value = '密码错误，请重试'
+    if (result.success && result.data?.valid) {
+      currentFactory.value = result.data.factory
+      isAuthenticated.value = true
+      
+      // 保存登录状态
+      localStorage.setItem('factory_auth', JSON.stringify({
+        factory: result.data.factory,
+        timestamp: Date.now()
+      }))
+      
+      ElMessage.success('登录成功')
+      // 加载订单
+      await loadOrders()
+    } else {
+      loginError.value = result.data?.message || '密码错误或工厂不存在'
+    }
+  } catch (error) {
+    console.error('登录失败:', error)
+    loginError.value = '网络错误，请稍后重试'
+  } finally {
+    loginLoading.value = false
   }
-  
-  loginLoading.value = false
 }
 
 // 退出登录

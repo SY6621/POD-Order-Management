@@ -1,6 +1,3 @@
-现在我已经收集了足够的信息来更新Vue组件架构文档。让我分析这些新组件及其通信机制，并更新文档。
-
-<docs>
 # Vue组件架构
 
 <cite>
@@ -36,15 +33,20 @@
 - [frontend/src/views/ServiceLink/ServiceLink.vue](file://frontend/src/views/ServiceLink/ServiceLink.vue)
 - [frontend/src/views/DesignLink/DesignLink.vue](file://frontend/src/views/DesignLink/DesignLink.vue)
 - [backend/src/api/service_link_routes.py](file://backend/src/api/service_link_routes.py)
+- [backend/tests/客服外链左侧栏.html](file://backend/tests/客服外链左侧栏.html)
+- [backend/tests/页面开发-问题需求模版.txt](file://backend/tests/页面开发-问题需求模版.txt)
+- [frontend/dist/assets/ServiceLink-MsYZxqdO.css](file://frontend/dist/assets/ServiceLink-MsYZxqdO.css)
+- [frontend/dist/assets/OrdersProducing-FO8Xy0Fo.css](file://frontend/dist/assets/OrdersProducing-FO8Xy0Fo.css)
 </cite>
 
 ## 更新摘要
 **所做更改**
-- 新增ServiceLink和DesignLink组件，提供客服外链功能
-- 增强组件间通信机制，支持iframe消息传递和postMessage通信
-- 完善客服外链API，支持Token验证和订单管理
-- 新增独立的客服外链路由系统
-- 增强字体管理系统，支持更多字体格式和精确的文本向量转换
+- ServiceLink页面UI重构与样式优化：从简单布局升级为三栏式布局（左侧订单列表、中间订单详情、右侧操作面板），新增Notion风格左侧栏样式
+- 生产订单页面改进：OrdersProducing组件从简单任务列表升级为完整的生产任务管理系统，新增三栏式布局和任务分组管理
+- 新增客服外链左侧栏HTML模板：提供完整的左侧栏样式参考和设计规范
+- 新增页面开发问题需求模板：标准化页面开发流程和需求收集格式
+- 增强组件间通信机制：支持更复杂的数据传递和状态管理
+- 优化样式系统：新增大量样式类和布局优化，提升用户体验和操作效率
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -179,7 +181,7 @@ K --> M
 - [frontend/src/views/Admin/AdminDashboard.vue:1-178](file://frontend/src/views/Admin/AdminDashboard.vue#L1-L178)
 - [frontend/src/layouts/AdminLayout.vue:1-234](file://frontend/src/layouts/AdminLayout.vue#L1-L234)
 - [frontend/src/views/StorePortal/StoreLogin.vue:1-161](file://frontend/src/views/StorePortal/StoreLogin.vue#L1-L161)
-- [frontend/src/views/ServiceLink/ServiceLink.vue:1-818](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L818)
+- [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
 - [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
 
 **章节来源**
@@ -326,6 +328,154 @@ OrdersProducing --> OrderService : "使用"
 4. **批量操作支持**：支持单个订单的PDF生成和管理
 5. **实时状态更新**：生成PDF后自动更新订单状态和显示URL
 6. **友好的用户界面**：提供清晰的订单信息展示和操作按钮
+
+**更新** OrdersProducing.vue组件的UI重大增强：
+
+1. **三栏式布局**：左侧任务列表、中间日期分组、右侧操作面板
+2. **任务分组管理**：按今日、昨日、更早任务自动分组
+3. **任务状态管理**：支持任务的展开/折叠和状态标识
+4. **生产文档生成**：集成PDF生成和下载功能
+5. **任务完成确认**：支持任务完成状态的确认和更新
+6. **响应式设计**：适配不同屏幕尺寸的显示效果
+
+**更新** OrdersProducing.vue组件的样式系统重大改进：
+
+1. **新增样式类**：
+   - `.producing-page` - 页面容器样式
+   - `.task-groups` - 任务分组容器
+   - `.task-group` - 任务分组样式
+   - `.group-header` - 分组头部样式
+   - `.task-card` - 任务卡片样式
+   - `.task-actions` - 任务操作按钮组
+   - `.btn-generate` - 生成文档按钮
+   - `.btn-download` - 下载文档按钮
+   - `.btn-complete` - 确认完成按钮
+
+2. **布局优化**：
+   - 固定宽度的左右面板 + 自适应中间区域
+   - Flexbox布局系统
+   - 响应式断点设计
+
+3. **视觉设计增强**：
+   - 渐变背景效果
+   - 圆角边框和阴影
+   - 状态色彩系统
+   - 图标和按钮样式
+
+### ServiceLink组件
+
+**更新** ServiceLink组件提供客服与客户之间的沟通链接，支持订单管理、邮件发送和设计修改：
+
+```mermaid
+classDiagram
+class ServiceLink {
++Object shopInfo
++Boolean designLinkEnabled
++Array orders
++Object selectedOrder
++Array operationLogs
++validateAndLoad() void
++selectOrder(order) void
++goToDesignLink() void
++sendEmail() void
++confirmOrder() void
++createOrder() void
++getEmailStatusType(status) String
++getEmailStatusText(status) String
++formatTime(timeStr) String
+}
+class OrderManagement {
++Array orders
++Object selectedOrder
++getEmailStatusType(status) String
++getEmailStatusText(status) String
+}
+class EmailSystem {
++sendEmail() void
++confirmOrder() void
+}
+ServiceLink --> OrderManagement : "管理"
+ServiceLink --> EmailSystem : "使用"
+```
+
+**图表来源**
+- [frontend/src/views/ServiceLink/ServiceLink.vue:227-420](file://frontend/src/views/ServiceLink/ServiceLink.vue#L227-L420)
+
+**更新** ServiceLink组件的UI重大改进：
+
+1. **三栏式布局设计**：
+   - 左侧：订单列表面板（340px固定宽度）
+   - 中间：订单详情面板（自适应宽度）
+   - 右侧：操作面板（360px固定宽度）
+
+2. **Notion风格左侧栏**：完全重写的左侧订单列表样式，包含状态角标、订单卡片、分类标签等
+
+3. **增强的订单详情**：
+   - 效果图预览区域（蓝框样式，支持hero尺寸）
+   - 紧凑型订单信息块（红框样式）
+   - 修改设计下拉面板（绿色按钮样式）
+
+4. **改进的操作面板**：
+   - 邮件内容预览区域
+   - 操作历史时间轴
+   - 响应式设计适配
+
+5. **状态管理增强**：
+   - 统计卡片显示订单状态分布
+   - 错误状态处理（加载中、Token无效、网络错误）
+   - 空状态处理
+
+6. **交互优化**：
+   - 悬停效果和过渡动画
+   - 状态指示器和视觉反馈
+   - 响应式布局适配
+
+**更新** ServiceLink组件的样式系统重大改进：
+
+1. **新增样式类**：
+   - `.order-list-panel.notion-style` - Notion风格左侧栏
+   - `.order-card` - 订单卡片样式
+   - `.effect-preview.hero` - 大尺寸效果图预览
+   - `.order-card.compact` - 紧凑型订单信息块
+   - `.design-collapsible` - 修改设计下拉面板
+
+2. **布局优化**：
+   - 固定宽度的左右面板 + 自适应中间区域
+   - Flexbox布局系统
+   - 响应式断点设计
+
+3. **视觉设计增强**：
+   - 渐变背景效果
+   - 圆角边框和阴影
+   - 状态色彩系统
+   - 图标和按钮样式
+
+**更新** ServiceLink组件的样式系统包含：
+
+1. **Notion风格左侧栏样式**：
+   - `.order-list-panel.notion-style` - 主容器样式
+   - `.section-tag` - 分类装饰标签
+   - `.order-card` - 订单卡片样式
+   - `.status-badge` - 状态角标样式
+   - `.item-desc` - 商品描述样式
+   - `.item-meta` - 元信息样式
+
+2. **订单详情样式**：
+   - `.effect-preview.hero` - 大尺寸效果图预览
+   - `.order-card.compact` - 紧凑型订单信息块
+   - `.order-card-header` - 订单头部样式
+   - `.order-card-content` - 订单内容样式
+
+3. **操作面板样式**：
+   - `.action-panel` - 操作面板样式
+   - `.email-section` - 邮件内容区域
+   - `.history-section` - 操作历史区域
+   - `.action-buttons` - 操作按钮组
+
+4. **响应式设计**：
+   - 媒体查询支持
+   - 移动端适配
+   - 灵活布局系统
 
 ### 物流下单组件 OrdersShipping.vue
 
@@ -599,7 +749,7 @@ end
 ```
 
 **图表来源**
-- [frontend/src/views/ServiceLink/ServiceLink.vue:1-818](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L818)
+- [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
 - [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
 
 ### ServiceLink组件
@@ -649,6 +799,15 @@ ServiceLink --> EmailSystem : "使用"
 4. **设计修改**：跳转到设计链接进行修改
 5. **操作历史**：记录客服的操作日志
 6. **状态管理**：管理订单的不同状态（草稿、已发送、已确认、需修改）
+
+**更新** ServiceLink组件的UI重大改进：
+
+1. **三栏式布局**：左侧订单列表（340px）、中间订单详情（自适应）、右侧操作面板（360px）
+2. **Notion风格左侧栏**：包含状态角标、订单卡片、分类标签等
+3. **增强的订单详情**：效果图预览（蓝框样式）、紧凑型订单信息块（红框样式）
+4. **修改设计面板**：绿色按钮样式，支持客户修改意见和设计处理
+5. **操作面板**：邮件内容预览、操作历史时间轴
+6. **状态管理**：统计卡片、错误状态处理、空状态处理
 
 ### DesignLink组件
 
@@ -751,7 +910,7 @@ end
 4. **设计链接**：独立的设计链接管理功能
 
 **章节来源**
-- [frontend/src/views/ServiceLink/ServiceLink.vue:1-818](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L818)
+- [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
 - [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
 - [backend/src/api/service_link_routes.py:1-516](file://backend/src/api/service_link_routes.py#L1-L516)
 
@@ -1331,6 +1490,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 8. **客服外链依赖**：ServiceLink和DesignLink组件依赖后端API进行Token验证
 9. **通信机制依赖**：postMessage和iframe通信机制支持组件间数据传递
 10. **API依赖**：FastAPI后端提供客服外链的完整API支持
+11. **样式依赖**：新增的CSS样式文件支持ServiceLink和OrdersProducing组件的样式需求
+12. **模板依赖**：新增的HTML模板文件为客服外链提供设计参考
 
 **章节来源**
 - [frontend/package.json:1-31](file://frontend/package.json#L1-L31)
@@ -1354,6 +1515,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 13. **客服外链优化**：ServiceLink和DesignLink组件采用懒加载和缓存机制，提升Token验证性能
 14. **通信机制优化**：postMessage和iframe通信采用事件驱动模式，避免轮询造成的性能损耗
 15. **API调用优化**：后端API使用异步处理，避免阻塞主线程
+16. **样式文件优化**：新增的CSS文件采用scoped样式，避免全局样式污染
+17. **模板文件优化**：HTML模板文件内联样式，减少HTTP请求数量
 
 ### 数据加载策略
 
@@ -1367,6 +1530,7 @@ AH[DesignLink组件] --> AI[iFrame通信]
 8. **字体缓存机制**：opentype.js字体缓存，避免重复加载相同字体文件
 9. **Token缓存机制**：客服外链Token在验证后缓存，避免重复验证
 10. **订单数据缓存**：DesignLink组件缓存订单数据，避免重复加载
+11. **样式缓存机制**：CSS文件缓存到浏览器，避免重复加载
 
 ### 构建优化
 
@@ -1376,6 +1540,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 4. **字体文件优化**：字体文件使用Base64编码嵌入HTML，减少HTTP请求数量
 5. **静态资源优化**：独立设计器HTML文件内联字体处理脚本
 6. **API文档优化**：后端API文档自动生成，提升开发效率
+7. **样式文件优化**：CSS文件按需加载，减少初始包大小
+8. **模板文件优化**：HTML模板文件内联关键样式，提升首屏渲染速度
 
 ## 故障排除指南
 
@@ -1383,7 +1549,7 @@ AH[DesignLink组件] --> AI[iFrame通信]
 
 #### Supabase连接问题
 - **症状**: 控制台显示"Supabase配置缺失"
-- **原因**: .env文件中缺少VITE_SUPABASE_URL或VITE_SUPABASE_KEY
+- **原因**: .env文件中缺少VITE_SUPABASE_URL或VITE_SUPabase_KEY
 - **解决**: 检查.env文件配置，确保环境变量正确设置
 
 #### API调用失败
@@ -1494,12 +1660,32 @@ AH[DesignLink组件] --> AI[iFrame通信]
 #### 设计器加载失败
 - **症状**: DesignLink页面设计器无法加载
 - **原因**: EffectDesigner组件加载失败或字体文件缺失
-- **解决**: 检查EffectDesigner组件状态，确认字体文件可用
+- **solve**: 检查EffectDesigner组件状态，确认字体文件可用
 
 #### 操作历史记录异常
 - **症状**: 客服操作历史记录不显示或显示错误
 - **原因**: 后端API调用失败或数据格式错误
 - **解决**: 检查后端API状态，确认数据格式正确
+
+#### ServiceLink样式加载失败
+- **症状**: ServiceLink页面样式显示异常或布局错乱
+- **原因**: CSS文件加载失败或样式冲突
+- **解决**: 检查CSS文件路径，确认样式文件正确加载
+
+#### OrdersProducing样式加载失败
+- **症状**: OrdersProducing页面样式显示异常或布局错乱
+- **原因**: CSS文件加载失败或样式冲突
+- **解决**: 检查CSS文件路径，确认样式文件正确加载
+
+#### 左侧栏模板显示异常
+- **症状**: 客服外链左侧栏样式显示异常
+- **原因**: HTML模板文件加载失败或样式冲突
+- **解决**: 检查HTML模板文件路径，确认模板文件正确加载
+
+#### 问题需求模板格式错误
+- **症状**: 页面开发问题需求模板显示异常
+- **原因**: 文本文件格式错误或编码问题
+- **解决**: 检查文本文件编码，确认文件格式正确
 
 **章节来源**
 - [frontend/src/utils/supabase.js:7-10](file://frontend/src/utils/supabase.js#L7-L10)
@@ -1524,6 +1710,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 12. **客服外链系统**: 新增ServiceLink和DesignLink组件提供完整的客服沟通和设计修改功能
 13. **组件间通信机制**: 通过postMessage和iframe实现组件间的高效数据传递
 14. **后端API支持**: FastAPI提供完整的客服外链API支持
+15. **样式系统优化**: 新增大量样式类和布局优化，提升用户体验和操作效率
+16. **模板系统支持**: 新增HTML模板和问题需求模板，标准化开发流程
 
 ### 技术亮点
 1. **现代化工具链**: Vite提供快速开发体验
@@ -1546,6 +1734,9 @@ AH[DesignLink组件] --> AI[iFrame通信]
 18. **精确向量转换**: Canvas像素扫描算法确保字体转换精度
 19. **客服外链API**: 完整的后端API支持Token验证和订单管理
 20. **组件通信机制**: postMessage和iframe通信确保组件间高效协作
+21. **样式文件优化**: 新增的CSS文件支持组件的样式需求
+22. **模板文件支持**: HTML模板为客服外链提供设计参考
+23. **问题需求模板**: 标准化页面开发流程和需求收集格式
 
 ### 改进建议
 1. **类型安全**: 可以考虑添加TypeScript支持
@@ -1566,6 +1757,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 16. **客服外链安全**: 增强Token的安全验证机制
 17. **通信机制优化**: 优化postMessage和iframe通信的性能表现
 18. **API性能优化**: 优化后端API的响应时间和并发处理能力
+19. **样式文件优化**: 优化CSS文件的加载和缓存策略
+20. **模板文件优化**: 优化HTML模板文件的加载和渲染性能
 
 该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件、字体处理系统的进一步完善、客服外链系统的完整实现，以及组件间的通信机制，都体现了现代前端开发的创新思维，通过统一的布局设计、高效的批量操作、精确的字体处理、完整的客服功能显著提升了用户的操作效率和体验质量。
 
@@ -1573,4 +1766,6 @@ AH[DesignLink组件] --> AI[iFrame通信]
 
 字体处理系统的完整实现，包括opentype.js引擎的集成、Canvas像素扫描算法的应用、字体缓存机制的建立，以及SKU字体映射系统的完善，为整个系统提供了强大的字体处理能力。这种从设计到生产的完整字体处理流程，确保了订单生产过程中字体的一致性和准确性，为电商订单管理提供了可靠的技术支撑。
 
-通过这次更新，系统不仅在功能上更加完善，在架构设计上也更加专业化，为未来的扩展和维护奠定了坚实的基础。新增的客服外链系统、增强的组件通信机制、完善的API支持，都为电商订单管理提供了全方位的解决方案，显著提升了系统的专业性和用户体验。
+新增的客服外链左侧栏HTML模板和页面开发问题需求模板，为前端开发提供了标准化的设计参考和需求收集格式，有助于提升开发效率和代码质量。这些模板的存在体现了项目在规范化和标准化方面的持续改进。
+
+通过这次更新，系统不仅在功能上更加完善，在架构设计上也更加专业化，为未来的扩展和维护奠定了坚实的基础。新增的客服外链系统、增强的组件通信机制、完善的API支持、优化的样式系统，都为电商订单管理提供了全方位的解决方案，显著提升了系统的专业性和用户体验。

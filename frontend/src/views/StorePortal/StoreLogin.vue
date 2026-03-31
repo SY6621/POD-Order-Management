@@ -24,7 +24,7 @@
             class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all group"
           >
             <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-100">
-              <span class="text-xl font-bold text-slate-600 group-hover:text-blue-600">{{ shop.code.toUpperCase() }}</span>
+              <span class="text-2xl">{{ shop.flag_emoji || shop.code.toUpperCase() }}</span>
             </div>
             <div class="text-left">
               <p class="font-semibold text-slate-800">{{ shop.name }}</p>
@@ -97,6 +97,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useShopStore } from '../../stores/shopStore'
 
 const route = useRoute()
@@ -146,13 +147,17 @@ async function handleLogin() {
     const result = await shopStore.login(selectedShop.value.code, password.value)
     
     if (result.success) {
-      // 登录成功，跳转到店铺首页
+      // 登录成功，显示提示
+      ElMessage.success('登录成功')
+      // 跳转到店铺首页
       router.push(`/store/${selectedShop.value.code}/orders`)
     } else {
-      error.value = '密码错误，请重试'
+      error.value = result.message || '密码错误，请重试'
+      ElMessage.error(error.value)
     }
   } catch (err) {
     error.value = '登录失败，请稍后重试'
+    ElMessage.error(error.value)
     console.error('登录错误:', err)
   } finally {
     loading.value = false

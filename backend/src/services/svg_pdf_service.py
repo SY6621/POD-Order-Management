@@ -6,9 +6,11 @@ Pixel-perfect PDF generation using SVG template
 
 import re
 import base64
+import time
+import functools
 import requests
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 from datetime import datetime
 from io import BytesIO
 
@@ -19,6 +21,76 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 from src.config.settings import settings, BASE_DIR
+
+
+# ============================================================
+# 网络请求重试机制
+# ============================================================
+
+def with_retry(max_retries: int = 2, retry_delay: float = 1.0):
+    """
+    网络请求重试装饰器
+    
+    Args:
+        max_retries: 最大重试次数（总共 max_retries + 1 次尝试）
+        retry_delay: 重试间隔（秒）
+    
+    Returns:
+        装饰后的函数
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        print(f"[RETRY] {func.__name__} 失败 (尝试 {attempt + 1}/{max_retries + 1}): {e}")
+                        time.sleep(retry_delay)
+            # 所有重试都失败
+            print(f"[ERROR] {func.__name__} 重试耗尽: {last_exception}")
+            raise last_exception
+        return wrapper
+    return decorator
+
+
+def _request_with_retry(method: str, url: str, **kwargs) -> requests.Response:
+    """
+    带重试机制的HTTP请求辅助函数
+    
+    Args:
+        method: HTTP方法 (GET/POST)
+        url: 请求URL
+        **kwargs: 传递给requests的参数
+    
+    Returns:
+        Response对象
+    
+    Raises:
+        最后一次请求的异常
+    """
+    max_retries = 2
+    retry_delay = 1.0
+    last_exception = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            if method.upper() == 'GET':
+                response = requests.get(url, **kwargs)
+            else:
+                response = requests.post(url, **kwargs)
+            return response
+        except requests.RequestException as e:
+            last_exception = e
+            if attempt < max_retries:
+                print(f"[RETRY] HTTP {method} {url[:50]}... 失败 (尝试 {attempt + 1}/{max_retries + 1}): {e}")
+                time.sleep(retry_delay)
+    
+    print(f"[ERROR] HTTP请求重试耗尽: {url[:50]}...")
+    raise last_exception
 
 
 # ============================================================
@@ -439,8 +511,8 @@ class SVGPDFService:
             
             print(f"[INFO] Loading product photo: {photo_url}")
             
-            # 下载图片
-            response = requests.get(photo_url, timeout=15)
+            # 下载图片（带重试机制）
+            response = _request_with_retry('GET', photo_url, timeout=15)
             if response.status_code == 200:
                 # 检查是否是 JPEG 2000 格式（文件头以 \x00\x00\x00 或 jP 开始）
                 content = response.content
@@ -712,17 +784,18 @@ class SVGPDFService:
             
             # Convert SVG to PDF
             drawing = svg2rlg(str(temp_svg_path))
-            if drawing:
-                renderPDF.drawToFile(drawing, str(pdf_path))
-                print(f"[OK] PDF generated: {pdf_path.name}")
-                
-                # Clean up temp SVG
-                temp_svg_path.unlink()
-                
-                return pdf_path
-            else:
-                print("[ERROR] Failed to parse SVG")
-                return None
+            if drawing is None:
+                # svg2rlg返回None表示SVG解析失败
+                temp_svg_path.unlink(missing_ok=True)
+                raise ValueError(f"SVG转PDF失败: 无法解析SVG文件 {temp_svg_path.name}")
+                        
+            renderPDF.drawToFile(drawing, str(pdf_path))
+            print(f"[OK] PDF generated: {pdf_path.name}")
+                        
+            # Clean up temp SVG
+            temp_svg_path.unlink()
+                        
+            return pdf_path
                 
         except Exception as e:
             print(f"[ERROR] PDF generation failed: {e}")
@@ -800,8 +873,8 @@ class SVGPDFService:
             (front_shape_data, back_shape_data) 格式与 _get_effect_shape_svg 相同
         """
         try:
-            # 下载SVG内容
-            response = requests.get(effect_svg_url, timeout=30)
+            # 下载SVG内容（带重试机制）
+            response = _request_with_retry('GET', effect_svg_url, timeout=30)
             if response.status_code != 200:
                 print(f"[WARN] 无法下载设计器SVG: {effect_svg_url}")
                 return (
@@ -943,78 +1016,66 @@ class SVGPDFService:
                 self._get_effect_shape_svg(shape, color, "back", size)
             )
     
-    def _download_shipping_label(self, tracking_number: str) -> Optional[str]:
+    def _download_label(self, label_url: str, return_format: str = "data_uri") -> Optional[str]:
         """
-        下载4PX物流面单PDF并转为base64
-        
-        Returns:
-            base64编码的PDF内容，失败返回None
-        """
-        try:
-            from src.services.shipping_service import shipping_service
+        统一的面单下载方法
             
-            # 获取面单URL
-            label_url = shipping_service.get_label_url(tracking_number)
-            if not label_url:
-                print(f"[WARN] 无法获取面单URL: {tracking_number}")
-                return None
-            
-            print(f"[INFO] 下载面单: {label_url}")
-            
-            # 下载PDF
-            response = requests.get(label_url, timeout=30)
-            if response.status_code != 200:
-                print(f"[WARN] 下载面单失败: {response.status_code}")
-                return None
-            
-            # 转为base64
-            pdf_base64 = base64.b64encode(response.content).decode('utf-8')
-            print(f"[OK] 面单下载成功: {len(pdf_base64)} 字符")
-            return pdf_base64
-            
-        except Exception as e:
-            print(f"[ERROR] 下载面单失败: {e}")
-            return None
-
-    def _download_label_as_base64(self, label_url: str) -> str:
-        """
-        从URL下载面单PNG并转为base64 data URI
-        
         Args:
-            label_url: 面单图片URL（PNG格式，10x10cm）
+            label_url: 面单URL（支持PDF/PNG/JPEG格式）
+            return_format: 返回格式
+                - "data_uri": 返回 base64 data URI（如 data:image/png;base64,...）
+                - "base64": 返回纯 base64 字符串
             
         Returns:
-            base64 data URI格式字符串，失败返回空字符串
+            根据return_format返回对应格式字符串，失败返回 None 或空字符串
         """
         if not label_url:
-            return ""
-            
+            return "" if return_format == "data_uri" else None
+                
         try:
-            print(f"[INFO] 下载面单PNG: {label_url[:60]}...")
-            response = requests.get(label_url, timeout=30)
-            
+            print(f"[INFO] 下载面单: {label_url[:60]}...")
+            response = _request_with_retry('GET', label_url, timeout=30)
+                
             if response.status_code != 200:
-                print(f"[WARN] 面单下载HTTP {response.status_code}: {label_url[:50]}")
-                return ""
-            
+                print(f"[WARN] 面单下载失败: HTTP {response.status_code}")
+                return "" if return_format == "data_uri" else None
+                
             # 检测内容类型
             content_type = response.headers.get('content-type', 'image/png')
             if 'png' in content_type.lower():
                 mime = 'image/png'
             elif 'jpeg' in content_type.lower() or 'jpg' in content_type.lower():
                 mime = 'image/jpeg'
+            elif 'pdf' in content_type.lower():
+                mime = 'application/pdf'
             else:
                 mime = 'image/png'  # 默认PNG
-            
-            # 转为base64 data URI
+                
+            # 转为base64
             b64 = base64.b64encode(response.content).decode('utf-8')
-            data_uri = f"data:{mime};base64,{b64}"
-            print(f"[OK] 面单PNG下载成功: {len(b64)} 字符 ({mime})")
-            return data_uri
-            
+            print(f"[OK] 面单下载成功: {len(b64)} 字符 ({mime})")
+                
+            if return_format == "data_uri":
+                return f"data:{mime};base64,{b64}"
+            else:
+                return b64
+                    
         except Exception as e:
-            print(f"[WARN] 面单PNG下载失败: {e}")
-            return ""
+            print(f"[ERROR] 面单下载失败: {e}")
+            return "" if return_format == "data_uri" else None
+    
+    def _download_label_as_base64(self, label_url: str) -> str:
+        """
+        从URL下载面单并转为base64 data URI（兼容旧接口）
+            
+        Args:
+            label_url: 面单图片URL
+                
+        Returns:
+            base64 data URI格式字符串，失败返回空字符串
+        """
+        result = self._download_label(label_url, return_format="data_uri")
+        return result if result else ""
     
     def _get_placeholder_label(self) -> str:
         """

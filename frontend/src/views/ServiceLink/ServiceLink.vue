@@ -1,48 +1,81 @@
 <template>
   <div class="service-link-page">
-    <!-- 顶部导航 -->
-    <header class="page-header">
-      <div class="header-content">
-        <div class="shop-info">
-          <h1>{{ shopInfo?.name || '店铺订单中心' }}</h1>
-          <span class="shop-lang">{{ shopCode?.toUpperCase() || 'US' }}</span>
-        </div>
-        <div class="header-actions">
-          <el-button
-            v-if="designLinkEnabled"
-            type="warning"
-            class="modify-design-btn"
-            @click="goToDesignLink"
-          >
-            <span class="btn-icon">✅</span>修改设计
-          </el-button>
-        </div>
-      </div>
-    </header>
-
-    <!-- 统计卡片 -->
-    <div class="stats-bar">
-      <div class="stat-card">
-        <span class="stat-label">全部订单</span>
-        <span class="stat-value">{{ orders.length }}</span>
-      </div>
-      <div class="stat-card pending">
-        <span class="stat-label">待确认</span>
-        <span class="stat-value">{{ pendingCount }}</span>
-      </div>
-      <div class="stat-card sent">
-        <span class="stat-label">已发送</span>
-        <span class="stat-value">{{ sentCount }}</span>
-      </div>
-      <div class="stat-card confirmed">
-        <span class="stat-label">已确认</span>
-        <span class="stat-value">{{ confirmedCount }}</span>
-      </div>
-      <div class="stat-card modify">
-        <span class="stat-label">需修改</span>
-        <span class="stat-value">{{ modifyCount }}</span>
+    <!-- 加载中状态 -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-content">
+        <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
+        <p class="loading-text">正在验证链接并加载订单数据...</p>
       </div>
     </div>
+
+    <!-- Token无效错误页面 -->
+    <div v-else-if="error === 'invalid_token'" class="error-overlay">
+      <div class="error-content">
+        <el-icon class="error-icon" :size="64" color="#ef4444"><CircleClose /></el-icon>
+        <h2 class="error-title">链接无效或已过期</h2>
+        <p class="error-desc">该客服外链可能已被禁用、Token已过期或链接地址不正确。</p>
+        <p class="error-hint">请联系管理员重新生成有效的客服外链。</p>
+      </div>
+    </div>
+
+    <!-- 网络错误页面 -->
+    <div v-else-if="error === 'network'" class="error-overlay">
+      <div class="error-content">
+        <el-icon class="error-icon" :size="64" color="#f59e0b"><Warning /></el-icon>
+        <h2 class="error-title">网络连接失败</h2>
+        <p class="error-desc">无法连接到服务器，请检查网络连接。</p>
+        <el-button type="primary" @click="retryLoad">
+          <el-icon><RefreshRight /></el-icon>
+          重新加载
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 正常页面内容 -->
+    <template v-else>
+      <!-- 顶部导航 -->
+      <header class="page-header">
+        <div class="header-content">
+          <div class="shop-info">
+            <h1>{{ shopInfo?.name || '店铺订单中心' }}</h1>
+            <span class="shop-lang">{{ shopCode?.toUpperCase() || 'US' }}</span>
+          </div>
+          <div class="header-actions">
+            <el-button
+              v-if="designLinkEnabled"
+              type="warning"
+              class="modify-design-btn"
+              @click="goToDesignLink"
+            >
+              <span class="btn-icon">✅</span>修改设计
+            </el-button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 统计卡片 -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <span class="stat-label">全部订单</span>
+          <span class="stat-value">{{ orders.length }}</span>
+        </div>
+        <div class="stat-card pending">
+          <span class="stat-label">待确认</span>
+          <span class="stat-value">{{ pendingCount }}</span>
+        </div>
+        <div class="stat-card sent">
+          <span class="stat-label">已发送</span>
+          <span class="stat-value">{{ sentCount }}</span>
+        </div>
+        <div class="stat-card confirmed">
+          <span class="stat-label">已确认</span>
+          <span class="stat-value">{{ confirmedCount }}</span>
+        </div>
+        <div class="stat-card modify">
+          <span class="stat-label">需修改</span>
+          <span class="stat-value">{{ modifyCount }}</span>
+        </div>
+      </div>
 
     <!-- 主内容 -->
     <main class="main-content">
@@ -285,6 +318,50 @@
           </div>
         </div>
 
+        <!-- 操作按钮区域 -->
+        <div v-if="selectedOrder" class="panel-section action-buttons-section">
+          <div class="panel-header">
+            <h3>⚡ 快捷操作</h3>
+          </div>
+          <div class="action-buttons">
+            <!-- 确认按钮：仅当email_status为sent时显示 -->
+            <el-button
+              v-if="selectedOrder.email_status === 'sent'"
+              type="success"
+              class="confirm-btn"
+              :loading="confirming"
+              @click="confirmOrder"
+            >
+              <span class="btn-icon">✅</span> 确认订单
+            </el-button>
+            <!-- 请求修改按钮：仅当email_status为sent时显示 -->
+            <el-button
+              v-if="selectedOrder.email_status === 'sent'"
+              type="warning"
+              class="modify-btn"
+              :loading="modifying"
+              @click="showModifyDialog"
+            >
+              <span class="btn-icon">✏️</span> 请求修改
+            </el-button>
+            <!-- 新订单提示 -->
+            <div v-if="selectedOrder.email_status === 'pending' || !selectedOrder.email_status" class="action-hint">
+              <el-icon><InfoFilled /></el-icon>
+              <span>该订单尚未发送效果图，请先在系统中发送邮件</span>
+            </div>
+            <!-- 已确认提示 -->
+            <div v-if="selectedOrder.email_status === 'confirmed'" class="action-hint success">
+              <el-icon><CircleCheckFilled /></el-icon>
+              <span>该订单已确认，无需操作</span>
+            </div>
+            <!-- 需修改提示 -->
+            <div v-if="selectedOrder.email_status === 'modify'" class="action-hint warning">
+              <el-icon><WarningFilled /></el-icon>
+              <span>该订单已提交修改请求，等待处理</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 操作历史 -->
         <div class="panel-section history-section">
           <div class="panel-header">
@@ -306,6 +383,33 @@
         </div>
       </aside>
     </main>
+    </template>
+
+    <!-- 修改原因对话框 -->
+    <el-dialog
+      v-model="modifyDialogVisible"
+      title="请求修改"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div class="modify-dialog-content">
+        <p class="dialog-hint">请填写客户要求的修改内容：</p>
+        <el-input
+          v-model="modifyReason"
+          type="textarea"
+          :rows="4"
+          placeholder="例如：客户希望将正面文字改为 Luna Bell，背面电话改为 123-456-7890"
+          maxlength="500"
+          show-word-limit
+        />
+      </div>
+      <template #footer>
+        <el-button @click="modifyDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="modifying" @click="requestModify">
+          提交修改请求
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -313,13 +417,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Clock, Edit, ArrowDown } from '@element-plus/icons-vue'
+import { Clock, Edit, ArrowDown, Loading, CircleClose, Warning, RefreshRight, InfoFilled, CircleCheckFilled, WarningFilled } from '@element-plus/icons-vue'
+import supabase from '@/utils/supabase'
 
 const route = useRoute()
 const router = useRouter()
 
+// API基础URL
+const API_BASE_URL = 'http://localhost:8000'
+
 // 状态
 const loading = ref(true)
+const error = ref(null) // 错误状态：null | 'invalid_token' | 'network' | 'no_orders'
 const shopInfo = ref(null)
 const designLinkEnabled = ref(true)
 const orders = ref([])
@@ -327,6 +436,10 @@ const selectedOrder = ref(null)
 const operationLogs = ref([])
 const customerFeedback = ref('')
 const showDesignPanel = ref(false) // 修改设计面板显示状态
+const confirming = ref(false) // 确认操作loading状态
+const modifying = ref(false) // 修改操作loading状态
+const modifyDialogVisible = ref(false) // 修改对话框显示状态
+const modifyReason = ref('') // 修改原因
 
 // 从URL获取参数
 const shopCode = computed(() => route.params.shopCode)
@@ -338,89 +451,232 @@ const sentCount = computed(() => orders.value.filter(o => o.email_status === 'se
 const confirmedCount = computed(() => orders.value.filter(o => o.email_status === 'confirmed').length)
 const modifyCount = computed(() => orders.value.filter(o => o.email_status === 'modify').length)
 
-// 验证Token并获取店铺信息
+/**
+ * 验证Token并加载数据
+ * 1. 调用后端API验证token
+ * 2. 验证通过后加载订单数据
+ * 3. 加载操作历史
+ */
 async function validateAndLoad() {
+  loading.value = true
+  error.value = null
+  
   try {
-    // TODO: 调用后端API验证token
-    // 模拟数据
+    // 检查必要参数
+    if (!shopCode.value || !token.value) {
+      error.value = 'invalid_token'
+      ElMessage.error('链接无效：缺少必要参数')
+      return
+    }
+    
+    console.log('🔐 开始验证Token:', { shopCode: shopCode.value, token: token.value.substring(0, 8) + '...' })
+    
+    // 1. 调用后端API验证Token
+    const validateResponse = await fetch(`${API_BASE_URL}/service-link/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        shop_code: shopCode.value,
+        token: token.value
+      })
+    })
+    
+    if (!validateResponse.ok) {
+      throw new Error('验证请求失败')
+    }
+    
+    const validateResult = await validateResponse.json()
+    console.log('✅ Token验证结果:', validateResult)
+    
+    if (!validateResult.valid) {
+      error.value = 'invalid_token'
+      ElMessage.error(validateResult.message || '链接无效或已过期')
+      return
+    }
+    
+    // 验证成功，保存店铺信息
     shopInfo.value = {
-      name: '美国店铺',
-      code: shopCode.value
+      name: validateResult.shop_name || '店铺订单中心',
+      code: shopCode.value,
+      id: validateResult.shop_id
     }
     designLinkEnabled.value = true
     
-    // 加载订单
-    orders.value = [
-      {
-        id: '1',
-        etsy_order_id: '4002217518',
-        customer_name: 'Jessica Head',
-        customer_email: 'jessica@example.com',
-        product_shape: '心形',
-        product_color: '金色',
-        front_text: 'KYLA',
-        back_text: 'If Lost 13999926688',
-        sku: 'B-G01B',
-        size: '大号',
-        quantity: 1,
-        engraving_sides: '双面',
-        brand_name: 'Marinella Nesso',
-        email_status: 'sent',
-        etsy_order_time: '2025-03-25T22:30:00Z',
-        created_at: null
-      },
-      {
-        id: '2',
-        etsy_order_id: '3986891868',
-        customer_name: 'Tom Smith',
-        customer_email: 'tom@example.com',
-        product_shape: '圆形',
-        product_color: '银色',
-        front_text: 'TOM',
-        back_text: '13800138000',
-        sku: 'B-S02S',
-        size: '大号',
-        quantity: 1,
-        engraving_sides: '双面',
-        brand_name: 'Marinella Nesso',
-        email_status: 'pending',
-        etsy_order_time: '2025-03-25T18:15:00Z',
-        created_at: null
-      },
-      {
-        id: '3',
-        etsy_order_id: '4002234567',
-        customer_name: 'Luna Wang',
-        customer_email: 'luna@example.com',
-        product_shape: '骨头形',
-        product_color: '玫瑰金',
-        front_text: 'LUNA',
-        back_text: '13987654321',
-        sku: 'B-B03R',
-        size: '大号',
-        quantity: 1,
-        engraving_sides: '双面',
-        brand_name: 'Marinella Nesso',
-        email_status: 'modify',
-        etsy_order_time: '2025-03-25T00:45:00Z',
-        created_at: '2025-03-25T02:00:00Z'
-      }
-    ]
-
-    operationLogs.value = [
-      { time: '14:32', type: 'email', label: '邮件', text: '客服发送确认邮件给客户' },
-      { time: '14:30', type: 'design', label: '设计', text: '设计师生成效果图' },
-      { time: '14:15', type: 'order', label: '订单', text: '订单创建，等待处理' }
-    ]
-
-    if (orders.value.length > 1) {
-      selectedOrder.value = orders.value[1] // 默认选中第二条（草稿状态）
-    }
+    // 2. 从Supabase加载该店铺的订单数据
+    await loadOrders(validateResult.shop_id)
+    
+    // 3. 加载操作历史
+    await loadOperationLogs(validateResult.shop_id)
+    
   } catch (e) {
-    ElMessage.error('加载失败')
+    console.error('❌ 加载失败:', e)
+    error.value = 'network'
+    ElMessage.error('网络错误，请检查连接后重试')
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * 从Supabase加载订单数据
+ * 查询条件: shop_id = validated_shop_id AND status = 'pending'
+ */
+async function loadOrders(shopId) {
+  try {
+    console.log('📦 开始加载订单数据，店铺ID:', shopId)
+    
+    // 查询待确认订单（pending状态）
+    const { data: ordersData, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('shop_id', shopId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+    
+    if (ordersError) {
+      console.error('❌ 订单查询错误:', ordersError)
+      throw ordersError
+    }
+    
+    console.log('✅ 订单数据加载成功:', ordersData?.length || 0, '条')
+    
+    if (!ordersData || ordersData.length === 0) {
+      orders.value = []
+      selectedOrder.value = null
+      return
+    }
+    
+    // 获取所有SKU ID用于关联查询
+    const skuIds = ordersData.map(o => o.sku_id).filter(Boolean)
+    
+    // 并行查询SKU信息和产品图片
+    let skuMap = {}
+    let photoMap = {}
+    
+    if (skuIds.length > 0) {
+      const [skuResult, photoResult] = await Promise.all([
+        supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds),
+        supabase.from('product_photos').select('sku_id, photo_url, photo_type').in('sku_id', skuIds).eq('is_active', true).order('sort_order', { ascending: true })
+      ])
+      
+      // 构建SKU Map
+      skuMap = skuResult.data
+        ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+        : {}
+      
+      // 构建产品实拍图 Map
+      if (photoResult.data) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        photoResult.data.forEach(p => {
+          if (!photoMap[p.sku_id]) {
+            photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+          }
+        })
+      }
+    }
+    
+    // 转换订单数据格式，与现有UI兼容
+    orders.value = ordersData.map(order => {
+      const skuInfo = skuMap[order.sku_id] || {}
+      return {
+        id: order.id,
+        etsy_order_id: order.etsy_order_id,
+        customer_name: order.customer_name || '未知客户',
+        customer_email: order.customer_email || '',
+        product_shape: order.product_shape || skuInfo.shape || '圆形',
+        product_color: order.product_color || skuInfo.color || '金色',
+        front_text: order.front_text || '',
+        back_text: order.back_text || '',
+        sku: skuInfo.sku_code || order.sku || '',
+        size: order.size || skuInfo.size || '大号',
+        quantity: order.quantity || 1,
+        engraving_sides: order.engraving_sides || '双面',
+        brand_name: order.brand_name || 'Marinella Nesso',
+        email_status: order.email_status || 'pending',
+        etsy_order_time: order.etsy_order_time,
+        created_at: order.created_at,
+        // 保留原始数据供后续使用
+        sku_mapping: skuInfo,
+        product_image: photoMap[order.sku_id] || null,
+        effect_image_url: order.effect_image_url
+      }
+    })
+    
+    // 默认选中第一个订单
+    if (orders.value.length > 0) {
+      selectedOrder.value = orders.value[0]
+    }
+    
+    console.log('✅ 订单数据处理完成')
+    
+  } catch (e) {
+    console.error('❌ 加载订单失败:', e)
+    ElMessage.error('加载订单数据失败')
+    orders.value = []
+  }
+}
+
+/**
+ * 从Supabase加载操作历史
+ * 从service_link_logs表查询该店铺的操作记录
+ */
+async function loadOperationLogs(shopId) {
+  try {
+    console.log('📝 开始加载操作历史，店铺ID:', shopId)
+    
+    const { data: logsData, error: logsError } = await supabase
+      .from('service_link_logs')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    
+    if (logsError) {
+      console.error('❌ 操作日志查询错误:', logsError)
+      // 日志加载失败不影响主流程
+      operationLogs.value = []
+      return
+    }
+    
+    console.log('✅ 操作历史加载成功:', logsData?.length || 0, '条')
+    
+    // 转换日志格式与现有UI兼容
+    operationLogs.value = (logsData || []).map(log => {
+      const createdAt = new Date(log.created_at)
+      const timeStr = `${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`
+      
+      // 根据action类型映射显示文本
+      const actionMap = {
+        'view': { type: 'view', label: '查看', text: '客服查看订单详情' },
+        'send_email': { type: 'email', label: '邮件', text: '客服发送确认邮件给客户' },
+        'confirm': { type: 'confirm', label: '确认', text: '客户确认设计' },
+        'request_modify': { type: 'modify', label: '修改', text: '客户请求修改设计' }
+      }
+      
+      const actionInfo = actionMap[log.action] || { type: 'order', label: '操作', text: log.action }
+      
+      return {
+        time: timeStr,
+        type: actionInfo.type,
+        label: actionInfo.label,
+        text: actionInfo.text,
+        raw: log // 保留原始数据
+      }
+    })
+    
+  } catch (e) {
+    console.error('❌ 加载操作历史失败:', e)
+    operationLogs.value = []
+  }
+}
+
+/**
+ * 重试加载
+ */
+function retryLoad() {
+  validateAndLoad()
 }
 
 // 选择订单
@@ -437,7 +693,10 @@ function toggleDesignPanel() {
 
 // 前往设计链接
 function goToDesignLink() {
-  router.push(`/design/${shopCode.value}?token=${token.value}`)
+  // 注意：service_token和design_token是不同的Token
+  // 如果shopInfo中有design_token，使用design_token，否则使用当前service_token
+  const designToken = shopInfo.value?.design_token || token.value
+  router.push(`/design/${shopCode.value}?token=${designToken}`)
 }
 
 // 处理设计下拉操作
@@ -459,6 +718,156 @@ function submitDesign() {
   customerFeedback.value = ''
 }
 
+/**
+ * 确认订单
+ * 1. 更新订单email_status为'confirmed'
+ * 2. 记录操作日志到service_link_logs表
+ * 3. 刷新订单列表
+ */
+async function confirmOrder() {
+  if (!selectedOrder.value || !shopInfo.value) {
+    ElMessage.warning('请先选择订单')
+    return
+  }
+
+  try {
+    confirming.value = true
+    console.log('✅ 开始确认订单:', selectedOrder.value.etsy_order_id)
+
+    // 1. 更新订单状态
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ email_status: 'confirmed' })
+      .eq('id', selectedOrder.value.id)
+
+    if (updateError) {
+      console.error('❌ 更新订单状态失败:', updateError)
+      throw updateError
+    }
+
+    // 2. 记录操作日志
+    const { error: logError } = await supabase
+      .from('service_link_logs')
+      .insert({
+        order_id: selectedOrder.value.id,
+        shop_id: shopInfo.value.id,
+        action_type: 'confirm',
+        action_detail: '客户确认订单',
+        created_at: new Date().toISOString()
+      })
+
+    if (logError) {
+      console.error('❌ 记录操作日志失败:', logError)
+      // 日志失败不影响主流程
+    }
+
+    console.log('✅ 订单确认成功')
+    ElMessage.success('订单已确认！')
+
+    // 3. 刷新订单列表
+    await loadOrders(shopInfo.value.id)
+    await loadOperationLogs(shopInfo.value.id)
+
+    // 4. 重新选中新订单列表的第一个（如果有的话）
+    if (newOrders.value.length > 0) {
+      selectedOrder.value = newOrders.value[0]
+    } else if (sentOrders.value.length > 0) {
+      selectedOrder.value = sentOrders.value[0]
+    } else {
+      selectedOrder.value = null
+    }
+
+  } catch (e) {
+    console.error('❌ 确认订单失败:', e)
+    ElMessage.error('确认失败，请重试')
+  } finally {
+    confirming.value = false
+  }
+}
+
+/**
+ * 显示修改对话框
+ */
+function showModifyDialog() {
+  modifyReason.value = ''
+  modifyDialogVisible.value = true
+}
+
+/**
+ * 请求修改
+ * 1. 弹出对话框让客服填写修改原因
+ * 2. 更新订单email_status为'modify'
+ * 3. 记录操作日志到service_link_logs表
+ * 4. 刷新订单列表
+ */
+async function requestModify() {
+  if (!selectedOrder.value || !shopInfo.value) {
+    ElMessage.warning('请先选择订单')
+    return
+  }
+
+  if (!modifyReason.value.trim()) {
+    ElMessage.warning('请填写修改原因')
+    return
+  }
+
+  try {
+    modifying.value = true
+    console.log('✏️ 开始请求修改:', selectedOrder.value.etsy_order_id, '原因:', modifyReason.value)
+
+    // 1. 更新订单状态
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ email_status: 'modify' })
+      .eq('id', selectedOrder.value.id)
+
+    if (updateError) {
+      console.error('❌ 更新订单状态失败:', updateError)
+      throw updateError
+    }
+
+    // 2. 记录操作日志（包含修改原因）
+    const { error: logError } = await supabase
+      .from('service_link_logs')
+      .insert({
+        order_id: selectedOrder.value.id,
+        shop_id: shopInfo.value.id,
+        action_type: 'request_modify',
+        action_detail: modifyReason.value.trim(),
+        created_at: new Date().toISOString()
+      })
+
+    if (logError) {
+      console.error('❌ 记录操作日志失败:', logError)
+      // 日志失败不影响主流程
+    }
+
+    console.log('✅ 修改请求已提交')
+    ElMessage.success('修改请求已提交！')
+    modifyDialogVisible.value = false
+    modifyReason.value = ''
+
+    // 3. 刷新订单列表
+    await loadOrders(shopInfo.value.id)
+    await loadOperationLogs(shopInfo.value.id)
+
+    // 4. 重新选中新订单列表的第一个（如果有的话）
+    if (newOrders.value.length > 0) {
+      selectedOrder.value = newOrders.value[0]
+    } else if (sentOrders.value.length > 0) {
+      selectedOrder.value = sentOrders.value[0]
+    } else {
+      selectedOrder.value = null
+    }
+
+  } catch (e) {
+    console.error('❌ 请求修改失败:', e)
+    ElMessage.error('提交失败，请重试')
+  } finally {
+    modifying.value = false
+  }
+}
+
 // 复制邮件
 function copyEmail() {
   const emailContent = `Hi ${selectedOrder.value.customer_name}!
@@ -477,7 +886,10 @@ function getLogIcon(type) {
   const icons = {
     email: '📧',
     design: '✍️',
-    order: '📝'
+    order: '📝',
+    view: '👁️',
+    confirm: '✅',
+    modify: '✏️'
   }
   return icons[type] || '📋'
 }
@@ -1788,5 +2200,164 @@ onMounted(() => {
 /* 状态标签颜色 */
 :deep(.el-tag) {
   border-radius: 4px;
+}
+
+/* ========== 加载和错误状态样式 ========== */
+
+/* 加载中遮罩 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-icon {
+  color: #3b82f6;
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* 错误页面 */
+.error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  margin-bottom: 20px;
+}
+
+.error-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.error-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.error-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 24px 0;
+}
+
+/* 操作按钮区域样式 */
+.action-buttons-section {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.action-buttons {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.confirm-btn {
+  width: 100%;
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  font-size: 14px !important;
+  padding: 12px 20px !important;
+  height: auto !important;
+}
+
+.confirm-btn:hover {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+}
+
+.modify-btn {
+  width: 100%;
+  background: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  font-size: 14px !important;
+  padding: 12px 20px !important;
+  height: auto !important;
+}
+
+.modify-btn:hover {
+  background: #ea580c !important;
+  border-color: #ea580c !important;
+}
+
+.action-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.action-hint.success {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.action-hint.warning {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+/* 修改对话框样式 */
+.modify-dialog-content {
+  padding: 8px 0;
+}
+
+.dialog-hint {
+  font-size: 14px;
+  color: #374151;
+  margin: 0 0 12px 0;
 }
 </style>

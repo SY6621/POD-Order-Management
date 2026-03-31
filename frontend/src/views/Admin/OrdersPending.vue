@@ -366,9 +366,10 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 复制
               </button>
-              <button @click="submitEmail" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-                ✅ 邮件确认
+              <button @click="submitEmail" :disabled="isSendingEmail" class="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
+                <svg v-if="!isSendingEmail" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                <svg v-else class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                {{ isSendingEmail ? '发送中...' : '✅ 邮件确认' }}
               </button>
             </div>
           </div>
@@ -445,13 +446,7 @@
                 <span class="text-[10px] text-slate-400">只读</span>
               </div>
               <div class="bg-slate-50 border border-slate-200 rounded p-2 h-24 overflow-y-auto whitespace-pre-wrap text-slate-700">
-Hi {{ selectedOrder?.customer_name?.split(' ')[0] || 'there' }}!
-
-Here is the preview of your custom pet tag (Version 1).
-Please check the name, phone number and layout.
-
-Best,
-Customer Support Team
+                {{ modifyLastEmail || '暂无邮件记录' }}
               </div>
             </div>
 
@@ -469,12 +464,10 @@ Customer Support Team
                 <span class="text-slate-500 font-medium flex items-center gap-1">
                   <span>💬</span> 客户修改要求
                 </span>
-                <span class="text-[10px] text-green-500">StorePortal</span>
+                <span class="text-[10px] text-green-500">ServiceLink</span>
               </div>
               <div class="bg-slate-50 border border-slate-200 rounded p-2 min-h-[60px] text-slate-700 whitespace-pre-wrap">
-1. 正面文字由 "Kyla" 改为 "Luna"
-2. 背面电话替换为 "+61 4xx xxx xxx"
-3. 其它保持不变
+                {{ modifyCustomerRequest || '暂无客户修改要求记录' }}
               </div>
             </div>
 
@@ -514,20 +507,23 @@ Customer Support Team
             <div class="border border-slate-200 rounded-lg">
               <button class="w-full px-2 py-1.5 flex items-center justify-between text-[11px] text-slate-500" @click="showHistory = !showHistory">
                 <span class="flex items-center gap-1">
-                  <span>📜</span> 历史记录
+                  <span>📜</span> 历史记录 ({{ modifyOrderLogs.length }})
                 </span>
                 <svg :class="['w-3 h-3 transition-transform', showHistory ? 'rotate-180' : '']" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
               </button>
               <div v-if="showHistory" class="px-2 pb-2 max-h-32 overflow-y-auto text-[10px] text-slate-600 space-y-1">
-                <div>2026-03-24 10:15 · 系统邮件 V1</div>
-                <div>2026-03-24 23:01 · 客户修改：请把名字改成 LUNA</div>
+                <div v-for="log in modifyOrderLogs" :key="log.id" class="py-0.5 border-b border-slate-100 last:border-0">
+                  <span class="text-slate-400">{{ formatLogTime(log.sent_at) }}</span> · 
+                  <span class="text-slate-700">{{ log.email_type === 'first_confirm' ? '首封确认' : log.email_type === 'modification' ? '修改确认' : '追评邮件' }}</span>
+                </div>
+                <div v-if="modifyOrderLogs.length === 0" class="text-slate-400 text-center py-1">暂无历史记录</div>
               </div>
             </div>
 
             <!-- 操作按钮 -->
             <div class="flex gap-2 pt-2">
-              <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm">保存草稿</button>
-              <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm">标记已处理</button>
+              <button @click="saveModifyDraft" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm transition-colors">保存草稿</button>
+              <button @click="markModifyHandled" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium text-[11px] shadow-sm transition-colors">标记已处理</button>
             </div>
           </div>
         </div>
@@ -567,6 +563,8 @@ Customer Support Team
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '../../stores/orderStore'
+import { sendConfirmationEmail } from '../../utils/api.js'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const store = useOrderStore()
@@ -590,6 +588,9 @@ const settingsSaved = ref(false) // 设置保存状态
 const showHistory = ref(false) // 客户修改Tab：历史记录折叠状态
 const replyContent = ref('') // 客户修改Tab：邮件/信息回复内容
 const replySenderName = ref('Customer Support Team') // 客户修改Tab：回复邮件落款人
+const modifyOrderLogs = ref([]) // 客户修改Tab：订单的邮件历史记录
+const modifyCustomerRequest = ref('') // 客户修改Tab：客户的修改要求
+const modifyLastEmail = ref('') // 客户修改Tab：上次发送的邮件内容
 
 // 邮件风格控制（新增）
 const emailTone = ref('casual') // 语气：formal(正式) / casual(随和) / lively(活泼)
@@ -615,8 +616,9 @@ const greetingOptions = [
   { value: 'hey', label: 'Hey', desc: '轻松亲近', icon: '✌️' }
 ]
 
-// 导入邮件模板
-import emailTemplates from '../../config/email-templates.json'
+// 邮件模板数据（从API加载）
+const emailTemplatesData = ref({})
+const isTemplatesLoading = ref(false)
 
 // 邮件撰写功能增强
 const emailType = ref('first_confirm') // 邮件类型：first_confirm | modification | follow_up
@@ -631,10 +633,33 @@ const emailTypeOptions = [
   { value: 'follow_up', label: '追评邮件', desc: '发货后的售后跟进', icon: '⭐' }
 ]
 
-// 当前邮件类型的模板列表
+// 当前邮件类型的模板列表（从API加载的数据）
 const currentTemplates = computed(() => {
-  return emailTemplates[emailType.value]?.templates || []
+  return emailTemplatesData.value[emailType.value] || []
 })
+
+// 加载邮件模板（从后端API）
+const loadEmailTemplates = async () => {
+  isTemplatesLoading.value = true
+  try {
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+    const response = await fetch(`${apiBase}/api/email-templates`)
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      emailTemplatesData.value = result.data
+      console.log('✅ 邮件模板加载成功:', Object.keys(result.data).map(k => `${k}(${result.data[k].length}个)`).join(', '))
+    } else {
+      console.error('❌ 邮件模板加载失败:', result.message)
+      emailTemplatesData.value = {}
+    }
+  } catch (e) {
+    console.error('❌ 邮件模板加载异常:', e.message)
+    emailTemplatesData.value = {}
+  } finally {
+    isTemplatesLoading.value = false
+  }
+}
 
 // 预设落款人选项
 const senderOptions = [
@@ -647,6 +672,8 @@ const senderOptions = [
 
 onMounted(async () => {
   await store.getPendingOrders()
+  // 加载邮件模板
+  await loadEmailTemplates()
   // 调试输出
   console.log('🔍 OrdersPending 页面数据:', {
     storeOrders: store.orders.length,
@@ -706,6 +733,18 @@ const saveEmailSettings = () => {
   }
 }
 
+// 格式化日志时间
+const formatLogTime = (timestamp) => {
+  if (!timestamp) return '-'
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // 监听 Tab 切换，自动选择第一个订单
 watch(orderTab, (newTab) => {
   if (newTab === 'new' && filteredOrders.value.length > 0) {
@@ -734,6 +773,13 @@ watch(orderTab, (newTab) => {
       selectOrder(firstPendingOrder)
       console.log('📌 自动选择待创建订单:', firstPendingOrder.etsy_order_id)
     }
+  } else if (newTab === 'modify' && filteredOrders.value.length > 0) {
+    // 切换到客户修改 Tab 时，自动选择第一个订单
+    const firstModifyOrder = filteredOrders.value[0]
+    if (firstModifyOrder) {
+      selectOrder(firstModifyOrder)
+      console.log('📌 自动选择客户修改订单:', firstModifyOrder.etsy_order_id)
+    }
   }
 })
 
@@ -755,12 +801,15 @@ const filteredOrders = computed(() => {
   // 新订单：无效果图的 pending 订单
   // 邮件撰写：有效果图的 pending 订单（等待发送邮件）
   // 待创建：有效果图且已发送邮件的 pending 订单
+  // 客户修改：email_status === 'modify' 的订单
   if (orderTab.value === 'new') {
     orders = orders.filter(o => o.status === 'pending' && !o.effect_image_url)
   } else if (orderTab.value === 'email') {
     orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && !o.email_sent)
   } else if (orderTab.value === 'pending') {
-    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent)
+    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status !== 'modify')
+  } else if (orderTab.value === 'modify') {
+    orders = orders.filter(o => o.status === 'pending' && o.email_status === 'modify')
   }
   
   return orders
@@ -798,14 +847,27 @@ const emailOrdersCount = computed(() => {
   return orders.length
 })
 const modifyCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status === 'needs_change')
+  // 客户修改Tab：email_status === 'modify' 的订单
+  let orders = allOrders.value.filter(o => o.status === 'pending' && o.email_status === 'modify')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
+  console.log('🔧 客户修改Tab筛选:', {
+    总数: allOrders.value.length,
+    满足条件: orders.length,
+    详情: allOrders.value.filter(o => o.email_status === 'modify').map(o => ({
+      id: o.etsy_order_id,
+      status: o.status,
+      email_status: o.email_status
+    }))
+  })
   return orders.length
 })
 const pendingCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent)
+  // 待创建Tab：有效果图且已发送邮件，但不是 modify 状态的订单
+  let orders = allOrders.value.filter(o => 
+    o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status !== 'modify'
+  )
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
@@ -833,6 +895,11 @@ const selectOrder = async (order) => {
     } catch (e) {
       console.warn('加载邮件内容失败:', e)
     }
+  }
+  
+  // 如果在客户修改Tab，加载邮件记录和客户修改要求
+  if (orderTab.value === 'modify') {
+    await loadModifyOrderData(order)
   }
   
   if (designerFrame.value && designerFrame.value.contentWindow) {
@@ -1130,15 +1197,21 @@ const copyEmail = async () => {
   }
 }
 
+// 邮件发送loading状态
+const isSendingEmail = ref(false)
+
 const submitEmail = async () => {
   if (!emailContentChinese.value && !emailContentEnglish.value) {
-    alert('请先点击「生成邮件」')
+    ElMessage.warning('请先点击「生成邮件」')
     return
   }
   if (!selectedOrder.value) {
-    alert('请先选择订单')
+    ElMessage.warning('请先选择订单')
     return
   }
+  
+  isSendingEmail.value = true
+  
   try {
     // 合并中英文内容
     const fullContent = `=== 中文版本 Chinese Version ===\n\n${emailContentChinese.value}\n\n=== English Version ===\n\n${emailContentEnglish.value}`
@@ -1161,33 +1234,67 @@ const submitEmail = async () => {
       confirmation_deadline: emailType.value === 'first_confirm' ? confirmationDeadline.value : null
     })
     
-    // 2. 更新订单状态为已发送邮件
+    // 2. 调用后端API发送邮件
+    let emailSendSuccess = false
+    let emailSendError = null
+    
+    try {
+      // 从效果图URL中提取文件名作为effect_image_path
+      const effectImageUrl = selectedOrder.value.effect_image_url || ''
+      const effectImagePath = effectImageUrl.split('/').pop() || ''
+      
+      // 构建产品信息
+      const productInfo = `${selectedOrder.value.sku_mapping?.product_name || 'Custom Product'} (${selectedOrder.value.sku_mapping?.sku_code || selectedOrder.value.sku_id || 'N/A'})`
+      
+      await sendConfirmationEmail({
+        order_id: selectedOrder.value.id,
+        to_email: selectedOrder.value.customer_email || '',
+        customer_name: selectedOrder.value.customer_name || '',
+        product_info: productInfo,
+        effect_image_path: effectImagePath
+      })
+      
+      emailSendSuccess = true
+      ElMessage.success('邮件已发送至客户邮箱')
+    } catch (sendError) {
+      emailSendError = sendError.message
+      // 发送失败不阻断主流程，继续执行后续操作
+      ElMessage.warning(`自动发送邮件失败: ${sendError.message}，请使用「复制内容」手动发送`)
+    }
+    
+    // 3. 更新订单状态为已发送邮件
     await store.updateEmailSentStatus(selectedOrder.value.id, true)
     
-    // 3. 设置已确认的邮件内容（显示在右侧“确认邮件”栏）
+    // 4. 设置已确认的邮件内容（显示在右侧"确认邮件"栏）
     confirmedEmailContent.value = emailContentEnglish.value
     
-    // 4. 清空邮件内容
+    // 5. 清空邮件内容
     emailContentChinese.value = ''
     emailContentEnglish.value = ''
     emailContent.value = ''
     customerNote.value = ''
     
-    // 5. 刷新订单列表
+    // 6. 刷新订单列表
     await store.getPendingOrders()
     
-    // 6. 跳转到待创建Tab，并选中当前订单
+    // 7. 跳转到待创建Tab，并选中当前订单
     orderTab.value = 'pending'
     const updatedOrder = store.orders.find(o => o.id === selectedOrder.value.id)
     if (updatedOrder) {
       selectedOrder.value = updatedOrder
     }
-    // 7. 设置待创建Tab的邮件预览内容（流转时直接使用已保存的内容）
+    // 8. 设置待创建Tab的邮件预览内容（流转时直接使用已保存的内容）
     pendingEmailContent.value = fullContent
     
-    alert('✅ 邮件已保存，订单已流转到待创建状态！')
+    if (emailSendSuccess) {
+      ElMessage.success('✅ 邮件已保存并发送，订单已流转到待创建状态！')
+    } else {
+      ElMessage.info('✅ 邮件记录已保存，订单已流转到待创建状态。邮件发送失败，请手动复制发送。')
+    }
   } catch (e) {
-    alert('❌ 邮件保存失败：' + e.message)
+    ElMessage.error('❌ 邮件保存失败：' + e.message)
+  } finally {
+    isSendingEmail.value = false
   }
 }
 
@@ -1225,7 +1332,7 @@ const copyShareLink = async () => {
 // 复制邮件内容（用于客服粘贴到Etsy）
 const copyEmailContent = async () => {
   if (!selectedOrder.value) {
-    alert('请先选择订单')
+    ElMessage.warning('请先选择订单')
     return
   }
   try {
@@ -1233,12 +1340,12 @@ const copyEmailContent = async () => {
     const emailLog = await store.getEmailLogByOrderId(selectedOrder.value.id)
     if (emailLog && emailLog.content) {
       await navigator.clipboard.writeText(emailLog.content)
-      alert('✅ 邮件内容已复制！\n客服可粘贴到Etsy后台发送给客户')
+      ElMessage.success('✅ 邮件内容已复制！客服可粘贴到Etsy后台发送给客户')
     } else {
-      alert('暂无邮件内容，请先生成邮件')
+      ElMessage.warning('暂无邮件内容，请先生成邮件')
     }
   } catch (e) {
-    alert('复制失败：' + e.message)
+    ElMessage.error('复制失败：' + e.message)
   }
 }
 
@@ -1322,6 +1429,139 @@ const onModifyDesignerLoad = () => {
       frontText: selectedOrder.value.front_text,
       backText, phone
     })
+  }
+}
+
+// 客户修改Tab：加载订单相关数据（邮件记录 + 客户修改要求）
+const loadModifyOrderData = async (order) => {
+  if (!order) return
+  
+  try {
+    // 1. 加载邮件历史记录
+    const emailLogs = await store.getOrderEmailLogs(order.id)
+    modifyOrderLogs.value = emailLogs || []
+    
+    // 2. 获取最新邮件内容
+    if (emailLogs && emailLogs.length > 0) {
+      modifyLastEmail.value = emailLogs[0].content || ''
+    }
+    
+    // 3. 从 Supabase 加载 service_link_logs 获取客户修改要求
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/service_link_logs?order_id=eq.${order.id}&action=eq.request_modify&select=*&order=created_at.desc`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      }
+    )
+    
+    if (response.ok) {
+      const logs = await response.json()
+      if (logs && logs.length > 0) {
+        // 从 action_details JSONB 字段提取修改原因
+        const latestLog = logs[0]
+        modifyCustomerRequest.value = latestLog.action_details?.reason 
+          || latestLog.action_details?.feedback 
+          || '客户请求修改，但未填写具体原因'
+      } else {
+        modifyCustomerRequest.value = '暂无客户修改要求记录'
+      }
+    }
+    
+    console.log('📋 客户修改Tab数据加载完成:', {
+      emailLogs: emailLogs?.length || 0,
+      lastEmail: modifyLastEmail.value ? '已加载' : '无',
+      customerRequest: modifyCustomerRequest.value
+    })
+  } catch (e) {
+    console.error('❌ 加载客户修改Tab数据失败:', e)
+  }
+}
+
+// 客户修改Tab：保存草稿
+const saveModifyDraft = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  
+  try {
+    // 保存回复邮件作为新的邮件记录
+    if (replyContent.value.trim()) {
+      await store.saveEmailLog({
+        order_id: selectedOrder.value.id,
+        email_type: 'modification',
+        subject: `【修改确认】Your Custom ${selectedOrder.value.sku_mapping?.product_name || 'Product'} - ${selectedOrder.value.etsy_order_id}`,
+        content: replyContent.value,
+        effect_image_url: selectedOrder.value.effect_image_url,
+        sender_name: replySenderName.value
+      })
+      console.log('✅ 草稿已保存')
+      alert('✅ 草稿已保存')
+    } else {
+      alert('请先填写回复内容')
+    }
+  } catch (e) {
+    console.error('❌ 保存草稿失败:', e)
+    alert('❌ 保存失败：' + e.message)
+  }
+}
+
+// 客户修改Tab：标记已处理（将订单流转回待创建Tab）
+const markModifyHandled = async () => {
+  if (!selectedOrder.value) {
+    alert('请先选择订单')
+    return
+  }
+  
+  if (!confirm(`确认将订单 ${selectedOrder.value.etsy_order_id} 标记为已处理？\n\n订单将流转到「待创建」Tab，等待发送给客户确认。`)) return
+  
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    
+    // 更新订单的 email_status 为空（恢复到待创建状态）
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/orders?id=eq.${selectedOrder.value.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          email_status: null,
+          updated_at: new Date().toISOString()
+        })
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error('更新订单状态失败')
+    }
+    
+    // 刷新订单列表
+    await store.getPendingOrders()
+    
+    // 清空选中状态
+    selectedOrder.value = null
+    modifyOrderLogs.value = []
+    modifyCustomerRequest.value = ''
+    modifyLastEmail.value = ''
+    replyContent.value = ''
+    
+    alert('✅ 订单已标记为已处理，已流转到「待创建」Tab！')
+    console.log('✅ 订单修改已处理完成')
+  } catch (e) {
+    console.error('❌ 标记处理失败:', e)
+    alert('❌ 操作失败：' + e.message)
   }
 }
 

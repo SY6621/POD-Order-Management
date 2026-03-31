@@ -60,7 +60,7 @@
                     class="w-16 h-16 rounded-lg border border-slate-200"
                   />
                 </div>
-                <span class="px-3 py-1.5 bg-orange-100 text-orange-700 text-sm font-bold rounded-full">待发货</span>
+                <span class="px-3 py-1.5 bg-green-100 text-green-700 text-sm font-bold rounded-full">已完成</span>
               </div>
             </div>
           </div>
@@ -193,23 +193,23 @@
         <!-- 确认按钮 -->
         <button 
           @click="confirmPickup"
-          :disabled="!formattedOrder || confirming || !formattedOrder.hasLogistics"
+          :disabled="!formattedOrder || confirming || !formattedOrder.canConfirm"
           class="w-full py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center gap-2"
-          :class="formattedOrder && !confirming && formattedOrder.hasLogistics
+          :class="formattedOrder && !confirming && formattedOrder.canConfirm
             ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-200'
             : 'bg-slate-100 text-slate-400 cursor-not-allowed'"
         >
           <svg v-if="!confirming" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
           <svg v-else class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          {{ confirming ? '确认中...' : (formattedOrder?.hasLogistics ? '确认已揽件，发货' : '请先补充物流信息') }}
+          {{ confirming ? '确认中...' : '确认已揽件，发货' }}
         </button>
 
         <!-- 底部说明 -->
         <div class="mt-4 text-center">
           <p class="text-xs text-slate-400">
-            {{ formattedOrder?.hasLogistics 
+            {{ formattedOrder?.canConfirm 
               ? '请核对以上信息无误后点击确认，订单状态将更新为「已发货」' 
-              : '该订单缺少物流信息，请先在「物流下单」页面创建物流订单' }}
+              : '该订单当前状态无法进行揽件确认' }}
           </p>
         </div>
       </div>
@@ -242,9 +242,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useOrderStore } from '../../stores/orderStore'
-
-const store = useOrderStore()
+import { ElMessage } from 'element-plus'
+import supabase from '../../utils/supabase'
 
 // ── 状态 ──
 const searchQuery = ref('')
@@ -254,47 +253,38 @@ const confirming = ref(false)
 const showSuccess = ref(false)
 const errorMsg = ref('')
 const currentOrder = ref(null)
+const currentLogistics = ref(null)
 
 // ── 计算属性：格式化订单数据 ──
 const formattedOrder = computed(() => {
   if (!currentOrder.value) return null
   
   const order = currentOrder.value
-  
-  // 优先使用关联表数据，如果没有则使用订单表直接字段
-  const logistics = order.logistics || {}
+  const logistics = currentLogistics.value || {}
   const skuMapping = order.sku_mapping || {}
-  const productionDocs = order.production_documents || {}
   
-  // 解析实拍图 URLs（JSON 数组格式）
+  // 获取产品实拍图 URL
   let productPhoto = null
-  if (productionDocs.real_photo_urls) {
-    try {
-      const photos = JSON.parse(productionDocs.real_photo_urls)
-      productPhoto = photos && photos.length > 0 ? photos[0] : null
-    } catch (e) {
-      productPhoto = productionDocs.real_photo_urls
-    }
+  if (order.product_photo_url) {
+    productPhoto = order.product_photo_url
   }
   
-  // 获取效果图 URL（优先使用关联表，否则使用订单表字段）
-  const effectImage = productionDocs.effect_jpg_url 
-    || order.effect_image_url 
-    || order.effect_image 
-    || null
+  // 获取效果图 URL
+  const effectImage = order.effect_image_url || null
   
-  // 获取收件人信息（优先使用 logistics 表，否则使用订单表字段）
-  const buyerName = logistics.recipient_name 
-    || order.customer_name 
-    || '-'
+  // 获取收件人信息（优先使用 logistics 表）
+  const buyerName = logistics.recipient_name || order.customer_name || '-'
   
-  // 判断是否有完整的物流信息
-  const hasLogistics = logistics && logistics.recipient_name
+  // 判断是否有完整的物流信息（有收件人姓名即认为有物流信息）
+  const hasLogistics = !!(logistics && logistics.recipient_name)
+  
+  // 判断订单是否可以揽件确认（必须是 completed 状态）
+  const canConfirm = order.status === 'completed'
   
   return {
     id: order.id,
     etsy_order_id: order.etsy_order_id,
-    // 收件人信息（优先从 logistics 表获取，否则使用订单表字段）
+    // 收件人信息（优先从 logistics 表获取）
     buyer_name: buyerName,
     buyer_phone: logistics.phone || order.buyer_phone || '-',
     shipping_country: logistics.country || order.shipping_country || '-',
@@ -302,10 +292,9 @@ const formattedOrder = computed(() => {
     shipping_city: logistics.city || order.shipping_city || '-',
     shipping_zip: logistics.postal_code || order.shipping_zip || '-',
     shipping_address: logistics.street_address || order.shipping_address || '-',
-    // 产品信息（优先从 sku_mapping 获取，否则使用订单表字段）
-    product_name: skuMapping.product_name 
-      || (order.product_shape ? `宠物ID牌 - ${order.product_shape}` : '宠物ID牌'),
-    sku: skuMapping.sku_code || order.matched_sku_id || order.sku_id || '-',
+    // 产品信息（优先从 sku_mapping 获取）
+    product_name: skuMapping.product_name || '宠物ID牌',
+    sku: skuMapping.sku || order.sku || '-',
     custom_text: order.front_text || '-',
     quantity: order.quantity || 1,
     // 图片信息
@@ -314,7 +303,9 @@ const formattedOrder = computed(() => {
     // 状态
     status: order.status,
     // 标记是否有物流信息
-    hasLogistics
+    hasLogistics,
+    // 标记是否可以确认揽件
+    canConfirm
   }
 })
 
@@ -337,44 +328,177 @@ const pickupQrCodeUrl = computed(() => {
 
 // ── 方法 ──
 async function searchOrder() {
-  if (!searchQuery.value.trim()) return
+  if (!searchQuery.value.trim()) {
+    ElMessage.warning('请输入订单号或物流单号')
+    return
+  }
   
   searching.value = true
   searched.value = true
   currentOrder.value = null
+  currentLogistics.value = null
   errorMsg.value = ''
   
+  const query = searchQuery.value.trim()
+  
   try {
-    // 调用 Store 方法搜索订单
-    const order = await store.searchOrderById(searchQuery.value.trim())
+    // 1. 先尝试按订单号搜索（etsy_order_id 或 id）
+    let { data: orderData, error: orderError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        sku_mapping (*)
+      `)
+      .ilike('etsy_order_id', `%${query}%`)
+      .limit(1)
     
-    if (order) {
+    if (orderError) throw orderError
+    
+    // 2. 如果没找到，尝试用 id 精确搜索
+    if (!orderData || orderData.length === 0) {
+      const { data: dataById, error: idError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          sku_mapping (*)
+        `)
+        .eq('id', query)
+        .single()
+      
+      if (idError && idError.code !== 'PGRST116') throw idError
+      if (dataById) orderData = [dataById]
+    }
+    
+    // 3. 如果还是没找到，尝试按物流单号搜索
+    if (!orderData || orderData.length === 0) {
+      const { data: logisticsData, error: logisticsError } = await supabase
+        .from('logistics')
+        .select('order_id')
+        .ilike('tracking_number', `%${query}%`)
+        .limit(1)
+      
+      if (logisticsError) throw logisticsError
+      
+      if (logisticsData && logisticsData.length > 0) {
+        const { data: orderByTracking, error: trackingError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            sku_mapping (*)
+          `)
+          .eq('id', logisticsData[0].order_id)
+          .single()
+        
+        if (trackingError && trackingError.code !== 'PGRST116') throw trackingError
+        if (orderByTracking) orderData = [orderByTracking]
+      }
+    }
+    
+    // 4. 处理搜索结果
+    if (orderData && orderData.length > 0) {
+      const order = orderData[0]
+      
+      // 检查订单状态（只有 completed 状态才能揽件确认）
+      if (order.status !== 'completed') {
+        errorMsg.value = `订单状态为「${getStatusText(order.status)}」，只有「已完成」状态的订单才能进行揽件确认`
+        searching.value = false
+        return
+      }
+      
       currentOrder.value = order
+      
+      // 5. 加载物流信息
+      await loadLogisticsInfo(order.id)
+      
+      ElMessage.success('订单查找成功')
     } else {
-      errorMsg.value = '未找到该订单，请检查订单号是否正确'
+      errorMsg.value = '未找到该订单，请检查订单号或物流单号是否正确'
     }
   } catch (e) {
     errorMsg.value = '搜索失败，请重试'
     console.error('搜索订单失败:', e)
+    ElMessage.error('搜索失败：' + (e.message || '未知错误'))
   } finally {
     searching.value = false
   }
 }
 
+// 获取状态显示文本
+function getStatusText(status) {
+  const statusMap = {
+    'new': '新订单',
+    'pending': '待确认',
+    'confirmed': '已确认',
+    'producing': '生产中',
+    'completed': '已完成',
+    'shipped': '已发货',
+    'delivered': '已送达',
+    'cancelled': '已取消'
+  }
+  return statusMap[status] || status
+}
+
+// 加载物流信息
+async function loadLogisticsInfo(orderId) {
+  try {
+    const { data, error } = await supabase
+      .from('logistics')
+      .select('*')
+      .eq('order_id', orderId)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error('加载物流信息失败:', error)
+      return
+    }
+    
+    currentLogistics.value = data || null
+  } catch (e) {
+    console.error('加载物流信息异常:', e)
+    currentLogistics.value = null
+  }
+}
+
 async function confirmPickup() {
-  if (!currentOrder.value) return
+  if (!currentOrder.value) {
+    ElMessage.warning('请先搜索订单')
+    return
+  }
+  
+  // 检查订单状态
+  if (currentOrder.value.status !== 'completed') {
+    ElMessage.error(`订单状态为「${getStatusText(currentOrder.value.status)}」，无法进行揽件确认`)
+    return
+  }
   
   confirming.value = true
   errorMsg.value = ''
   
   try {
-    // 调用 Store 方法更新订单状态为已发货
-    await store.updateOrderStatus(currentOrder.value.id, 'shipped')
+    // 更新订单状态为 delivered（已送达/已发货）
+    const { data, error } = await supabase
+      .from('orders')
+      .update({
+        status: 'delivered',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentOrder.value.id)
+      .select()
     
+    if (error) throw error
+    
+    // 更新本地订单状态
+    if (data && data.length > 0) {
+      currentOrder.value = { ...currentOrder.value, ...data[0] }
+    }
+    
+    ElMessage.success('揽件确认成功')
     showSuccess.value = true
   } catch (e) {
     errorMsg.value = '确认失败，请重试: ' + (e.message || '未知错误')
     console.error('确认发货失败:', e)
+    ElMessage.error('确认失败：' + (e.message || '未知错误'))
   } finally {
     confirming.value = false
   }
@@ -383,6 +507,7 @@ async function confirmPickup() {
 function resetPage() {
   searchQuery.value = ''
   currentOrder.value = null
+  currentLogistics.value = null
   searched.value = false
   showSuccess.value = false
   errorMsg.value = ''

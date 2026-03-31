@@ -18,7 +18,7 @@ export const useShopStore = defineStore('shop', () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('shops')
-        .select('id, name, code, region, status')
+        .select('id, name, code, region, status, flag_emoji')
         .eq('status', 'active')
         .order('name')
       
@@ -48,15 +48,8 @@ export const useShopStore = defineStore('shop', () => {
         return { success: false, message: '店铺不存在' }
       }
 
-      // 2. 验证密码（简单明文比较，生产环境应使用 bcrypt）
-      // 注意：实际应从环境变量或配置中读取密码
-      const validPasswords = {
-        'us': 'us123',
-        'eu': 'eu123',
-        'asia': 'asia123'
-      }
-      
-      if (password !== validPasswords[shopCode]) {
+      // 2. 验证密码（与数据库中的password_hash字段比较）
+      if (password !== shop.password_hash) {
         return { success: false, message: '密码错误' }
       }
 
@@ -65,7 +58,8 @@ export const useShopStore = defineStore('shop', () => {
         id: shop.id,
         name: shop.name,
         code: shop.code,
-        region: shop.region
+        region: shop.region,
+        flag_emoji: shop.flag_emoji
       }
       isAuthenticated.value = true
       
@@ -73,6 +67,7 @@ export const useShopStore = defineStore('shop', () => {
       localStorage.setItem('shop_auth', JSON.stringify({
         shopId: shop.id,
         shopCode: shop.code,
+        shopName: shop.name,
         timestamp: Date.now()
       }))
 
@@ -109,7 +104,7 @@ export const useShopStore = defineStore('shop', () => {
       // 获取店铺信息
       const { data: shop, error } = await supabase
         .from('shops')
-        .select('id, name, code, region')
+        .select('id, name, code, region, flag_emoji')
         .eq('id', authData.shopId)
         .single()
       
@@ -136,7 +131,7 @@ export const useShopStore = defineStore('shop', () => {
   }
 
   // 获取当前店铺的订单
-  const fetchShopOrders = async (status = null) => {
+  const fetchShopOrders = async (filters = {}) => {
     if (!currentShop.value) return []
     
     try {
@@ -146,8 +141,14 @@ export const useShopStore = defineStore('shop', () => {
         .eq('shop_id', currentShop.value.id)
         .order('created_at', { ascending: false })
       
-      if (status) {
-        query = query.eq('status', status)
+      // 状态筛选
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status)
+      }
+      
+      // 搜索功能
+      if (filters.search) {
+        query = query.or(`order_number.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%`)
       }
 
       const { data, error } = await query
@@ -156,6 +157,33 @@ export const useShopStore = defineStore('shop', () => {
       return data || []
     } catch (err) {
       console.error('获取店铺订单失败:', err)
+      return []
+    }
+  }
+
+  // 获取店铺的效果图订单（有effect_image_url的订单）
+  const fetchShopEffectOrders = async (search = '') => {
+    if (!currentShop.value) return []
+    
+    try {
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .eq('shop_id', currentShop.value.id)
+        .not('effect_image_url', 'is', null)
+        .order('created_at', { ascending: false })
+      
+      // 搜索功能
+      if (search) {
+        query = query.or(`order_number.ilike.%${search}%,customer_name.ilike.%${search}%`)
+      }
+
+      const { data, error } = await query
+      
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      console.error('获取店铺效果图订单失败:', err)
       return []
     }
   }
@@ -185,6 +213,7 @@ export const useShopStore = defineStore('shop', () => {
     checkAuth,
     logout,
     fetchShopOrders,
+    fetchShopEffectOrders,
     logAccess
   }
 })

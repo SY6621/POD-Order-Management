@@ -51,11 +51,14 @@
                     {{ order.product_shape }} · {{ order.product_color }} · {{ order.product_size || '大号' }}
                   </div>
                   <div class="task-customer">{{ order.customer_name }}</div>
+                  <div v-if="order.logistics?.tracking_number" class="task-logistics">
+                    物流: {{ order.logistics.tracking_number }}
+                  </div>
                 </div>
               </div>
               <!-- 操作按钮 -->
               <div class="task-actions">
-                <button 
+                <button
                   v-if="order.production_pdf_url"
                   class="btn-download"
                   @click="downloadPdf(order)"
@@ -107,10 +110,13 @@
                     {{ order.product_shape }} · {{ order.product_color }} · {{ order.product_size || '大号' }}
                   </div>
                   <div class="task-customer">{{ order.customer_name }}</div>
+                  <div v-if="order.logistics?.tracking_number" class="task-logistics">
+                    物流: {{ order.logistics.tracking_number }}
+                  </div>
                 </div>
               </div>
               <div class="task-actions">
-                <button 
+                <button
                   v-if="order.production_pdf_url"
                   class="btn-download"
                   @click="downloadPdf(order)"
@@ -160,10 +166,13 @@
                   </div>
                   <div class="task-customer">{{ order.customer_name }}</div>
                   <div class="task-date">{{ formatDate(order.created_at) }}</div>
+                  <div v-if="order.logistics?.tracking_number" class="task-logistics">
+                    物流: {{ order.logistics.tracking_number }}
+                  </div>
                 </div>
               </div>
               <div class="task-actions">
-                <button 
+                <button
                   v-if="order.production_pdf_url"
                   class="btn-download"
                   @click="downloadPdf(order)"
@@ -196,6 +205,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import supabase from '../../utils/supabase'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -250,14 +260,40 @@ const totalCount = computed(() => orders.value.length)
 async function loadOrders() {
   loading.value = true
   try {
+    // 1. 查询订单
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, sku_mappings:sku_mapping(*)`)
+      .select(`*, sku_mapping(*)`)
       .in('status', ['confirmed', 'producing'])
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    orders.value = data || []
+
+    // 2. 如果有订单，查询物流信息
+    if (data && data.length > 0) {
+      const orderIds = data.map(o => o.id)
+      const { data: logisticsData } = await supabase
+        .from('logistics')
+        .select('order_id, tracking_number, carrier')
+        .in('order_id', orderIds)
+
+      // 构建物流Map
+      const logisticsMap = {}
+      if (logisticsData) {
+        logisticsData.forEach(l => {
+          logisticsMap[l.order_id] = l
+        })
+      }
+
+      // 组装数据
+      orders.value = data.map(order => ({
+        ...order,
+        logistics: logisticsMap[order.id] || null
+      }))
+    } else {
+      orders.value = data || []
+    }
+
     console.log(`✅ 生产中订单: ${orders.value.length} 条`)
   } catch (e) {
     console.error('❌ 加载失败:', e)
@@ -282,12 +318,12 @@ async function generatePdf(order) {
     if (data.success) {
       const idx = orders.value.findIndex(o => o.id === order.id)
       if (idx !== -1) orders.value[idx].production_pdf_url = data.production_pdf_url
-      alert('✅ 生产文档生成成功！')
+      ElMessage.success('生产文档生成成功！')
     } else {
-      alert('❌ 生成失败: ' + (data.detail || data.message || '未知错误'))
+      ElMessage.error('生成失败: ' + (data.detail || data.message || '未知错误'))
     }
   } catch (e) {
-    alert('❌ 网络错误: ' + e.message)
+    ElMessage.error('网络错误: ' + e.message)
   } finally {
     generatingId.value = null
   }
@@ -303,21 +339,30 @@ function downloadPdf(order) {
 }
 
 async function confirmComplete(order) {
-  if (!confirm(`确认订单 #${order.etsy_order_id} 已完成生产？`)) return
-  
   try {
+    await ElMessageBox.confirm(
+      `确认订单 #${order.etsy_order_id} 已完成生产？`,
+      '生产完成确认',
+      { confirmButtonText: '确认完成', cancelButtonText: '取消', type: 'success' }
+    )
+  } catch {
+    return // 用户取消
+  }
+
+  try {
+    const now = new Date().toISOString()
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .update({ status: 'completed', updated_at: now, completed_at: now })
       .eq('id', order.id)
 
     if (error) throw error
-    
+
     // 从列表移除
     orders.value = orders.value.filter(o => o.id !== order.id)
-    alert('✅ 已标记为完成！')
+    ElMessage.success('订单已标记为完成！')
   } catch (e) {
-    alert('❌ 操作失败: ' + e.message)
+    ElMessage.error('操作失败: ' + e.message)
   }
 }
 
@@ -557,6 +602,15 @@ function getColorHex(color) {
   font-size: 12px;
   color: #9ca3af;
   margin-top: 4px;
+}
+
+.task-logistics {
+  font-size: 12px;
+  color: #3b82f6;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* 操作按钮 */

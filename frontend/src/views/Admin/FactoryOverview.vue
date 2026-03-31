@@ -7,7 +7,7 @@
         <p class="text-sm text-slate-500 mt-1">实时监控各工厂生产进度与订单状态</p>
       </div>
       <div class="flex items-center gap-2">
-        <button class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+        <button @click="refreshData" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
             <path d="M21 3v5h-5"/>
@@ -69,7 +69,7 @@
           </div>
           <div>
             <p class="text-2xl font-bold text-red-600">{{ stats.overdue }}</p>
-            <p class="text-xs text-slate-500">⚠️ 逾期</p>
+            <p class="text-xs text-slate-500">逾期</p>
           </div>
         </div>
       </div>
@@ -96,21 +96,12 @@
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2">
-          <span class="text-sm text-slate-500">工厂:</span>
-          <select v-model="filters.factory" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-            <option value="all">全部</option>
-            <option value="工厂A">工厂A</option>
-            <option value="工厂B">工厂B</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2">
           <span class="text-sm text-slate-500">状态:</span>
           <select v-model="filters.status" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
             <option value="all">全部</option>
             <option value="生产中">生产中</option>
-            <option value="已完成">已完成</option>
-            <option value="逾期">逾期</option>
             <option value="待揽件">待揽件</option>
+            <option value="已完成">已完成</option>
           </select>
         </div>
         <div class="flex items-center gap-2">
@@ -138,9 +129,8 @@
               <th class="px-4 whitespace-nowrap font-medium">形状</th>
               <th class="px-4 whitespace-nowrap font-medium">尺寸</th>
               <th class="px-4 whitespace-nowrap font-medium">工艺</th>
-              <th class="px-4 whitespace-nowrap font-medium">工厂</th>
               <th class="px-4 whitespace-nowrap font-medium">下单时间</th>
-              <th class="px-4 whitespace-nowrap font-medium">交货时间</th>
+              <th class="px-4 whitespace-nowrap font-medium">完成时间</th>
               <th class="px-4 whitespace-nowrap font-medium">状态</th>
               <th class="px-4 whitespace-nowrap font-medium">生产文档</th>
             </tr>
@@ -151,23 +141,22 @@
               :key="order.id" 
               :class="[
                 'h-[48px] transition-colors',
-                order.status === '逾期' ? 'bg-red-50 border-l-4 border-red-500' : 'hover:bg-slate-50'
+                order.isOverdue ? 'bg-red-50 border-l-4 border-red-500' : 'hover:bg-slate-50'
               ]"
             >
-              <td class="px-4 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id }}</td>
-              <td class="px-4 whitespace-nowrap font-mono text-slate-500">{{ order.sku_mappings?.sku_code || '-' }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.shape || order.product_shape || '-' }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.size || order.product_size || '-' }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mappings?.craft || '-' }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-600">-</td>
+              <td class="px-4 whitespace-nowrap font-medium text-slate-700">{{ order.order_number }}</td>
+              <td class="px-4 whitespace-nowrap font-mono text-slate-500">{{ order.sku_mapping?.sku_code || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mapping?.shape || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mapping?.size || '-' }}</td>
+              <td class="px-4 whitespace-nowrap text-slate-600">{{ order.sku_mapping?.craft || '-' }}</td>
               <td class="px-4 whitespace-nowrap text-slate-500">{{ formatDate(order.created_at) }}</td>
-              <td class="px-4 whitespace-nowrap text-slate-500">-</td>
+              <td class="px-4 whitespace-nowrap text-slate-500">{{ formatDate(order.completed_at) }}</td>
               <td class="px-4 whitespace-nowrap">
-                <span :class="getStatusClass('生产中')">生产中</span>
+                <span :class="getStatusClass(order.statusText)">{{ order.statusText }}</span>
               </td>
               <td class="px-4 whitespace-nowrap">
                 <button v-if="order.production_pdf_url" @click="viewPdf(order)" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 text-xs">
-                  <span>📄</span>PDF
+                  <span>PDF</span>
                 </button>
                 <button v-else @click="generatePdf(order)" :disabled="generatingId === order.id" class="text-orange-500 hover:text-orange-700 font-medium flex items-center gap-1 text-xs disabled:opacity-50">
                   <span>{{ generatingId === order.id ? '生成中...' : '生成PDF' }}</span>
@@ -175,7 +164,7 @@
               </td>
             </tr>
             <tr v-if="filteredOrders.length === 0" class="h-[60px]">
-              <td colspan="10" class="px-4 text-center text-slate-400 text-sm">暂无订单数据</td>
+              <td colspan="9" class="px-4 text-center text-slate-400 text-sm">暂无订单数据</td>
             </tr>
           </tbody>
         </table>
@@ -186,16 +175,16 @@
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
       <h2 class="text-base font-bold text-slate-800 mb-3">工厂工作量汇总</h2>
       <div class="space-y-2">
-        <div v-for="factory in factorySummary" :key="factory.name" class="flex items-center gap-6 py-2 px-4 bg-slate-50 rounded-lg">
-          <span class="font-bold text-slate-700 w-20">{{ factory.name }}:</span>
+        <div class="flex items-center gap-6 py-2 px-4 bg-slate-50 rounded-lg">
+          <span class="font-bold text-slate-700 w-20">全部:</span>
           <span class="text-sm">
-            <span class="text-blue-600 font-medium">生产中 {{ factory.producing }}</span>
+            <span class="text-blue-600 font-medium">生产中 {{ stats.producing }}</span>
             <span class="mx-2 text-slate-300">|</span>
-            <span class="text-green-600 font-medium">完成 {{ factory.completed }}</span>
+            <span class="text-green-600 font-medium">今日完成 {{ stats.todayCompleted }}</span>
             <span class="mx-2 text-slate-300">|</span>
-            <span class="text-red-600 font-medium">逾期 {{ factory.overdue }}</span>
+            <span class="text-red-600 font-medium">逾期 {{ stats.overdue }}</span>
             <span class="mx-2 text-slate-300">|</span>
-            <span class="text-orange-600 font-medium">待揽件 {{ factory.waitingPickup }}</span>
+            <span class="text-orange-600 font-medium">待揽件 {{ stats.waitingPickup }}</span>
           </span>
         </div>
       </div>
@@ -206,54 +195,139 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import supabase from '../../utils/supabase'
+import { ElMessage } from 'element-plus'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
 const realOrders = ref([])
 const loading = ref(false)
 const generatingId = ref(null)
 
+// 刷新按钮功能
+async function refreshData() {
+  ElMessage.info('正在刷新数据...')
+  await loadOrders()
+  ElMessage.success('数据刷新成功')
+}
+
 onMounted(() => loadOrders())
 
+// 加载订单数据 - 统计用
 async function loadOrders() {
   loading.value = true
   try {
-    const { data, error } = await supabase
+    // 1. 获取生产中订单
+    const { data: producingData, error: producingError } = await supabase
       .from('orders')
-      .select(`*, sku_mappings:sku_mapping(*), logistics(*)`)
+      .select(`*, sku_mapping(*)`)
       .eq('status', 'producing')
       .order('created_at', { ascending: false })
-    if (error) throw error
-    realOrders.value = data || []
-    console.log(`✅ 工厂生产总览加载: ${realOrders.value.length} 条`)
+    
+    if (producingError) throw producingError
+    
+    // 2. 获取待揽件订单 (completed)
+    const { data: completedData, error: completedError } = await supabase
+      .from('orders')
+      .select(`*, sku_mapping(*)`)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+    
+    if (completedError) throw completedError
+    
+    // 3. 获取今日完成订单
+    const today = new Date().toISOString().split('T')[0]
+    const { data: todayCompletedData, error: todayError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('status', 'delivered')
+      .gte('completed_at', today)
+    
+    if (todayError) throw todayError
+    
+    // 4. 获取已发货订单
+    const { data: deliveredData, error: deliveredError } = await supabase
+      .from('orders')
+      .select(`*, sku_mapping(*)`)
+      .eq('status', 'delivered')
+      .order('completed_at', { ascending: false })
+      .limit(30)
+    
+    if (deliveredError) throw deliveredError
+    
+    // 计算逾期
+    const threeDaysAgo = new Date()
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+    
+    // 合并所有订单用于表格显示
+    realOrders.value = [
+      ...(producingData || []).map(o => ({ 
+        ...o, 
+        statusText: '生产中',
+        isOverdue: new Date(o.created_at) < threeDaysAgo
+      })),
+      ...(completedData || []).map(o => ({ ...o, statusText: '待揽件', isOverdue: false })),
+      ...(deliveredData || []).map(o => ({ ...o, statusText: '已完成', isOverdue: false }))
+    ]
+    
+    // 计算统计数据
+    stats.value = {
+      producing: (producingData || []).length,
+      todayCompleted: (todayCompletedData || []).length,
+      overdue: (producingData || []).filter(o => new Date(o.created_at) < threeDaysAgo).length,
+      waitingPickup: (completedData || []).length
+    }
+    
+    console.log('工厂生产总览加载:', {
+      producing: stats.value.producing,
+      todayCompleted: stats.value.todayCompleted,
+      overdue: stats.value.overdue,
+      waitingPickup: stats.value.waitingPickup
+    })
   } catch (e) {
-    console.error('❌ 加载失败:', e)
+    console.error('加载失败:', e)
+    ElMessage.error('数据加载失败: ' + e.message)
   } finally {
     loading.value = false
   }
 }
 
+// 统计数据
+const stats = ref({
+  producing: 0,
+  todayCompleted: 0,
+  overdue: 0,
+  waitingPickup: 0
+})
+
 // 筛选条件
 const filters = reactive({
-  factory: 'all',
   status: 'all',
   startDate: '',
   endDate: '',
 })
 
-// 统计数据
-const stats = computed(() => ({
-  producing: realOrders.value.length,
-  todayCompleted: 0,
-  overdue: 0,
-  waitingPickup: 0,
-}))
-
-// 展示订单列表
-const filteredOrders = computed(() => realOrders.value)
-
-// 工厂汇总（未分配工厂时不展示）
-const factorySummary = computed(() => [])
+// 展示订单列表（支持筛选）
+const filteredOrders = computed(() => {
+  let result = realOrders.value
+  
+  // 状态筛选
+  if (filters.status !== 'all') {
+    result = result.filter(o => o.statusText === filters.status)
+  }
+  
+  // 日期筛选
+  if (filters.startDate) {
+    const start = new Date(filters.startDate)
+    result = result.filter(o => new Date(o.created_at) >= start)
+  }
+  if (filters.endDate) {
+    const end = new Date(filters.endDate)
+    end.setHours(23, 59, 59)
+    result = result.filter(o => new Date(o.created_at) <= end)
+  }
+  
+  return result
+})
 
 async function generatePdf(order) {
   generatingId.value = order.id
@@ -267,11 +341,12 @@ async function generatePdf(order) {
     if (data.success) {
       const idx = realOrders.value.findIndex(o => o.id === order.id)
       if (idx !== -1) realOrders.value[idx] = { ...realOrders.value[idx], production_pdf_url: data.production_pdf_url }
+      ElMessage.success('PDF生成成功')
     } else {
-      alert('❌ 生成失败: ' + (data.detail || data.message || '未知错误'))
+      ElMessage.error('生成失败: ' + (data.detail || data.message || '未知错误'))
     }
   } catch (e) {
-    alert('❌ 网络错误: ' + e.message)
+    ElMessage.error('网络错误: ' + e.message)
   } finally {
     generatingId.value = null
   }
@@ -292,15 +367,8 @@ const getStatusClass = (status) => {
   const classes = {
     '生产中': 'bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold',
     '已完成': 'bg-green-100 text-green-600 px-2 py-0.5 rounded text-[10px] font-bold',
-    '逾期': 'bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold',
-    '待揓件': 'bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold',
+    '待揽件': 'bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold',
   }
   return classes[status] || 'bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold'
 }
-
-const getStatusText = (status) => {
-  if (status === '逾期') return '🔴逾期-须跟进'
-  return status
-}
 </script>
-

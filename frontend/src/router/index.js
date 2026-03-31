@@ -123,9 +123,9 @@ const routes = [
       },
       {
         path: 'templates',
-        name: 'AdminTemplates',
-        component: () => import('../views/Admin/AdminEffects.vue'), // 复用现有页面
-        meta: { title: '邮件模板' }
+        name: 'EmailTemplates',
+        component: () => import('../views/Admin/EmailTemplates.vue'),
+        meta: { title: '邮件模板', requiresAdminAuth: true }
       },
       {
         path: 'factory-overview',
@@ -155,7 +155,7 @@ const routes = [
       {
         path: 'settings',
         name: 'AdminSettings',
-        component: () => import('../views/Admin/AdminDashboard.vue'), // 临时复用
+        component: () => import('../views/Admin/AdminSettings.vue'),
         meta: { title: '系统设置', requiresMainAccount: true }
       },
       // 保留旧路由兼容

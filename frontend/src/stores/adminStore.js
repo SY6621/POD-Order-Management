@@ -293,6 +293,23 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  // 更新子账号信息
+  const updateSubAccount = async (userId, userData) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update(userData)
+        .eq('id', userId)
+        .select()
+        .single()
+
+      if (error) throw error
+      return { success: true, user: data }
+    } catch (err) {
+      return { success: false, message: err.message }
+    }
+  }
+
   // 分配店铺权限
   const assignShopPermissions = async (userId, shopIds) => {
     try {
@@ -352,6 +369,7 @@ export const useAdminStore = defineStore('admin', () => {
     // 子账号管理
     fetchSubAccounts,
     createSubAccount,
+    updateSubAccount,
     updateSubAccountStatus,
     assignShopPermissions,
     fetchSubAccountStats

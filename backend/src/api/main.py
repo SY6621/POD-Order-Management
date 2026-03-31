@@ -147,6 +147,39 @@ class ShippingQueryOrderRequest(BaseModel):
     order_no: str
 
 
+# ============ 邮件模板相关请求模型 ============
+
+class EmailTemplateCreateRequest(BaseModel):
+    """创建邮件模板请求"""
+    type: str  # first_confirm, modification, follow_up
+    template_key: str  # 模板唯一标识
+    name: str  # 模板名称
+    content: dict  # JSONB 邮件内容
+    icon: Optional[str] = None
+    description: Optional[str] = None
+    subject_zh: Optional[str] = None
+    subject_en: Optional[str] = None
+    ai_prompt: Optional[str] = None
+    sender_name: Optional[str] = None
+    style: Optional[str] = None
+    is_active: Optional[bool] = True
+    sort_order: Optional[int] = 0
+
+
+class EmailTemplateUpdateRequest(BaseModel):
+    """更新邮件模板请求"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    subject_zh: Optional[str] = None
+    subject_en: Optional[str] = None
+    content: Optional[dict] = None
+    ai_prompt: Optional[str] = None
+    sender_name: Optional[str] = None
+    style: Optional[str] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+
 @app.get("/")
 async def root():
     """API 根路径"""
@@ -839,6 +872,561 @@ async def query_shipping_order(request: ShippingQueryOrderRequest):
     except Exception as e:
         return JSONResponse(
             {"success": False, "message": str(e), "data": None},
+            status_code=500
+        )
+
+
+# ==================== 邮件模板 API ====================
+
+@app.get("/api/email-templates")
+async def get_all_email_templates(is_active: Optional[str] = None):
+    """
+    获取所有邮件模板（按type分组返回）
+    
+    Query参数:
+    - is_active: 可选，过滤是否启用的模板 ("true"/"false")
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {
+            "first_confirm": [...],
+            "modification": [...],
+            "follow_up": [...]
+        }
+    }
+    """
+    try:
+        # 构建查询条件
+        filters = {}
+        if is_active is not None:
+            if is_active.lower() == "true":
+                filters["is_active"] = True
+            elif is_active.lower() == "false":
+                filters["is_active"] = False
+        
+        # 查询所有模板，按 sort_order 排序
+        templates = db.supabase.table("email_templates").select("*").order("sort_order").execute()
+        
+        if not templates.data:
+            return {"success": True, "data": {"first_confirm": [], "modification": [], "follow_up": []}}
+        
+        # 按类型分组
+        grouped = {
+            "first_confirm": [],
+            "modification": [],
+            "follow_up": []
+        }
+        
+        for tpl in templates.data:
+            tpl_type = tpl.get("type", "")
+            # 应用过滤条件
+            if is_active is not None:
+                if is_active.lower() == "true" and not tpl.get("is_active", True):
+                    continue
+                if is_active.lower() == "false" and tpl.get("is_active", True):
+                    continue
+            
+            if tpl_type in grouped:
+                grouped[tpl_type].append(tpl)
+        
+        return {"success": True, "data": grouped}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"获取模板列表失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.get("/api/email-templates/{template_type}")
+async def get_email_templates_by_type(template_type: str):
+    """
+    获取指定类型的模板列表
+    
+    路径参数:
+    - template_type: 模板类型 (first_confirm / modification / follow_up)
+    
+    返回格式:
+    {
+        "success": true,
+        "data": [...]
+    }
+    """
+    try:
+        valid_types = ["first_confirm", "modification", "follow_up"]
+        if template_type not in valid_types:
+            return JSONResponse(
+                {"success": False, "message": f"无效的模板类型，有效值: {', '.join(valid_types)}", "data": None},
+                status_code=400
+            )
+        
+        result = db.supabase.table("email_templates").select("*").eq("type", template_type).order("sort_order").execute()
+        
+        return {"success": True, "data": result.data or []}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"获取模板列表失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.post("/api/email-templates")
+async def create_email_template(request: EmailTemplateCreateRequest):
+    """
+    创建新邮件模板
+    
+    必填字段: type, template_key, name, content
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {...}
+    }
+    """
+    try:
+        # 检查 (type, template_key) 是否已存在
+        existing = db.supabase.table("email_templates").select("id").eq("type", request.type).eq("template_key", request.template_key).execute()
+        
+        if existing.data:
+            return JSONResponse(
+                {"success": False, "message": f"模板已存在: type={request.type}, template_key={request.template_key}", "data": None},
+                status_code=400
+            )
+        
+        # 构建插入数据
+        insert_data = {
+            "type": request.type,
+            "template_key": request.template_key,
+            "name": request.name,
+            "content": request.content,
+            "icon": request.icon,
+            "description": request.description,
+            "subject_zh": request.subject_zh,
+            "subject_en": request.subject_en,
+            "ai_prompt": request.ai_prompt,
+            "sender_name": request.sender_name,
+            "style": request.style,
+            "is_active": request.is_active if request.is_active is not None else True,
+            "sort_order": request.sort_order if request.sort_order is not None else 0
+        }
+        
+        result = db.supabase.table("email_templates").insert(insert_data).execute()
+        
+        if result.data:
+            return {"success": True, "data": result.data[0]}
+        else:
+            return JSONResponse(
+                {"success": False, "message": "创建模板失败", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"创建模板失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.put("/api/email-templates/{template_id}")
+async def update_email_template(template_id: str, request: EmailTemplateUpdateRequest):
+    """
+    更新邮件模板内容
+    
+    自动更新 updated_at 为当前时间
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {...}
+    }
+    """
+    try:
+        # 检查模板是否存在
+        existing = db.supabase.table("email_templates").select("*").eq("id", template_id).execute()
+        
+        if not existing.data:
+            return JSONResponse(
+                {"success": False, "message": "模板不存在", "data": None},
+                status_code=404
+            )
+        
+        # 构建更新数据（只更新非None字段）
+        update_data = {"updated_at": datetime.now().isoformat()}
+        
+        if request.name is not None:
+            update_data["name"] = request.name
+        if request.description is not None:
+            update_data["description"] = request.description
+        if request.subject_zh is not None:
+            update_data["subject_zh"] = request.subject_zh
+        if request.subject_en is not None:
+            update_data["subject_en"] = request.subject_en
+        if request.content is not None:
+            update_data["content"] = request.content
+        if request.ai_prompt is not None:
+            update_data["ai_prompt"] = request.ai_prompt
+        if request.sender_name is not None:
+            update_data["sender_name"] = request.sender_name
+        if request.style is not None:
+            update_data["style"] = request.style
+        if request.is_active is not None:
+            update_data["is_active"] = request.is_active
+        if request.sort_order is not None:
+            update_data["sort_order"] = request.sort_order
+        
+        result = db.supabase.table("email_templates").update(update_data).eq("id", template_id).execute()
+        
+        if result.data:
+            return {"success": True, "data": result.data[0]}
+        else:
+            return JSONResponse(
+                {"success": False, "message": "更新模板失败", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"更新模板失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.delete("/api/email-templates/{template_id}")
+async def delete_email_template(template_id: str):
+    """
+    删除邮件模板
+    
+    返回格式:
+    {
+        "success": true,
+        "message": "模板已删除"
+    }
+    """
+    try:
+        # 检查模板是否存在
+        existing = db.supabase.table("email_templates").select("id").eq("id", template_id).execute()
+        
+        if not existing.data:
+            return JSONResponse(
+                {"success": False, "message": "模板不存在", "data": None},
+                status_code=404
+            )
+        
+        # 执行删除
+        db.supabase.table("email_templates").delete().eq("id", template_id).execute()
+        
+        return {"success": True, "message": "模板已删除"}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"删除模板失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+# ==================== 工厂管理 API ====================
+
+class FactoryCreateRequest(BaseModel):
+    """创建工厂请求"""
+    name: str
+    code: str
+    password_hash: Optional[str] = ""
+    status: Optional[str] = "active"
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    access_url: Optional[str] = None
+
+
+class FactoryUpdateRequest(BaseModel):
+    """更新工厂请求"""
+    name: Optional[str] = None
+    code: Optional[str] = None
+    password_hash: Optional[str] = None
+    status: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    access_url: Optional[str] = None
+
+
+class FactoryVerifyPasswordRequest(BaseModel):
+    """验证工厂密码请求"""
+    code: str
+    password: str
+
+
+@app.get("/api/factories")
+async def get_all_factories():
+    """
+    获取所有工厂列表
+    
+    返回格式:
+    {
+        "success": true,
+        "data": [...]
+    }
+    """
+    try:
+        result = db.supabase.table("factories").select("*").order("created_at", desc=True).execute()
+        
+        return {"success": True, "data": result.data or []}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"获取工厂列表失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.post("/api/factories")
+async def create_factory(request: FactoryCreateRequest):
+    """
+    创建新工厂
+    
+    必填字段: name, code
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {...}
+    }
+    """
+    try:
+        # 检查 code 是否已存在
+        existing = db.supabase.table("factories").select("id").eq("code", request.code).execute()
+        
+        if existing.data:
+            return JSONResponse(
+                {"success": False, "message": f"工厂代码已存在: {request.code}", "data": None},
+                status_code=400
+            )
+        
+        # 构建插入数据
+        insert_data = {
+            "name": request.name,
+            "code": request.code,
+            "password_hash": request.password_hash or "",
+            "status": request.status or "active",
+            "contact_name": request.contact_name,
+            "contact_phone": request.contact_phone,
+            "address": request.address,
+            "access_url": request.access_url
+        }
+        
+        result = db.supabase.table("factories").insert(insert_data).execute()
+        
+        if result.data:
+            return {"success": True, "data": result.data[0], "message": "工厂创建成功"}
+        else:
+            return JSONResponse(
+                {"success": False, "message": "创建工厂失败", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"创建工厂失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.put("/api/factories/{factory_id}")
+async def update_factory(factory_id: str, request: FactoryUpdateRequest):
+    """
+    更新工厂信息
+    
+    自动更新 updated_at 为当前时间
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {...}
+    }
+    """
+    try:
+        # 检查工厂是否存在
+        existing = db.supabase.table("factories").select("*").eq("id", factory_id).execute()
+        
+        if not existing.data:
+            return JSONResponse(
+                {"success": False, "message": "工厂不存在", "data": None},
+                status_code=404
+            )
+        
+        # 构建更新数据（只更新非None字段）
+        update_data = {}
+        
+        if request.name is not None:
+            update_data["name"] = request.name
+        if request.code is not None:
+            # 检查新code是否已被其他工厂使用
+            code_check = db.supabase.table("factories").select("id").eq("code", request.code).neq("id", factory_id).execute()
+            if code_check.data:
+                return JSONResponse(
+                    {"success": False, "message": f"工厂代码已被使用: {request.code}", "data": None},
+                    status_code=400
+                )
+            update_data["code"] = request.code
+        if request.password_hash is not None:
+            update_data["password_hash"] = request.password_hash
+        if request.status is not None:
+            update_data["status"] = request.status
+        if request.contact_name is not None:
+            update_data["contact_name"] = request.contact_name
+        if request.contact_phone is not None:
+            update_data["contact_phone"] = request.contact_phone
+        if request.address is not None:
+            update_data["address"] = request.address
+        if request.access_url is not None:
+            update_data["access_url"] = request.access_url
+        
+        if not update_data:
+            return JSONResponse(
+                {"success": False, "message": "没有需要更新的字段", "data": None},
+                status_code=400
+            )
+        
+        result = db.supabase.table("factories").update(update_data).eq("id", factory_id).execute()
+        
+        if result.data:
+            return {"success": True, "data": result.data[0], "message": "工厂更新成功"}
+        else:
+            return JSONResponse(
+                {"success": False, "message": "更新工厂失败", "data": None},
+                status_code=500
+            )
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"更新工厂失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.delete("/api/factories/{factory_id}")
+async def delete_factory(factory_id: str):
+    """
+    删除工厂
+    
+    返回格式:
+    {
+        "success": true,
+        "message": "工厂已删除"
+    }
+    """
+    try:
+        # 检查工厂是否存在
+        existing = db.supabase.table("factories").select("id").eq("id", factory_id).execute()
+        
+        if not existing.data:
+            return JSONResponse(
+                {"success": False, "message": "工厂不存在", "data": None},
+                status_code=404
+            )
+        
+        # 执行删除
+        db.supabase.table("factories").delete().eq("id", factory_id).execute()
+        
+        return {"success": True, "message": "工厂已删除"}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"删除工厂失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.post("/api/factories/verify-password")
+async def verify_factory_password(request: FactoryVerifyPasswordRequest):
+    """
+    验证工厂密码（用于工厂协作平台登录）
+    
+    参数:
+    - code: 工厂代码
+    - password: 访问密码
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {
+            "valid": true/false,
+            "factory": {...}
+        }
+    }
+    """
+    try:
+        # 查询工厂
+        result = db.supabase.table("factories").select("*").eq("code", request.code).execute()
+        
+        if not result.data:
+            return {
+                "success": True,
+                "data": {
+                    "valid": False,
+                    "message": "工厂不存在"
+                }
+            }
+        
+        factory = result.data[0]
+        
+        # 检查状态
+        if factory.get("status") != "active":
+            return {
+                "success": True,
+                "data": {
+                    "valid": False,
+                    "message": "工厂已停用"
+                }
+            }
+        
+        # 验证密码
+        if factory.get("password_hash") == request.password:
+            return {
+                "success": True,
+                "data": {
+                    "valid": True,
+                    "factory": {
+                        "id": factory["id"],
+                        "name": factory["name"],
+                        "code": factory["code"]
+                    }
+                }
+            }
+        else:
+            return {
+                "success": True,
+                "data": {
+                    "valid": False,
+                    "message": "密码错误"
+                }
+            }
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"验证失败: {str(e)}", "data": None},
             status_code=500
         )
 

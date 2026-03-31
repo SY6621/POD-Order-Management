@@ -624,7 +624,10 @@
                   </td>
                 </tr>
                 <tr v-if="filteredOrders.length === 0" class="h-[60px]">
-                  <td colspan="7" class="px-3 text-center text-slate-400 text-sm">暂无待下单订单</td>
+                  <td colspan="7" class="px-3 text-center text-sm">
+                    <span v-if="loadError" class="text-red-500">{{ loadError }}</span>
+                    <span v-else class="text-slate-400">暂无待下单订单</span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -693,6 +696,7 @@
 <script setup>
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import supabase from '../../utils/supabase'
 
 // 路由
@@ -705,14 +709,14 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const activeTab = ref('4px')
 const orderListTab = ref('pending') // 右侧Tab：pending=待下单 / shipped=已下单
 const loading = ref(false)
-const demoMode = ref(false)
+const loadError = ref('') // 加载错误信息
 const orders = ref([])          // 待下单（confirmed）
 const shippedOrders = ref([])   // 已下单（shipped）
 const selectedOrder = ref(null)
 const selectedOrders = ref([]) // 批量选择的订单
 const searchKeyword = ref('')
 const showAdvanced = ref(false)
-// 物流渠道固定为A1（4PX标准直发）
+// 物流渠道（动态加载，默认保留A1作为回退选项）
 const channels = ref([
   { code: 'A1', name: '4PX标准直发(A1) (7-15天)' }
 ])
@@ -724,13 +728,6 @@ const showResult = ref(false)
 const orderResult = ref(null)
 const batchResults = ref([]) // 批量下单结果
 const todayShippedCount = ref(0)
-
-// 假数据（回退用）
-const mockOrders = [
-  { id: 'demo-001', etsy_order_id: '4002217518', customer_name: 'Luna Parker', sku_id: 'B-HC-G-L', country: 'AU', total_amount: 29.99 },
-  { id: 'demo-002', etsy_order_id: '4002217519', customer_name: 'Mike Johnson', sku_id: 'B-BO-S-S', country: 'US', total_amount: 19.99 },
-  { id: 'demo-003', etsy_order_id: '4002217520', customer_name: 'Emma Wilson', sku_id: 'B-CI-G-L', country: 'GB', total_amount: 24.99 },
-]
 
 // 表单数据
 const form = reactive({
@@ -847,7 +844,7 @@ const getProductDescription = (order) => {
 // 加载订单列表
 const loadOrders = async () => {
   loading.value = true
-  demoMode.value = false
+  loadError.value = ''
   
   try {
     // 注意：由于orders表有两个外键指向sku_mapping(sku_id和matched_sku_id)，
@@ -866,16 +863,16 @@ const loadOrders = async () => {
       // 调试：打印第一条订单的所有字段
       console.log('📦 第一条订单数据:', JSON.stringify(data[0], null, 2))
     } else {
-      // 无数据时使用假数据
-      orders.value = mockOrders
-      demoMode.value = true
-      console.log('⚠️ 无确认订单，使用演示数据')
+      // 无数据时显示空列表
+      orders.value = []
+      console.log('⚠️ 无待下单订单')
     }
   } catch (e) {
     console.error('❌ 订单加载失败:', e)
-    // 回退到假数据
-    orders.value = mockOrders
-    demoMode.value = true
+    // 显示错误提示
+    orders.value = []
+    loadError.value = e.message || '订单加载失败，请刷新重试'
+    ElMessage.error('订单加载失败：' + loadError.value)
   } finally {
     loading.value = false
   }
@@ -961,14 +958,21 @@ const loadChannels = async (countryCode) => {
         name: p.logistics_product_name || p.name || p.logistics_product_code
       }))
       form.channel_code = channels.value[0]?.code || 'A1'
+    } else {
+      // API返回为空时，回退到A1作为唯一选项
+      channels.value = [
+        { code: 'A1', name: '4PX标准直发(A1) (7-15天)' }
+      ]
+      form.channel_code = 'A1'
+      console.log('⚠️ 渠道API返回空数据，使用默认A1')
     }
   } catch (e) {
-    console.error('❌ 渠道查询失败，使用默认:', e)
-    // 使用默认渠道
+    console.error('❌ 渠道查询失败，使用默认A1:', e)
+    // API失败时，回退显示A1作为唯一选项
     channels.value = [
-      { code: 'PX', name: '4PX标准直发 (7-15天)' },
-      { code: 'PY', name: '4PX快速直发 (3-7天)' }
+      { code: 'A1', name: '4PX标准直发(A1) (7-15天)' }
     ]
+    form.channel_code = 'A1'
   } finally {
     loadingChannels.value = false
   }
@@ -1022,25 +1026,29 @@ const selectOrder = async (order) => {
   }
   
   // 尝试加载物流表数据（可能有已存在的物流信息）
-  if (order.id && !demoMode.value) {
+  if (order.id) {
     await loadLogistics(order.id)
   }
   
-  // 物流渠道固定使用A1（4PX标准直发）
-  form.channel_code = 'A1'
+  // 根据收件国家动态加载可用渠道
+  if (form.recipient_country) {
+    await loadChannels(form.recipient_country)
+  }
 }
 
-// 国家变化时（暂不动态查询渠道，固定使用PX）
-const onCountryChange = () => {
-  // 当前只支持PX渠道，无需动态加载
+// 国家变化时重新加载可用渠道
+const onCountryChange = async () => {
   console.log('国家切换为:', form.recipient_country)
+  if (form.recipient_country) {
+    await loadChannels(form.recipient_country)
+  }
 }
 
 // 创建物流订单
 const createOrder = async () => {
   // 表单验证
   if (!form.recipient_name || !form.recipient_street || !form.recipient_city || !form.recipient_postcode || !form.recipient_country) {
-    alert('请填写必填项：姓名、地址、城市、邮编、国家')
+    ElMessage.warning('请填写必填项：姓名、地址、城市、邮编、国家')
     return
   }
   
@@ -1079,11 +1087,11 @@ const createOrder = async () => {
       
       console.log('✅ 物流订单创建成功:', data.data)
     } else {
-      alert('下单失败：' + (data.message || data.detail || '未知错误'))
+      ElMessage.error('下单失败：' + (data.message || data.detail || '未知错误'))
     }
   } catch (e) {
     console.error('❌ 创建订单失败:', e)
-    alert('网络错误：' + e.message)
+    ElMessage.error('网络错误：' + e.message)
   } finally {
     submitting.value = false
   }
@@ -1094,7 +1102,7 @@ const downloadLabel = () => {
   if (orderResult.value?.label_url) {
     window.open(orderResult.value.label_url, '_blank')
   } else {
-    alert('面单PDF尚未生成，请稍后重试')
+    ElMessage.warning('面单PDF尚未生成，请稍后重试')
   }
 }
 
@@ -1106,7 +1114,7 @@ const printLabel = () => {
       printWindow.onload = () => printWindow.print()
     }
   } else {
-    alert('面单PDF尚未生成，请稍后重试')
+    ElMessage.warning('面单PDF尚未生成，请稍后重试')
   }
 }
 
@@ -1208,7 +1216,7 @@ const getOrderFormData = (order) => {
   
   return {
     order_id: order.id,
-    logistics_product_code: 'PX',
+    logistics_product_code: form.channel_code,
     recipient_name: order.shipping_name || order.customer_name || '',
     recipient_phone: generateFakePhone(),
     recipient_email: order.customer_email || '',
@@ -1226,7 +1234,7 @@ const getOrderFormData = (order) => {
 // 批量创建物流订单
 const createBatchOrder = async () => {
   if (selectedOrders.value.length === 0) {
-    alert('请先选择订单')
+    ElMessage.warning('请先选择订单')
     return
   }
   
@@ -1290,9 +1298,9 @@ const createBatchOrder = async () => {
   const failCount = results.filter(r => !r.success).length
   
   if (failCount === 0) {
-    alert(`✅ 批量下单完成！成功 ${successCount} 单`)
+    ElMessage.success(`批量下单完成！成功 ${successCount} 单`)
   } else {
-    alert(`⚠️ 批量下单完成：成功 ${successCount} 单，失败 ${failCount} 单`)
+    ElMessage.warning(`批量下单完成：成功 ${successCount} 单，失败 ${failCount} 单`)
   }
   
   submittingBatch.value = false

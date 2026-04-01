@@ -83,7 +83,7 @@
               <img v-if="selectedOrder.product_image_url" :src="selectedOrder.product_image_url" alt="产品实拍图" />
               <div v-else class="image-placeholder">
                 <el-icon><Picture /></el-icon>
-                <span>产品实拍图</span>
+                <span>暂无实拍图</span>
               </div>
             </div>
             
@@ -243,6 +243,7 @@ import {
   Loading, CircleClose, Back, Picture,
   MagicStick, ArrowDown, DocumentChecked, Check
 } from '@element-plus/icons-vue'
+import supabase from '../../utils/supabase'
 
 const route = useRoute()
 const router = useRouter()
@@ -252,6 +253,7 @@ const loading = ref(true)
 const error = ref(false)
 const errorMessage = ref('')
 const shopInfo = ref(null)
+const serviceToken = ref('') // 保存 service_token 用于跳转回 ServiceLink
 const orders = ref([])
 const selectedOrder = ref(null)
 const replyContent = ref('')
@@ -301,7 +303,10 @@ async function validateToken() {
       name: data.shop_name,
       code: shopCode.value
     }
-    
+        
+    // 保存 service_token 用于跳转回 ServiceLink
+    serviceToken.value = data.service_token || ''
+        
     return true
   } catch (e) {
     // 开发模式：API调用失败时也显示页面
@@ -318,58 +323,97 @@ async function validateToken() {
 // 获取订单列表
 async function fetchOrders() {
   try {
-    // 模拟数据
-    orders.value = [
-      {
-        id: '1',
-        etsy_order_id: '4002217518',
-        customer_name: 'Jessica Head',
-        customer_email: 'jessica@example.com',
-        product_shape: '心形',
-        product_color: '金色',
-        front_text: 'KYLA',
-        back_text: 'If Lost 13999926688',
-        sku: 'B-G01B',
-        size: 'L',
-        country: '美国',
-        font_code: 'F-04',
-        status: 'pending',
-        modify_request: '1. 正面文字由 "Kyla" 改为 "Luna" 2. 背面电话替换为 "+61 4xx xxx xxx" 3. 其它保持不变',
-        created_at: '2025-03-25T14:32:00Z'
-      },
-      {
-        id: '2',
-        etsy_order_id: '3986891868',
-        customer_name: 'Tom Smith',
-        customer_email: 'tom@example.com',
-        product_shape: '圆形',
-        product_color: '银色',
-        front_text: 'TOM',
-        back_text: '13800138000',
-        sku: 'B-S02S',
-        size: 'M',
-        country: '美国',
-        font_code: 'F-04',
-        status: 'pending',
-        created_at: '2025-03-25T10:15:00Z'
-      },
-      {
-        id: '3',
-        etsy_order_id: '4002234567',
-        customer_name: 'Luna Wang',
-        customer_email: 'luna@example.com',
-        product_shape: '骨头形',
-        product_color: '玫瑰金',
-        front_text: 'LUNA',
-        back_text: '13987654321',
-        sku: 'B-B03R',
-        size: 'S',
-        country: '澳大利亚',
-        font_code: 'F-04',
-        status: 'pending',
-        created_at: '2025-03-24T16:45:00Z'
+    // 从Supabase加载真实订单数据
+    const { data: ordersData, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('shop_id', shopInfo.value?.id || 'test-shop-id')
+      .in('status', ['pending', 'modifying'])
+      .order('created_at', { ascending: false })
+    
+    if (ordersError) {
+      console.error('❌ 订单查询错误:', ordersError)
+      throw ordersError
+    }
+    
+    // 如果没有订单数据，使用模拟数据（开发模式）
+    if (!ordersData || ordersData.length === 0) {
+      console.log('⚠️ 无真实订单数据，使用模拟数据')
+      orders.value = [
+        {
+          id: '1',
+          etsy_order_id: '4002217518',
+          customer_name: 'Jessica Head',
+          customer_email: 'jessica@example.com',
+          product_shape: '心形',
+          product_color: '金色',
+          front_text: 'KYLA',
+          back_text: 'If Lost 13999926688',
+          sku: 'B-G01B',
+          size: 'L',
+          country: '美国',
+          font_code: 'F-04',
+          status: 'pending',
+          modify_request: '1. 正面文字由 "Kyla" 改为 "Luna" 2. 背面电话替换为 "+61 4xx xxx xxx" 3. 其它保持不变',
+          created_at: '2025-03-25T14:32:00Z',
+          sku_id: null
+        }
+      ]
+    } else {
+      // 获取所有SKU ID用于关联查询产品实拍图
+      const skuIds = ordersData.map(o => o.sku_id).filter(Boolean)
+      
+      // 并行查询SKU信息和产品图片
+      let skuMap = {}
+      let photoMap = {}
+      
+      if (skuIds.length > 0) {
+        const [skuResult, photoResult] = await Promise.all([
+          supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds),
+          supabase.from('product_photos').select('sku_id, photo_url, photo_type').in('sku_id', skuIds).eq('is_active', true).order('sort_order', { ascending: true })
+        ])
+        
+        // 构建SKU Map
+        skuMap = skuResult.data
+          ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+          : {}
+        
+        // 构建产品实拍图 Map
+        if (photoResult.data) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+          photoResult.data.forEach(p => {
+            if (!photoMap[p.sku_id]) {
+              photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+            }
+          })
+        }
       }
-    ]
+      
+      // 转换订单数据格式
+      orders.value = ordersData.map(order => {
+        const skuInfo = skuMap[order.sku_id] || {}
+        return {
+          id: order.id,
+          etsy_order_id: order.etsy_order_id,
+          customer_name: order.customer_name || '未知客户',
+          customer_email: order.customer_email || '',
+          product_shape: order.product_shape || skuInfo.shape || '圆形',
+          product_color: order.product_color || skuInfo.color || '金色',
+          front_text: order.front_text || '',
+          back_text: order.back_text || '',
+          sku: skuInfo.sku_code || order.sku || '',
+          size: order.size || skuInfo.size || 'L',
+          country: order.country || '美国',
+          font_code: order.font_code || 'F-04',
+          status: order.status || 'pending',
+          modify_request: order.modify_request || '',
+          created_at: order.created_at,
+          // 产品实拍图URL - 优先使用orders表的product_photo_url，其次查询product_photos表
+          product_image_url: order.product_photo_url || photoMap[order.sku_id] || null,
+          effect_image_url: order.effect_image_url || null
+        }
+      })
+    }
     
     operationLogs.value = [
       { time: '2026-03-24 10:15', text: '系统邮件 V1' },
@@ -381,6 +425,7 @@ async function fetchOrders() {
       selectedOrder.value = orders.value[0]
     }
   } catch (e) {
+    console.error('❌ 获取订单失败:', e)
     ElMessage.error('获取订单失败')
   }
 }
@@ -449,7 +494,9 @@ const loadOrderToDesigner = (order) => {
 
 // 返回沟通链接
 function goToServiceLink() {
-  router.push(`/service/${shopCode.value}?token=${token.value}`)
+  // 使用保存的 service_token 而非 design_token (token.value)
+  const targetToken = serviceToken.value || token.value
+  router.push(`/service/${shopCode.value}?token=${targetToken}`)
 }
 
 // 保存草稿

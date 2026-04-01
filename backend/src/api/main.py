@@ -23,6 +23,7 @@ from src.services.email_service import email_service
 from src.services.database_service import db
 from src.services.shipping_service import FourPXClient
 from src.services.translation_service import translation_service
+from src.services.ai_service import ai_service
 from src.config.settings import settings
 
 
@@ -1445,6 +1446,22 @@ class TranslateEmailRequest(BaseModel):
     chinese_content: str
 
 
+class AIGenerateEmailRequest(BaseModel):
+    """AI生成邮件请求模型"""
+    scene: str  # first_confirm / modify_confirm / review_request
+    customer_name: str
+    product_name: str = "Custom Pet Tag"
+    front_text: Optional[str] = ""
+    back_text: Optional[str] = ""
+    shape: str = "Heart"
+    color: str = "Gold"
+    size: str = "Small"
+    tone: str = "friendly"  # friendly / professional / warm
+    sender_name: str = "Customer Support Team"
+    modify_reason: Optional[str] = None  # 仅 modify_confirm 场景需要
+    effect_image_url: Optional[str] = None
+
+
 @app.post("/api/translate")
 async def translate_text(request: TranslateRequest):
     """
@@ -1531,6 +1548,138 @@ async def translate_email(request: TranslateEmailRequest):
     except Exception as e:
         return JSONResponse(
             {"success": False, "message": f"翻译服务异常: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+# ==================== AI 邮件生成 API ====================
+
+@app.get("/api/ai/status")
+async def get_ai_status():
+    """
+    获取AI服务状态
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {
+            "ai_available": true/false,
+            "provider": "zhipu"/null,
+            "model": "glm-4-flash",
+            "supported_scenes": {...},
+            "supported_tones": {...}
+        }
+    }
+    """
+    try:
+        return {
+            "success": True,
+            "data": {
+                "ai_available": ai_service.is_ai_available(),
+                "provider": ai_service.available_provider,
+                "model": ai_service.model if ai_service.is_ai_available() else None,
+                "supported_scenes": ai_service.get_supported_scenes(),
+                "supported_tones": ai_service.get_supported_tones()
+            }
+        }
+    except Exception as e:
+        return JSONResponse(
+            {"success": False, "message": f"获取AI状态失败: {str(e)}", "data": None},
+            status_code=500
+        )
+
+
+@app.post("/api/ai/generate-email")
+async def ai_generate_email(request: AIGenerateEmailRequest):
+    """
+    AI生成邮件内容
+    
+    三种场景:
+    - first_confirm: 首封确认邮件 - 效果图制作完成，请客户确认设计
+    - modify_confirm: 修改确认邮件 - 按客户要求修改后，请再次确认
+    - review_request: 追评邮件 - 订单完成后邀请客户留下好评
+    
+    请求示例:
+    {
+        "scene": "first_confirm",
+        "customer_name": "Ellie Boon",
+        "product_name": "Custom Heart Pet ID Tag",
+        "front_text": "Dolly",
+        "back_text": "07957 183676",
+        "shape": "Heart",
+        "color": "Gold",
+        "size": "Small",
+        "tone": "friendly",
+        "sender_name": "HeritageHound Team",
+        "effect_image_url": "https://xxx.supabase.co/xxx.svg"
+    }
+    
+    返回格式:
+    {
+        "success": true,
+        "data": {
+            "subject": "Your Custom Heart Pet ID Tag is Ready! 🐾",
+            "body": "Dear Ellie,\n\nThank you for your order...",
+            "scene": "first_confirm",
+            "generated_by": "ai" / "template"
+        }
+    }
+    """
+    try:
+        # 参数校验
+        valid_scenes = ["first_confirm", "modify_confirm", "review_request"]
+        if request.scene not in valid_scenes:
+            return JSONResponse(
+                {"success": False, "message": f"无效的场景类型，有效值: {', '.join(valid_scenes)}", "data": None},
+                status_code=400
+            )
+        
+        valid_tones = ["friendly", "professional", "warm"]
+        if request.tone not in valid_tones:
+            return JSONResponse(
+                {"success": False, "message": f"无效的语气风格，有效值: {', '.join(valid_tones)}", "data": None},
+                status_code=400
+            )
+        
+        # modify_confirm 场景需要 modify_reason
+        if request.scene == "modify_confirm" and not request.modify_reason:
+            return JSONResponse(
+                {"success": False, "message": "modify_confirm 场景需要提供 modify_reason 参数", "data": None},
+                status_code=400
+            )
+        
+        # 构建参数
+        params = {
+            "scene": request.scene,
+            "customer_name": request.customer_name,
+            "product_name": request.product_name,
+            "front_text": request.front_text or "",
+            "back_text": request.back_text or "",
+            "shape": request.shape,
+            "color": request.color,
+            "size": request.size,
+            "tone": request.tone,
+            "sender_name": request.sender_name,
+            "effect_image_url": request.effect_image_url
+        }
+        
+        # modify_confirm 场景添加修改原因
+        if request.scene == "modify_confirm" and request.modify_reason:
+            params["modify_reason"] = request.modify_reason
+        
+        # 调用AI服务生成邮件
+        result = ai_service.generate_email(params)
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            {"success": False, "message": f"邮件生成失败: {str(e)}", "data": None},
             status_code=500
         )
 

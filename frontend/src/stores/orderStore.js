@@ -58,40 +58,71 @@ export const useOrderStore = defineStore('order', () => {
       orders.value = data || []
       console.log('✅ 订单数据加载成功:', data?.length, '条')
       
-      // 如果有订单，单独加载 SKU 信息 + 产品实拍图
+      // 如果有订单，单独加载 SKU 信息 + 产品实拍图 + 店铺信息
       if (data?.length > 0) {
         const skuIds = data.map(o => o.sku_id).filter(Boolean)
-        if (skuIds.length > 0) {
-          // 并行查询 sku_mapping 和 product_photos
-          const [skuResult, photoResult] = await Promise.all([
-            supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds),
-            supabase.from('product_photos').select('sku_id, photo_url, photo_type').in('sku_id', skuIds).eq('is_active', true).order('sort_order', { ascending: true })
-          ])
-          
-          // 构建 SKU Map
-          const skuMap = skuResult.data
-            ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
-            : {}
-          
-          // 构建产品实拍图 Map（每个 sku_id 取第一张）
-          const photoMap = {}
-          if (photoResult.data) {
-            photoResult.data.forEach(p => {
-              if (!photoMap[p.sku_id]) {
-                // 正确的 Supabase Storage URL: photos bucket，不是 assets
-                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-                photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
-                console.log('🖼️ 实拍图 URL:', photoMap[p.sku_id])
-              }
-            })
+        const shopIds = data.map(o => o.shop_id).filter(Boolean)
+        
+        // 调试：输出 shop_id 值
+        console.log('🔍 shop_id 检查:', {
+          shopIds: shopIds,
+          shopIdCount: shopIds.length,
+          sampleOrderShopIds: data.slice(0, 3).map(o => ({ id: o.etsy_order_id, shop_id: o.shop_id, shop_code: o.shop_code }))
+        })
+        
+        // 并行查询 sku_mapping、product_photos、shops
+        const [skuResult, photoResult, shopResult] = await Promise.all([
+          skuIds.length > 0
+            ? supabase.from('sku_mapping').select('id, sku_code, shape, color, size').in('id', skuIds)
+            : { data: [] },
+          skuIds.length > 0
+            ? supabase.from('product_photos').select('sku_id, photo_url, photo_type').in('sku_id', skuIds).eq('is_active', true).order('sort_order', { ascending: true })
+            : { data: [] },
+          // 如果 shopIds 为空，查询所有 shops 作为 fallback
+          supabase.from('shops').select('id, code, name, operator')
+        ])
+        
+        // 构建 SKU Map
+        const skuMap = skuResult.data
+          ? Object.fromEntries(skuResult.data.map(s => [s.id, s]))
+          : {}
+        
+        // 构建产品实拍图 Map（每个 sku_id 取第一张）
+        const photoMap = {}
+        if (photoResult.data) {
+          photoResult.data.forEach(p => {
+            if (!photoMap[p.sku_id]) {
+              // 正确的 Supabase Storage URL: photos bucket，不是 assets
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+              photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+              console.log('🖼️ 实拍图 URL:', photoMap[p.sku_id])
+            }
+          })
+        }
+        
+        // 构建 Shop Map
+        const shopMap = shopResult.data
+          ? Object.fromEntries(shopResult.data.map(s => [s.id, s]))
+          : {}
+        
+        orders.value = data.map(order => {
+          // 优先通过 shop_id 匹配，如果为空则尝试通过 shop_code 匹配
+          let shop = shopMap[order.shop_id] || null
+          if (!shop && order.shop_code) {
+            shop = Object.values(shopMap).find(s => s.code === order.shop_code) || null
+          }
+          // 如果仍然没有店铺信息，创建一个默认值
+          if (!shop) {
+            shop = { name: order.shop_code || '未分配', code: order.shop_code || 'N/A', operator: '-' }
           }
           
-          orders.value = data.map(order => ({
+          return {
             ...order,
             sku_mapping: skuMap[order.sku_id] || null,
-            product_image: photoMap[order.sku_id] || null
-          }))
-        }
+            product_image: photoMap[order.sku_id] || null,
+            shops: shop
+          }
+        })
         
         const first = orders.value[0]
         console.log('🔍 第一条订单字段检查:', {
@@ -99,7 +130,10 @@ export const useOrderStore = defineStore('order', () => {
           sku: first.sku_mapping?.sku_code || '无',
           shape: first.sku_mapping?.shape || '无',
           color: first.sku_mapping?.color || '无',
-          product_image: first.product_image ? '有' : '无'
+          product_image: first.product_image ? '有' : '无',
+          shop_code: first.shops?.code || first.shop_code || '无',
+          shop_name: first.shops?.name || '无',
+          operator: first.shops?.operator || '无'
         })
       }
       return orders.value

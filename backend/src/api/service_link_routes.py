@@ -47,6 +47,8 @@ class ValidateTokenResponse(BaseModel):
     valid: bool
     shop_id: Optional[str] = None
     shop_name: Optional[str] = None
+    service_token: Optional[str] = None
+    design_token: Optional[str] = None
     message: str
 
 
@@ -234,11 +236,13 @@ async def validate_token(request: ValidateTokenRequest):
         if not shop.get("service_link_enabled", False):
             return ValidateTokenResponse(valid=False, message="客服外链已禁用")
         
-        # 5. 验证成功
+        # 5. 验证成功，返回两个token供页面跳转使用
         return ValidateTokenResponse(
             valid=True,
             shop_id=shop["id"],
             shop_name=shop["name"],
+            service_token=shop.get("service_token", ""),
+            design_token=shop.get("design_token", ""),
             message="验证成功"
         )
         
@@ -503,11 +507,13 @@ async def validate_design_token(request: ValidateDesignTokenRequest):
         if not shop.get("design_link_enabled", False):
             return ValidateTokenResponse(valid=False, message="设计链接已禁用")
         
-        # 5. 验证成功
+        # 5. 验证成功，返回两个token供页面跳转使用
         return ValidateTokenResponse(
             valid=True,
             shop_id=shop["id"],
             shop_name=shop["name"],
+            service_token=shop.get("service_token", ""),
+            design_token=shop.get("design_token", ""),
             message="设计链接验证成功"
         )
         

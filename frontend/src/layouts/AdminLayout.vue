@@ -56,7 +56,7 @@
               <path d="M8 16h.01"/>
             </svg>
             <span>待确认订单</span>
-            <span class="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">32</span>
+            <span class="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">{{ orderCounts.pending }}</span>
           </router-link>
 
           <!-- 3. 物流下单 -->
@@ -86,7 +86,7 @@
               <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
             </svg>
             <span>生产中订单</span>
-            <span class="ml-auto bg-slate-700 text-xs px-2 py-0.5 rounded-full">18</span>
+            <span class="ml-auto bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{ orderCounts.producing }}</span>
           </router-link>
 
           <!-- 5. 已完成订单 -->
@@ -100,7 +100,7 @@
               <path d="m9 11 3 3L22 4"/>
             </svg>
             <span>已完成订单</span>
-            <span class="ml-auto bg-slate-700 text-xs px-2 py-0.5 rounded-full">64</span>
+            <span class="ml-auto bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{ orderCounts.completed }}</span>
           </router-link>
 
           <!-- 6. 邮件模板 -->
@@ -181,7 +181,7 @@
       </nav>
 
       <!-- 底部用户信息 -->
-      <div class="p-4 border-t border-slate-800">
+      <div class="p-4 mt-20 border-t border-slate-800">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
             <span class="font-bold">{{ currentUser?.username?.[0]?.toUpperCase() || 'A' }}</span>
@@ -208,13 +208,43 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminStore } from '../stores/adminStore'
+import supabase from '../utils/supabase'
 
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
+
+// 订单数量统计
+const orderCounts = ref({
+  pending: 0,
+  shipping: 0,
+  producing: 0,
+  completed: 0
+})
+
+// 获取订单数量统计
+const fetchOrderCounts = async () => {
+  try {
+    const { data, error } = await supabase.from('orders').select('status')
+    if (error) throw error
+    if (data) {
+      orderCounts.value.pending = data.filter(o => ['pending', 'effect_sent'].includes(o.status)).length
+      orderCounts.value.shipping = data.filter(o => o.status === 'confirmed').length
+      orderCounts.value.producing = data.filter(o => o.status === 'producing').length
+      orderCounts.value.completed = data.filter(o => ['completed', 'delivered'].includes(o.status)).length
+      console.log('📊 订单统计:', orderCounts.value)
+    }
+  } catch (e) {
+    console.error('获取订单统计失败:', e)
+  }
+}
+
+onMounted(() => {
+  fetchOrderCounts()
+})
 
 // 当前用户信息
 const currentUser = computed(() => adminStore.currentUser)

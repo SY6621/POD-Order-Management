@@ -40,15 +40,9 @@
             <h1>{{ shopInfo?.name || '店铺订单中心' }}</h1>
             <span class="shop-lang">{{ shopCode?.toUpperCase() || 'US' }}</span>
           </div>
+          <!-- 移除右上角重复按钮，保留底部修改设计按钮 -->
           <div class="header-actions">
-            <el-button
-              v-if="designLinkEnabled"
-              type="warning"
-              class="modify-design-btn"
-              @click="goToDesignLink"
-            >
-              <span class="btn-icon">✅</span>修改设计
-            </el-button>
+            <!-- 占位，保持布局 -->
           </div>
         </div>
       </header>
@@ -102,18 +96,26 @@
             <div class="order-number"># {{ order.etsy_order_id }}</div>
             <div class="flex gap-3">
               <div class="flex-shrink-0">
+                <!-- 产品实拍图：优先显示真实图片 -->
                 <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <img 
+                    v-if="order.product_image" 
+                    :src="order.product_image" 
+                    :alt="'产品图-' + order.etsy_order_id"
+                    class="product-real-img"
+                    @error="onProductImageError($event, order)"
+                  />
+                  <svg v-else width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path :d="getShapeIconPath(order.product_shape)"></path>
                   </svg>
                 </div>
               </div>
               <div class="flex-1">
                 <span class="item-tag">Personalisable</span>
-                <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
-                <div class="item-meta">Color + Size: <span class="meta-bold">Gold Large</span></div>
-                <div class="item-meta">Engraving Side: <span class="meta-bold">Double-sided</span></div>
-                <div class="item-meta">Personalization <span class="meta-bold">Front: Luna (F-04) Back: 416.456.3524</span></div>
+                <div class="item-desc">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                <div class="item-meta">Color + Size: <span class="meta-bold">{{ formatColorSize(order.product_color, order.size) }}</span></div>
+                <div class="item-meta">Engraving Side: <span class="meta-bold">{{ order.engraving_sides || 'Double-sided' }}</span></div>
+                <div class="item-meta">Personalization <span class="meta-bold">Front: {{ order.front_text }} Back: {{ order.back_text || '-' }}</span></div>
               </div>
             </div>
           </div>
@@ -134,15 +136,24 @@
             <div class="order-number"># {{ order.etsy_order_id }}</div>
             <div class="flex gap-3">
               <div class="flex-shrink-0">
+                <!-- 产品实拍图：优先显示真实图片 -->
                 <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <img 
+                    v-if="order.product_image" 
+                    :src="order.product_image" 
+                    :alt="'产品图-' + order.etsy_order_id"
+                    class="product-real-img"
+                    @error="onProductImageError($event, order)"
+                  />
+                  <svg v-else width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path :d="getShapeIconPath(order.product_shape)"></path>
                   </svg>
                 </div>
               </div>
               <div class="flex-1">
                 <span class="item-tag">Personalisable</span>
-                <div class="item-desc">Custom Heart Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                <div class="item-desc">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
+                <div class="item-meta">Personalization <span class="meta-bold">Front: {{ order.front_text }}</span></div>
               </div>
             </div>
           </div>
@@ -161,32 +172,47 @@
           <!-- 详情头部 -->
           <div class="detail-header">
             <h3>订单详情 {{ selectedOrder.etsy_order_id }}</h3>
-            <el-tag :type="getEmailStatusType(selectedOrder.email_status)">
-              {{ getEmailStatusText(selectedOrder.email_status) }}
-            </el-tag>
+            <div class="detail-header-actions">
+              <el-tag :type="getEmailStatusType(selectedOrder.email_status)" class="status-tag">
+                {{ getEmailStatusText(selectedOrder.email_status) }}
+              </el-tag>
+              <!-- 按钮组移到标题行右侧 -->
+              <el-button size="small" class="action-btn gray-btn" @click="downloadImage">下载 JPG</el-button>
+              <a 
+                :href="getDesignLink()" 
+                target="_blank"
+                class="design-link-btn"
+              >修改外链</a>
+            </div>
           </div>
 
           <!-- 订单详情区域 -->
           <div class="order-detail-section">
-            <!-- 效果图预览 - 蓝框：放大到与订单信息块同宽 -->
+            <!-- 效果图预览 - 效果图填满整个预览区域 -->
             <div class="effect-section">
               <h4>📷 效果图预览</h4>
               <div class="effect-preview hero">
-                <div class="preview-placeholder">
-                  <div class="preview-image hero-image">
-                    <svg viewBox="0 0 100 100" class="preview-svg">
-                      <path :d="getShapePath(selectedOrder.product_shape)"
-                            :fill="getColorHex(selectedOrder.product_color)"
-                            :stroke="getColorStroke(selectedOrder.product_color)"
-                            stroke-width="2"/>
-                      <text x="50" y="50" text-anchor="middle" font-size="16" fill="#374151" dy=".3em">{{ selectedOrder.front_text }}</text>
-                    </svg>
-                  </div>
-                  <!-- 右下角按钮组 -->
-                  <div class="preview-actions">
-                    <el-button size="small" class="action-btn gray-btn" @click="downloadImage">下载 JPG</el-button>
-                  </div>
-                </div>
+                <!-- 优先使用effect_image_url展示真实效果图 -->
+                <img 
+                  v-if="selectedOrder.effect_image_url"
+                  :src="selectedOrder.effect_image_url" 
+                  :alt="'效果图-' + selectedOrder.etsy_order_id"
+                  class="effect-real-image"
+                  @error="onEffectImageError"
+                />
+                <!-- 兜底：使用SVG渲染 -->
+                <svg 
+                  v-else 
+                  viewBox="0 0 100 100" 
+                  class="effect-fallback-svg"
+                >
+                  <path :d="getShapePath(selectedOrder.product_shape)"
+                        :fill="getColorHex(selectedOrder.product_color)"
+                        :stroke="getColorStroke(selectedOrder.product_color)"
+                        stroke-width="2"/>
+                  <text x="50" y="50" text-anchor="middle" font-size="12" fill="#374151" dy=".3em">{{ selectedOrder.front_text }}</text>
+                  <text x="50" y="70" text-anchor="middle" font-size="10" fill="#6b7280" dy=".3em">{{ selectedOrder.back_text }}</text>
+                </svg>
               </div>
             </div>
 
@@ -203,7 +229,15 @@
                 <!-- 左侧：图片和标题 -->
                 <div class="order-card-left">
                   <div class="product-img-wrapper">
-                    <svg viewBox="0 0 24 24" class="product-icon">
+                    <!-- 优先显示产品实拍图 -->
+                    <img 
+                      v-if="selectedOrder.product_image" 
+                      :src="selectedOrder.product_image" 
+                      :alt="'产品实拍图-' + selectedOrder.etsy_order_id"
+                      class="product-real-img"
+                      @error="onDetailProductImageError"
+                    />
+                    <svg v-else viewBox="0 0 24 24" class="product-icon">
                       <path :d="getShapePath(selectedOrder.product_shape)" 
                             :fill="getColorHex(selectedOrder.product_color)" 
                             stroke="#d1d5db" 
@@ -226,7 +260,7 @@
                   </div>
                   <div class="info-row">
                     <span class="info-label">颜色 + 尺寸:</span>
-                    <span class="info-value">{{ selectedOrder.product_color }}{{ selectedOrder.size || '大号' }}</span>
+                    <span class="info-value">{{ formatColorSize(selectedOrder.product_color, selectedOrder.size) }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-label">雕刻面:</span>
@@ -240,57 +274,7 @@
               </div>
             </div>
 
-            <!-- 修改设计下拉框 -->
-            <div class="design-collapsible">
-              <!-- 绿色按钮行 -->
-              <div class="design-button-row">
-                <el-button 
-                  type="success" 
-                  size="small"
-                  class="design-toggle-btn"
-                  @click="toggleDesignPanel"
-                >
-                  <span class="btn-icon">✏️</span>
-                  <span>修改设计</span>
-                  <el-icon class="btn-arrow" :class="{ rotate: showDesignPanel }"><ArrowDown /></el-icon>
-                </el-button>
-              </div>
-              <!-- 当前订单信息 -->
-              <div class="current-order-info">
-                当前订单：{{ selectedOrder.etsy_order_id }} 客户：{{ selectedOrder.customer_name }}
-              </div>
-              
-              <!-- 下拉内容 -->
-              <div v-show="showDesignPanel" class="design-content">
-                <!-- 客户修改意见 -->
-                <div class="customer-feedback">
-                  <h4>客户修改意见</h4>
-                  <div class="feedback-form">
-                    <el-input
-                      v-model="customerFeedback"
-                      type="textarea"
-                      :rows="3"
-                      placeholder="将客户的修改要求贴贴/填写至此处..."
-                      class="feedback-input"
-                    />
-                    <div class="reference-upload">
-                      <div class="upload-area">
-                        <span class="upload-icon">📁</span>
-                        <span class="upload-text">点击上传 JPG / PNG • 最大 2MB</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="design-actions">
-                    <el-button type="primary" class="submit-btn" @click="submitDesign">
-                      <span>✅</span> 提交设计处理
-                    </el-button>
-                    <el-button type="success" class="edit-btn" @click="goToDesignLink">
-                      <span>🎨</span> 编辑当前设计
-                    </el-button>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       </section>
@@ -314,7 +298,10 @@
               <p>Please confirm the design looks correct, or let us know if you need any changes.</p>
               <p>Best regards,<br>Customer Support Team</p>
             </div>
-            <el-button size="small" class="copy-btn" @click="copyEmail">复制</el-button>
+            <el-button size="small" type="primary" class="copy-btn" @click="copyEmail">
+              <el-icon class="copy-icon"><DocumentCopy /></el-icon>
+              复制邮件内容
+            </el-button>
           </div>
         </div>
 
@@ -344,11 +331,25 @@
             >
               <span class="btn-icon">✏️</span> 请求修改
             </el-button>
-            <!-- 新订单提示 -->
-            <div v-if="selectedOrder.email_status === 'pending' || !selectedOrder.email_status" class="action-hint">
-              <el-icon><InfoFilled /></el-icon>
-              <span>该订单尚未发送效果图，请先在系统中发送邮件</span>
-            </div>
+            <!-- 新订单/待确认时显示客户操作按钮 -->
+            <template v-if="selectedOrder.email_status === 'pending' || !selectedOrder.email_status || selectedOrder.email_status === 'sent'">
+              <el-button
+                type="success"
+                class="confirm-btn"
+                :loading="confirming"
+                @click="handleCustomerConfirm"
+              >
+                <span class="btn-icon">✅</span> 确认设计
+              </el-button>
+              <el-button
+                type="warning"
+                class="modify-btn"
+                :loading="modifying"
+                @click="showModifyDialog"
+              >
+                <span class="btn-icon">✏️</span> 需要修改
+              </el-button>
+            </template>
             <!-- 已确认提示 -->
             <div v-if="selectedOrder.email_status === 'confirmed'" class="action-hint success">
               <el-icon><CircleCheckFilled /></el-icon>
@@ -371,12 +372,24 @@
             <el-empty description="暂无记录" :image-size="60" />
           </div>
           <div v-else class="history-timeline">
-            <div v-for="(log, index) in operationLogs" :key="index" class="history-item">
-              <span class="history-time">{{ log.time }}</span>
-              <span class="history-icon">{{ getLogIcon(log.type) }}</span>
+            <!-- 显示当前订单的操作记录 -->
+            <div v-if="currentOrderLogs.length > 0">
+              <div v-for="(log, index) in currentOrderLogs" :key="index" class="history-item">
+                <span class="history-time">{{ log.time }}</span>
+                <span class="history-icon">{{ getLogIcon(log.type) }}</span>
+                <div class="history-content">
+                  <span class="history-label">{{ log.label }}</span>
+                  <span class="history-text">{{ log.text }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- 无记录时显示订单创建时间 -->
+            <div v-else class="history-item">
+              <span class="history-time">{{ formatShortTime(selectedOrder.created_at) }}</span>
+              <span class="history-icon">📋</span>
               <div class="history-content">
-                <span class="history-label">{{ log.label }}</span>
-                <span class="history-text">{{ log.text }}</span>
+                <span class="history-label">订单创建</span>
+                <span class="history-text">订单已入库，等待处理</span>
               </div>
             </div>
           </div>
@@ -417,7 +430,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Clock, Edit, ArrowDown, Loading, CircleClose, Warning, RefreshRight, InfoFilled, CircleCheckFilled, WarningFilled } from '@element-plus/icons-vue'
+import { Clock, Edit, ArrowDown, Loading, CircleClose, Warning, RefreshRight, InfoFilled, CircleCheckFilled, WarningFilled, DocumentCopy } from '@element-plus/icons-vue'
 import supabase from '@/utils/supabase'
 
 const route = useRoute()
@@ -496,11 +509,13 @@ async function validateAndLoad() {
       return
     }
     
-    // 验证成功，保存店铺信息
+    // 验证成功，保存店铺信息（包含两个token供页面跳转使用）
     shopInfo.value = {
       name: validateResult.shop_name || '店铺订单中心',
       code: shopCode.value,
-      id: validateResult.shop_id
+      id: validateResult.shop_id,
+      service_token: validateResult.service_token || '',
+      design_token: validateResult.design_token || ''
     }
     designLinkEnabled.value = true
     
@@ -548,8 +563,8 @@ async function loadOrders(shopId) {
       return
     }
     
-    // 获取所有SKU ID用于关联查询
-    const skuIds = ordersData.map(o => o.sku_id).filter(Boolean)
+    // 获取所有SKU ID用于关联查询（兼容sku_id和sku_mapping_id字段）
+    const skuIds = ordersData.map(o => o.sku_id || o.sku_mapping_id).filter(Boolean)
     
     // 并行查询SKU信息和产品图片
     let skuMap = {}
@@ -571,7 +586,11 @@ async function loadOrders(shopId) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         photoResult.data.forEach(p => {
           if (!photoMap[p.sku_id]) {
-            photoMap[p.sku_id] = `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+            // photo_url 可能是完整URL或相对路径
+            const photoUrl = p.photo_url.startsWith('http') 
+              ? p.photo_url 
+              : `${supabaseUrl}/storage/v1/object/public/${p.photo_url}`
+            photoMap[p.sku_id] = photoUrl
           }
         })
       }
@@ -599,7 +618,7 @@ async function loadOrders(shopId) {
         created_at: order.created_at,
         // 保留原始数据供后续使用
         sku_mapping: skuInfo,
-        product_image: photoMap[order.sku_id] || null,
+        product_image: photoMap[order.sku_id || order.sku_mapping_id] || null,
         effect_image_url: order.effect_image_url
       }
     })
@@ -931,6 +950,144 @@ function getColorStroke(color) {
 // 订单分组
 const newOrders = computed(() => orders.value.filter(o => o.email_status === 'pending' || !o.email_status))
 const sentOrders = computed(() => orders.value.filter(o => ['sent', 'confirmed', 'modify'].includes(o.email_status)))
+
+// 当前订单的操作日志
+const currentOrderLogs = computed(() => {
+  if (!selectedOrder.value) return []
+  return operationLogs.value.filter(log => log.raw?.order_id === selectedOrder.value.id)
+})
+
+// 格式化颜色+尺寸
+function formatColorSize(color, size) {
+  const colorText = color || ''
+  const sizeText = size || ''
+  if (!colorText && !sizeText) return '-'
+  if (!colorText) return sizeText
+  if (!sizeText) return colorText
+  return `${colorText} · ${sizeText}`
+}
+
+// 产品图片加载失败处理
+function onProductImageError(event, order) {
+  console.warn('产品图片加载失败:', order.etsy_order_id)
+  order.product_image = null // 清除失败的URL，显示SVG兜底
+}
+
+// 效果图加载失败处理
+function onEffectImageError() {
+  console.warn('效果图加载失败，切换到SVG兜底')
+  if (selectedOrder.value) {
+    selectedOrder.value.effect_image_url = null
+  }
+}
+
+// 订单详情区产品图片加载失败处理
+function onDetailProductImageError() {
+  console.warn('订单详情区产品实拍图加载失败:', selectedOrder.value?.etsy_order_id)
+  if (selectedOrder.value) {
+    selectedOrder.value.product_image = null
+  }
+}
+
+// 获取设计链接
+function getDesignLink() {
+  const designToken = shopInfo.value?.design_token || token.value
+  return `/design/${shopCode.value}?token=${designToken}`
+}
+
+// 下载JPG图片
+function downloadImage() {
+  if (!selectedOrder.value) return
+  
+  // 如果有效果图URL，下载效果图
+  if (selectedOrder.value.effect_image_url) {
+    const link = document.createElement('a')
+    link.href = selectedOrder.value.effect_image_url
+    link.download = `effect_${selectedOrder.value.etsy_order_id}.jpg`
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } else {
+    ElMessage.warning('暂无效果图可下载')
+  }
+}
+
+// 格式化短时间（用于操作历史）
+function formatShortTime(timeStr) {
+  if (!timeStr) return '--'
+  const date = new Date(timeStr)
+  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+// 客户确认设计（区别于运营确认）
+async function handleCustomerConfirm() {
+  if (!selectedOrder.value || !shopInfo.value) {
+    ElMessage.warning('请先选择订单')
+    return
+  }
+
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      '确认该设计效果符合预期？确认后将提交生产。',
+      '确认设计',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'success'
+      }
+    ).catch(() => false)
+
+    if (!confirmed) return
+
+    confirming.value = true
+    console.log('✅ 客户确认设计:', selectedOrder.value.etsy_order_id)
+
+    // 1. 更新订单状态
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ email_status: 'confirmed' })
+      .eq('id', selectedOrder.value.id)
+
+    if (updateError) {
+      console.error('❌ 更新订单状态失败:', updateError)
+      throw updateError
+    }
+
+    // 2. 记录操作日志
+    await supabase
+      .from('service_link_logs')
+      .insert({
+        order_id: selectedOrder.value.id,
+        shop_id: shopInfo.value.id,
+        action_type: 'customer_confirm',
+        action_detail: '客户确认设计',
+        created_at: new Date().toISOString()
+      })
+
+    console.log('✅ 设计确认成功')
+    ElMessage.success('设计已确认！感谢您的确认。')
+
+    // 3. 刷新数据
+    await loadOrders(shopInfo.value.id)
+    await loadOperationLogs(shopInfo.value.id)
+
+    // 4. 重新选中订单
+    if (newOrders.value.length > 0) {
+      selectedOrder.value = newOrders.value[0]
+    } else if (sentOrders.value.length > 0) {
+      selectedOrder.value = sentOrders.value[0]
+    } else {
+      selectedOrder.value = null
+    }
+
+  } catch (e) {
+    console.error('❌ 确认失败:', e)
+    ElMessage.error('确认失败，请重试')
+  } finally {
+    confirming.value = false
+  }
+}
 
 // 获取图标路径（用于小图标）
 function getShapeIconPath(shape) {
@@ -1568,6 +1725,7 @@ onMounted(() => {
 .detail-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -1577,6 +1735,16 @@ onMounted(() => {
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
+}
+
+.detail-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-header-actions .status-tag {
+  margin-right: 8px;
 }
 
 /* 效果图预览 - 蓝框：增加高度，作为主体 */
@@ -1593,7 +1761,7 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* 效果图预览 - 蓝框：放大 */
+/* 效果图预览区域 */
 .effect-section {
   margin-bottom: 12px;
 }
@@ -1606,49 +1774,59 @@ onMounted(() => {
 }
 
 .effect-preview {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  background: #ffffff;
   border-radius: 8px;
-  padding: 20px;
+  padding: 0;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-/* 效果图主体高度 - 更大 */
+/* 效果图主体 - 填满容器 */
 .effect-preview.hero {
-  padding: 48px 20px;
+  padding: 0;
   min-height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.preview-placeholder {
-  display: flex;
-  flex-direction: column;
+/* 修改外链按钮样式 - 标题行版本 */
+.design-link-btn {
+  display: inline-flex;
   align-items: center;
-  position: relative;
+  justify-content: center;
+  padding: 5px 11px;
+  font-size: 12px;
+  background: #6b7280;
+  color: #ffffff;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 24px;
+  box-sizing: border-box;
 }
 
-/* 右下角按钮组 */
-.preview-actions {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
+.design-link-btn:hover {
+  background: #4b5563;
+  color: #ffffff;
 }
 
-/* 灰色按钮样式 */
+/* 灰色按钮样式 - 标题行版本 */
 .gray-btn {
-  background: #9ca3af !important;
-  border-color: #9ca3af !important;
+  background: #6b7280 !important;
+  border-color: #6b7280 !important;
   color: #ffffff !important;
   font-size: 12px !important;
-  padding: 6px 12px !important;
+  padding: 5px 11px !important;
+  height: 24px;
 }
 
 .gray-btn:hover {
-  background: #6b7280 !important;
-  border-color: #6b7280 !important;
+  background: #4b5563 !important;
+  border-color: #4b5563 !important;
 }
 
 .gray-btn .btn-arrow {
@@ -1660,32 +1838,22 @@ onMounted(() => {
   transform: rotate(180deg);
 }
 
-.preview-image {
-  width: 140px;
-  height: 140px;
-  background: #ffffff;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+/* 效果图真实图片 - 填满容器 */
+.effect-real-image {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-/* 效果图主体图片更大 */
-.preview-image.hero-image {
-  width: 220px;
-  height: 220px;
-  border-radius: 16px;
-}
-
-.preview-svg {
-  width: 120px;
-  height: 120px;
-}
-
-.preview-image.hero-image .preview-svg {
-  width: 180px;
-  height: 180px;
+/* SVG兜底效果图 - 填满容器 */
+.effect-fallback-svg {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
 }
 
 /* 订单信息块样式 - 红框：紧凑版本 */
@@ -2359,5 +2527,37 @@ onMounted(() => {
   font-size: 14px;
   color: #374151;
   margin: 0 0 12px 0;
+}
+
+/* 产品实拍图样式 */
+.product-real-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+
+
+/* 复制按钮样式 - 蓝色背景 */
+.copy-btn {
+  width: 100%;
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.copy-btn:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.copy-icon {
+  font-size: 16px;
 }
 </style>

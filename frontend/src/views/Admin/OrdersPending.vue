@@ -53,10 +53,10 @@
               <tbody class="divide-y divide-slate-100">
                 <tr v-for="order in filteredOrders" :key="order.id" @click="selectOrder(order)" 
                     :class="['hover:bg-slate-50 transition-colors h-[40px] cursor-pointer', selectedOrder?.id === order.id ? 'bg-blue-50' : '']">
-                  <td class="px-3 whitespace-nowrap font-mono text-slate-600 text-[11px]">{{ order.shop_code || order.shops?.code || '-' }}</td>
+                  <td class="px-3 whitespace-nowrap font-mono text-slate-600 text-[11px]">{{ order.shops?.name || order.shops?.code || order.shop_code || '-' }}</td>
                   <td class="px-3 whitespace-nowrap font-medium text-slate-700">{{ order.etsy_order_id || order.id }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.customer_name }}</td>
-                  <td class="px-3 whitespace-nowrap text-slate-600">{{ order.country || '美国' }}</td>
+                  <td class="px-3 whitespace-nowrap text-slate-600">{{ order.shipping_country || order.country || '-' }}</td>
                   <td class="px-3 whitespace-nowrap font-mono text-slate-500 text-[11px]">{{ order.sku_mapping?.sku_code || order.sku_id || '-' }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.quantity }}</td>
                   <td class="px-3 whitespace-nowrap">
@@ -66,20 +66,31 @@
                     <span v-else class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
                   </td>
                   <td class="px-3 whitespace-nowrap">
-                    <span v-if="order.effect_image_url" class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">已出</span>
-                    <span v-else class="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">空</span>
+                    <el-tag v-if="order.effect_image_url" type="success" size="small" class="text-[10px]">已生成</el-tag>
+                    <el-tag v-else type="info" size="small" class="text-[10px]">未生成</el-tag>
                   </td>
                   <td class="px-3 whitespace-nowrap">
-                    <span v-if="order.status === 'pending' && !order.effect_image_url" class="text-slate-400 text-[10px]">-</span>
-                    <div v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent" class="flex items-center gap-1">
-                      <button @click.stop="rollbackToEdit(order)" class="bg-amber-100 hover:bg-amber-200 text-amber-700 px-2 py-1 rounded text-[10px] transition-colors">回退编辑</button>
-                      <button @click.stop="goToEmailTab(order)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-[10px] transition-colors">写邮件</button>
+                    <div class="flex items-center gap-1">
+                      <!-- 新订单状态：生成效果图 + 详情 -->
+                      <template v-if="order.status === 'pending' && !order.effect_image_url">
+                        <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'new'">生成效果图</el-button>
+                        <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
+                      </template>
+                      <!-- 邮件撰写状态：回退编辑 + 写邮件 -->
+                      <template v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent">
+                        <el-button size="small" type="warning" link @click.stop="rollbackToEdit(order)">回退编辑</el-button>
+                        <el-button size="small" type="primary" link @click.stop="goToEmailTab(order)">写邮件</el-button>
+                      </template>
+                      <!-- 待创建状态：回退邮件 + 创建订单 -->
+                      <template v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent">
+                        <el-button size="small" type="warning" link @click.stop="rollbackToEmail(order)">回退邮件</el-button>
+                        <el-button size="small" type="success" link @click.stop="confirmOrder(order)">物流下单</el-button>
+                      </template>
+                      <!-- 其他状态 -->
+                      <template v-else>
+                        <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
+                      </template>
                     </div>
-                    <div v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent" class="flex items-center gap-1">
-                      <button @click.stop="rollbackToEmail(order)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded text-[10px] transition-colors">回退邮件</button>
-                      <button @click.stop="confirmOrder(order)" class="bg-slate-800 hover:bg-slate-900 text-white px-2 py-1 rounded text-[10px] transition-colors">创建订单</button>
-                    </div>
-                    <span v-else class="text-slate-400 text-[10px]">-</span>
                   </td>
                 </tr>
                 <tr v-if="filteredOrders.length === 0" class="h-[60px]">
@@ -97,7 +108,10 @@
               <h3 class="font-bold text-slate-800 text-sm">效果图设计器</h3>
               <span class="text-xs text-slate-400">使用本地离线设计器生成正背面效果图</span>
             </div>
-            <div class="text-xs text-slate-500" v-if="selectedOrder">当前: {{ selectedOrder.etsy_order_id || selectedOrder.id }}</div>
+            <div class="text-xs text-slate-500" v-if="selectedOrder">
+              订单 <span class="font-bold text-slate-700">{{ selectedOrder.etsy_order_id || selectedOrder.id }}</span>
+              <span v-if="selectedOrder.customer_name" class="text-slate-400"> - {{ selectedOrder.customer_name }}</span>
+            </div>
           </div>
           <div class="bg-slate-50">
             <iframe v-if="designerUrl" ref="designerFrame" :src="designerUrl" class="w-full h-[950px] border-0" @load="onDesignerLoad"></iframe>
@@ -160,7 +174,7 @@
                   <span v-if="selectedOrder?.effect_image_url" class="text-green-500 ml-1">✓ 已确认</span>
                 </div>
                 <div class="aspect-[4/3] flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                  <img v-if="selectedOrder?.effect_image_url" :src="selectedOrder.effect_image_url" class="max-h-full max-w-full object-contain" alt="效果图" @error="$event.target.src=''" />
+                  <img v-if="selectedOrder?.effect_image_url" :src="selectedOrder.effect_image_url" class="max-w-[300px] max-h-[300px] object-contain" alt="效果图" @error="$event.target.src=''" />
                   <div v-else class="text-slate-400 text-sm flex flex-col items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                     <span class="text-xs">暂无效果图</span>
@@ -392,7 +406,7 @@
             <!-- 订单信息两列布局 -->
             <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] mb-2">
               <div><span class="text-slate-400">订单ID:</span> <span class="text-red-500 font-medium">{{ selectedOrder.etsy_order_id }}</span></div>
-              <div><span class="text-slate-400">国家:</span> <span class="text-slate-700">{{ selectedOrder.country || '美国' }}</span></div>
+              <div><span class="text-slate-400">国家:</span> <span class="text-slate-700">{{ selectedOrder.shipping_country || selectedOrder.country || '-' }}</span></div>
               <div><span class="text-slate-400">客户:</span> <span class="text-slate-700">{{ selectedOrder.customer_name }}</span></div>
               <div><span class="text-slate-400">颜色:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.color || '古铜金' }}</span></div>
               <div><span class="text-slate-400">形状:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.shape || '圆形' }}</span></div>
@@ -784,8 +798,14 @@ watch(orderTab, (newTab) => {
 })
 
 const allOrders = computed(() => {
-  const filtered = store.orders.filter(o => ['new', 'pending'].includes(o.status))
-  console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length)
+  // 待确认订单页面显示所有 status === 'pending' 的订单
+  const filtered = store.orders.filter(o => o.status === 'pending')
+  console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length, {
+    订单状态分布: store.orders.reduce((acc, o) => {
+      acc[o.status] = (acc[o.status] || 0) + 1
+      return acc
+    }, {})
+  })
   return filtered
 })
 
@@ -998,13 +1018,19 @@ const moveToPending = async (order) => {
 }
 
 const confirmOrder = async (order) => {
-  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 改为生产中？`)) return
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 进入物流下单？`)) return
   try {
-    await store.updateOrderStatus(order.id, 'producing')
+    await store.updateOrderStatus(order.id, 'confirmed')
     selectedOrder.value = null
-    alert('✅ 订单已转入生产中！')
+    ElMessage.success('订单已确认，即将进入物流下单页面')
+    setTimeout(() => {
+      router.push({
+        path: '/admin/orders/shipping',
+        query: { orderId: order.id }
+      })
+    }, 500)
   } catch (e) {
-    alert('❌ 操作失败：' + e.message)
+    ElMessage.error('操作失败：' + e.message)
   }
 }
 
@@ -1210,6 +1236,12 @@ const submitEmail = async () => {
     return
   }
   
+  // 检查客户邮箱
+  if (!selectedOrder.value.customer_email) {
+    ElMessage.warning('该订单缺少客户邮箱，请手动复制邮件内容发送')
+    return
+  }
+  
   isSendingEmail.value = true
   
   try {
@@ -1370,12 +1402,12 @@ const confirmSendToCustomer = async () => {
 // 前往物流下单页面
 const goToShipping = () => {
   if (!selectedOrder.value) {
-    alert('请先选择订单')
+    ElMessage.warning('请先选择订单')
     return
   }
   // 带上订单ID跳转到物流下单页面
   router.push({
-    path: '/admin/shipping',
+    path: '/admin/orders/shipping',
     query: { orderId: selectedOrder.value.id }
   })
 }

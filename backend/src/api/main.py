@@ -657,7 +657,7 @@ async def create_shipping_order(request: ShippingCreateOrderRequest):
                 print(f"[WARN] logistics核心字段保存也失败: {e2}")
         
         # 11. 更新订单状态（无论logistics是否成功，状态必须更新）
-        db.update("orders", {"id": request.order_id}, {"status": "producing"})
+        db.update("orders", {"id": request.order_id}, {"status": "生产中"})
         
         # 12. 自动生成生产文档PDF（异步触发，不阻断响应）
         production_pdf_url = ""

@@ -253,7 +253,7 @@ async function loadOrders() {
     const { data, error } = await supabase
       .from('orders')
       .select(`*, sku_mappings:sku_mapping(*)`)
-      .in('status', ['confirmed', 'producing'])
+      .in('status', ['待创建', '生产中'])
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -308,7 +308,7 @@ async function confirmComplete(order) {
   try {
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .update({ status: '已完成', updated_at: new Date().toISOString() })
       .eq('id', order.id)
 
     if (error) throw error

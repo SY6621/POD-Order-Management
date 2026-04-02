@@ -29,10 +29,12 @@ export const useOrderStore = defineStore('order', () => {
 
   // 状态映射（与数据库 orders_status_check 约束一致）
   const statusMap = {
-    pending: '待确认',
-    effect_sent: '效果图已发',
-    producing: '生产中',
-    delivered: '已送达'
+    '新订单': '新订单',
+    '待回复': '待回复',
+    '待创建': '待创建',
+    '客户修改': '客户修改',
+    '生产中': '生产中',
+    '已送达': '已送达'
   }
 
   const priorityMap = {
@@ -183,7 +185,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   // 获取生产中订单
-  // 查询状态为 confirmed 或 producing 的订单，关联SKU和物流信息
+  // 查询状态为 生产中 的订单，关联SKU和物流信息
   const getProducingOrders = async () => {
     loading.value = true
     error.value = null
@@ -193,7 +195,7 @@ export const useOrderStore = defineStore('order', () => {
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
-        .in('status', ['confirmed', 'producing'])
+        .in('status', ['待创建', '生产中'])
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
@@ -260,7 +262,7 @@ export const useOrderStore = defineStore('order', () => {
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
-        .eq('status', 'delivered')
+        .eq('status', '已送达')
         .order('created_at', { ascending: false })
 
       if (fetchError) {
@@ -334,9 +336,9 @@ export const useOrderStore = defineStore('order', () => {
       
       const stats = {
         total: data?.length || 0,
-        pending: data?.filter(o => ['pending', 'effect_sent'].includes(o.status)).length || 0,
-        producing: data?.filter(o => o.status === 'producing').length || 0,
-        completed: data?.filter(o => o.status === 'delivered').length || 0
+        pending: data?.filter(o => ['新订单', '待回复'].includes(o.status)).length || 0,
+        producing: data?.filter(o => o.status === '生产中').length || 0,
+        completed: data?.filter(o => o.status === '已送达').length || 0
       }
       
       console.log('✅ 订单统计:', stats)
@@ -356,7 +358,7 @@ export const useOrderStore = defineStore('order', () => {
       const updateData = { status: newStatus }
       
       // 根据状态自动填充时间字段
-      if (['completed', 'shipped', 'delivered'].includes(newStatus)) {
+      if (['已完成', '已发货', '已送达'].includes(newStatus)) {
         updateData.completed_at = new Date().toISOString()
         updateData.progress = 100
       }

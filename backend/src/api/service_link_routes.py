@@ -258,7 +258,7 @@ async def get_pending_orders(shop_id: str):
     - 客服外链只能看到待确认的订单
     """
     try:
-        result = db.supabase.table("orders").select("*").eq("shop_id", shop_id).eq("status", "pending").order("created_at", desc=True).execute()
+        result = db.supabase.table("orders").select("*").eq("shop_id", shop_id).eq("status", "新订单").order("created_at", desc=True).execute()
         
         orders = []
         for order in result.data or []:

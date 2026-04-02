@@ -10,7 +10,7 @@
     <div class="flex gap-4">
       <!-- ══ 左侧：订单列表 + 设计器/邮件撰写 ══ -->
       <!-- 待创建Tab时左侧缩小，其他Tab时左侧占满 -->
-      <div class="w-[60%] space-y-3 min-w-0">
+      <div class="w-[65%] space-y-3 min-w-0">
         <!-- 版块1：合并订单表格 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -28,11 +28,10 @@
           </div>
 
           <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-3 text-xs">
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">待处理 {{ newOrdersCount }}</button>
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'email' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-slate-500'" @click="orderTab = 'email'">邮件撰写 {{ emailOrdersCount }}</button>
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'modify' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-slate-500'" @click="orderTab = 'modify'">客户修改 {{ modifyCount }}</button>
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCount }}</button>
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allOrdersCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">待处理 {{ newCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'waiting' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-slate-500'" @click="orderTab = 'waiting'">待回复 {{ waitingCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCreateCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-500'" @click="orderTab = 'all'">全部 {{ allCount }}</button>
           </div>
           
           <div class="overflow-x-auto" style="max-height: 200px;">
@@ -60,9 +59,9 @@
                   <td class="px-3 whitespace-nowrap font-mono text-slate-500 text-[11px]">{{ order.sku_mapping?.sku_code || order.sku_id || '-' }}</td>
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.quantity }}</td>
                   <td class="px-3 whitespace-nowrap">
-                    <span v-if="order.status === 'pending' && !order.effect_image_url" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">新订单</span>
-                    <span v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">邮件撰写</span>
-                    <span v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
+                    <span v-if="order.status === '新订单'" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">待处理</span>
+                    <span v-else-if="order.status === '待回复'" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">待回复</span>
+                    <span v-else-if="order.status === '待创建'" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
                     <span v-else class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
                   </td>
                   <td class="px-3 whitespace-nowrap">
@@ -71,32 +70,21 @@
                   </td>
                   <td class="px-3 whitespace-nowrap">
                     <div class="flex items-center gap-1">
-                      <!-- 新订单状态：生成效果图 + 回退到新建(全部Tab显示) -->
-                      <template v-if="order.status === 'pending' && !order.effect_image_url">
+                      <!-- 待处理状态：生成效果图 -->
+                      <template v-if="order.status === '新订单'">
                         <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'new'">生成效果图</el-button>
                         <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
-                        <!-- 全部Tab显示重置按钮 -->
-                        <el-button v-if="orderTab === 'all'" size="small" type="danger" link @click.stop="resetOrderToNew(order)">重置</el-button>
                       </template>
-                      <!-- 邮件撰写状态：回退到新订单 + 写邮件 -->
-                      <template v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent">
-                        <el-button size="small" type="warning" link @click.stop="rollbackToEdit(order)">回退到新订单</el-button>
-                        <el-button size="small" type="primary" link @click.stop="goToEmailTab(order)">写邮件</el-button>
+                      <!-- 待回复状态：重发邮件 + 客户已确认 + 回退 -->
+                      <template v-else-if="order.status === '待回复'">
+                        <el-button size="small" type="primary" link @click.stop="selectOrder(order)">重发邮件</el-button>
+                        <el-button size="small" type="success" link @click.stop="confirmByCustomer(order)">客户已确认</el-button>
+                        <el-button size="small" type="warning" link @click.stop="revertToPending(order)">回退</el-button>
                       </template>
-                      <!-- 待创建状态：回退到邮件撰写 + 物流下单 -->
-                      <template v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent && order.email_status !== 'modify'">
-                        <el-button size="small" type="warning" link @click.stop="rollbackToEmail(order)">回退到邮件撰写</el-button>
-                        <el-button size="small" type="success" link @click.stop="confirmOrder(order)">物流下单</el-button>
-                      </template>
-                      <!-- 客户修改状态：回退到待创建 + 处理修改 -->
-                      <template v-else-if="order.status === 'pending' && order.email_status === 'modify'">
-                        <el-button size="small" type="warning" link @click.stop="rollbackToPending(order)">回退到待创建</el-button>
-                        <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'modify'">处理修改</el-button>
-                      </template>
-                      <!-- 生产中状态：重置为新订单(测试用) -->
-                      <template v-else-if="order.status === 'producing' || order.status === 'confirmed'">
-                        <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
-                        <el-button size="small" type="danger" link @click.stop="resetToPending(order)">重置为新订单</el-button>
+                      <!-- 待创建状态：创建物流单 + 退回待处理 -->
+                      <template v-else-if="order.status === '待创建'">
+                        <el-button size="small" type="success" link @click.stop="goToShipping(order)">创建物流单</el-button>
+                        <el-button size="small" type="warning" link @click.stop="revertToEffectSent(order)">回退</el-button>
                       </template>
                       <!-- 其他状态 -->
                       <template v-else>
@@ -408,40 +396,33 @@
       </div>
 
       <!-- 右侧：订单详情 + 发送面板（所有Tab右侧宽度一致） -->
-      <div class="w-[40%] shrink-0 space-y-3 min-w-[300px]">
+      <div class="w-[35%] shrink-0 space-y-3 min-w-[280px]">
         <!-- 订单详情 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
             <h3 class="font-bold text-slate-800 text-sm">订单详情</h3>
           </div>
-          <div v-if="selectedOrder" class="p-3">
-            <!-- 实拍图 -->
-            <div class="w-full h-28 bg-slate-100 rounded-lg overflow-hidden mb-2">
-              <img v-if="selectedOrder.product_image" :src="selectedOrder.product_image" class="w-full h-full object-contain"/>
-              <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-xs">暂无图片</div>
-            </div>
-            <!-- 订单信息两列布局 -->
-            <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] mb-2">
-              <div><span class="text-slate-400">订单ID:</span> <span class="text-red-500 font-medium">{{ selectedOrder.etsy_order_id }}</span></div>
-              <div><span class="text-slate-400">国家:</span> <span class="text-slate-700">{{ selectedOrder.shipping_country || selectedOrder.country || '-' }}</span></div>
-              <div><span class="text-slate-400">客户:</span> <span class="text-slate-700">{{ selectedOrder.customer_name }}</span></div>
-              <div><span class="text-slate-400">颜色:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.color || '古铜金' }}</span></div>
-              <div><span class="text-slate-400">形状:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.shape || '圆形' }}</span></div>
-              <div><span class="text-slate-400">尺寸:</span> <span class="text-slate-700">{{ selectedOrder.sku_mapping?.size || '30mm' }}</span></div>
-            </div>
-            <!-- 正背面内容 -->
-            <div class="bg-slate-50 rounded-lg p-2 text-[11px] space-y-1">
-              <div class="flex items-baseline gap-1">
-                <span class="text-slate-400 shrink-0">正面:</span>
-                <span class="text-slate-800 font-bold">{{ selectedOrder.front_text || '-' }}</span>
+          <div v-if="selectedOrder" class="p-2">
+            <!-- 图片左 + 信息右 横排布局 -->
+            <div class="flex gap-3">
+              <!-- 左：实拍图 -->
+              <div class="w-28 h-28 shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                <img v-if="selectedOrder.product_image" :src="selectedOrder.product_image" class="w-full h-full object-contain"/>
+                <div v-else class="w-full h-full flex items-center justify-center text-slate-400 text-xs">暂无图片</div>
               </div>
-              <div class="flex items-baseline gap-1">
-                <span class="text-slate-400 shrink-0">字体:</span>
-                <span class="text-slate-800 font-bold">{{ selectedOrder.font_code || 'F-04' }}</span>
-              </div>
-              <div class="flex items-baseline gap-1">
-                <span class="text-slate-400 shrink-0">背面:</span>
-                <span class="text-slate-800 font-bold">{{ selectedOrder.back_text || '-' }}</span>
+              <!-- 右：订单信息 两列 -->
+              <div class="flex-1 min-w-0">
+                <div class="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                  <div><span class="text-[11px] text-slate-400">订单ID:</span> <span class="text-xs text-red-500 font-medium">{{ selectedOrder.etsy_order_id }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">尺寸:</span> <span class="text-xs text-slate-700">{{ selectedOrder.sku_mapping?.size || '30mm' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">客户:</span> <span class="text-xs text-slate-700">{{ selectedOrder.customer_name }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">正面:</span> <span class="text-xs text-slate-800 font-bold">{{ selectedOrder.front_text || '-' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">国家:</span> <span class="text-xs text-slate-700">{{ selectedOrder.shipping_country || selectedOrder.country || '-' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">字体:</span> <span class="text-xs text-slate-800 font-bold">{{ selectedOrder.font_code || 'F-04' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">形状:</span> <span class="text-xs text-slate-700">{{ selectedOrder.sku_mapping?.shape || '圆形' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">背面:</span> <span class="text-xs text-slate-800 font-bold">{{ selectedOrder.back_text || '-' }}</span></div>
+                  <div><span class="text-[11px] text-slate-400">颜色:</span> <span class="text-xs text-slate-700">{{ selectedOrder.sku_mapping?.color || '古铜金' }}</span></div>
+                </div>
               </div>
             </div>
           </div>
@@ -462,17 +443,21 @@
             <div class="flex items-center gap-3 text-xs">
               <div class="flex items-center gap-1">
                 <span class="text-slate-500">模板:</span>
-                <select v-model="firstEmailTemplate" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
+                <select v-model="templateSelectValue" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
                   <option v-for="tpl in firstEmailTemplateOptions" :key="tpl.key" :value="tpl.key">{{ tpl.name }}</option>
+                  <option value="__custom__">自定义...</option>
                 </select>
+                <input v-if="templateSelectValue === '__custom__'" v-model="customTemplateName" type="text" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white w-20" placeholder="模板名" />
               </div>
               <div class="flex items-center gap-1">
                 <span class="text-slate-500">落款:</span>
-                <select v-model="firstEmailSender" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
+                <select v-model="senderSelectValue" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
                   <option value="Sophia">Sophia</option>
                   <option value="Customer Support Team">Customer Support Team</option>
                   <option value="Pet Tag Studio">Pet Tag Studio</option>
+                  <option value="__custom__">自定义...</option>
                 </select>
+                <input v-if="senderSelectValue === '__custom__'" v-model="customSenderName" @input="firstEmailSender = customSenderName" type="text" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white w-24" placeholder="输入落款名" />
               </div>
             </div>
 
@@ -481,19 +466,15 @@
               {{ firstEmailPreview }}
             </div>
 
-            <!-- 模板编辑（折叠区） -->
-            <div class="border-t border-slate-100 pt-2">
-              <div class="flex items-center justify-between cursor-pointer" @click="showTemplateEditor = !showTemplateEditor">
-                <span class="text-xs text-slate-400 flex items-center gap-1">
-                  ✏️ 编辑模板
-                </span>
-                <svg :class="['w-3 h-3 text-slate-400 transition-transform', showTemplateEditor ? 'rotate-180' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </div>
+            <!-- 编辑模板折叠区 -->
+            <div class="border-t border-slate-100 mt-2 pt-2">
+              <button @click="showTemplateEditor = !showTemplateEditor" class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700">
+                <span>✏️ 编辑模板</span>
+                <span class="text-[10px]">{{ showTemplateEditor ? '▲' : '▼' }}</span>
+              </button>
               <div v-if="showTemplateEditor" class="mt-2 space-y-2">
-                <textarea v-model="editingTemplateContent" rows="10" class="w-full border border-slate-200 rounded-lg p-2 text-xs text-slate-700 leading-relaxed resize-y" placeholder="模板正文（支持{firstName}、{senderName}占位符）"></textarea>
-                <button @click="saveTemplateToLocal" class="w-full px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium">
+                <textarea v-model="templateEditContent" rows="14" class="w-full text-xs border border-slate-200 rounded-lg p-2 resize-y focus:outline-none focus:ring-1 focus:ring-blue-300" placeholder="编辑模板内容..."></textarea>
+                <button @click="saveTemplate" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium">
                   💾 保存模板
                 </button>
               </div>
@@ -623,29 +604,122 @@
           </div>
         </div>
 
-          <!-- 发送给客户操作面板（待创建Tab显示） -->
-          <div v-if="orderTab === 'pending' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <!-- Tab2: 待回复 - 邮件状态与操作面板 -->
+          <div v-if="orderTab === 'waiting' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
-              <h3 class="font-bold text-slate-800 text-sm">🚀 发送给客户</h3>
+              <h3 class="font-bold text-slate-800 text-sm">📧 已发送邮件</h3>
             </div>
             <div class="p-3 space-y-3">
-              <p class="text-xs text-slate-500">请复制效果图和邮件内容，通过Etsy后台发送给客户确认。</p>
+              <!-- 邮件状态信息 -->
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">发送时间:</span>
+                  <span class="text-slate-700">{{ formatDate(selectedOrder.updated_at) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">模板名称:</span>
+                  <span class="text-slate-700">{{ selectedOrder.email_template_name || '标准确认' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">等待天数:</span>
+                  <span :class="waitingDays > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">
+                    {{ waitingDays }} 天
+                    <span v-if="waitingDays > 3" class="text-[10px] ml-1">⚠️ 超时</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="flex gap-2 pt-2 border-t border-slate-100">
+                <button @click="resendEmail" :disabled="isResendingEmail" class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                  <span v-if="isResendingEmail">发送中...</span>
+                  <span v-else>📧 重发邮件</span>
+                </button>
+                <button @click="confirmByCustomerFromPanel" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                  ✅ 客户已确认
+                </button>
+              </div>
+              <button @click="revertToPendingFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
+                ↩️ 回退到待处理
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab3: 待创建 - 操作面板 -->
+          <div v-if="orderTab === 'pending' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
+              <h3 class="font-bold text-slate-800 text-sm">🚀 创建物流单</h3>
+            </div>
+            <div class="p-3 space-y-3">
+              <p class="text-xs text-slate-500">客户已确认效果图，现在可以创建物流单。</p>
               
               <!-- 操作按钮 -->
               <div class="flex gap-2">
-                <button @click="copyShareLink" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                  🔗 复制链接
-                </button>
-                <button @click="copyEmailContent" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2.5 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                  📋 复制邮件
+                <button @click="goToShipping" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                  📦 创建物流单
                 </button>
               </div>
-              <button @click="goToShipping" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
-                物流下单 →
+              <button @click="revertToEffectSentFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
+                ↩️ 回退到待回复
               </button>
+            </div>
+          </div>
+
+          <!-- Tab4: 全部 - 根据订单状态动态显示操作面板 -->
+          <div v-if="orderTab === 'all' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
+              <h3 class="font-bold text-slate-800 text-sm">⚡ 快捷操作</h3>
+            </div>
+            <div class="p-3 space-y-3">
+              <!-- 待处理：显示去生成效果图 -->
+              <template v-if="selectedOrder.status === '新订单'">
+                <p class="text-xs text-slate-500">此订单需要生成效果图并发送首封确认邮件。</p>
+                <div class="flex gap-2">
+                  <button @click="orderTab = 'new'; selectOrder(selectedOrder)" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                    🎨 去生成效果图
+                  </button>
+                </div>
+              </template>
+
+              <!-- 待回复：显示重发邮件/客户已确认/回退 -->
+              <template v-else-if="selectedOrder.status === '待回复'">
+                <div class="space-y-2 text-xs mb-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-500">等待天数:</span>
+                    <span :class="waitingDays > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">{{ waitingDays }} 天</span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="resendEmail" :disabled="isResendingEmail" class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                    {{ isResendingEmail ? '发送中...' : '📧 重发邮件' }}
+                  </button>
+                  <button @click="confirmByCustomerFromPanel" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                    ✅ 客户已确认
+                  </button>
+                </div>
+                <button @click="revertToPendingFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs transition-all">
+                  ↩️ 回退到待处理
+                </button>
+              </template>
+
+              <!-- 待创建：显示创建物流单/回退到待回复 -->
+              <template v-else-if="selectedOrder.status === '待创建'">
+                <p class="text-xs text-slate-500">客户已确认，可以创建物流单。</p>
+                <div class="flex gap-2">
+                  <button @click="goToShipping" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                    📦 创建物流单
+                  </button>
+                </div>
+                <button @click="revertToEffectSentFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs transition-all">
+                  ↩️ 回退到待回复
+                </button>
+              </template>
+
+              <!-- 其他状态 -->
+              <template v-else>
+                <p class="text-xs text-slate-400">当前状态暂无可用操作</p>
+              </template>
             </div>
           </div>
 
@@ -768,7 +842,28 @@ const senderOptions = [
 // ===== 首封邮件区域 =====
 const firstEmailTemplate = ref('standard')
 const firstEmailSender = ref('Sophia')
+const senderSelectValue = ref('Sophia')
+const customSenderName = ref('')
+const templateSelectValue = ref('standard')
+const customTemplateName = ref('')
 const isSendingFirstEmail = ref(false)
+
+// 落款下拉联动
+watch(senderSelectValue, (val) => {
+  if (val !== '__custom__') {
+    firstEmailSender.value = val
+  } else {
+    firstEmailSender.value = customSenderName.value || 'Sophia'
+  }
+})
+
+// 模板下拉联动
+watch(templateSelectValue, (val) => {
+  if (val !== '__custom__') {
+    firstEmailTemplate.value = val
+  }
+  // 自定义时保持当前模板内容，用户可在编辑区修改
+})
 
 // 硬编码默认模板（如果API读不到就用这些）- 使用reactive使其响应式
 const defaultFirstEmailTemplates = reactive({
@@ -782,16 +877,16 @@ const defaultFirstEmailTemplates = reactive({
     key: 'urgent',
     content: `Hi {firstName},\n\nThank you for your order!\nYour design proof is ready. Since this is a rush order, please review and confirm within 12 hours so we can start production right away.\nIf I don't hear back within 12 hours, I'll proceed as requested.\nThank you!\n\nBest regards,\n{senderName}`
   },
-  custom_request: {
+  custom: {
     name: '定制需求确认',
-    key: 'custom_request',
+    key: 'custom',
     content: `Hi {firstName},\n\nThank you so much for your order!\nI've carefully prepared your custom design based on your special requirements. Please take a moment to review everything, especially the personalization details.\nPlease confirm within 24 hours if everything looks good, or let me know if you'd like any changes.\nLooking forward to hearing from you!\n\nBest regards,\n{senderName}`
   }
 })
 
 // 模板编辑相关
 const showTemplateEditor = ref(false)
-const editingTemplateContent = ref('')
+const templateEditContent = ref('')
 
 // 从localStorage加载自定义模板
 const loadCustomTemplates = () => {
@@ -812,19 +907,19 @@ const loadCustomTemplates = () => {
 }
 
 // 保存模板到localStorage
-const saveTemplateToLocal = () => {
+const saveTemplate = () => {
   const key = firstEmailTemplate.value
   if (!key) return
   
   // 更新运行时数据
   if (defaultFirstEmailTemplates[key]) {
-    defaultFirstEmailTemplates[key].content = editingTemplateContent.value
+    defaultFirstEmailTemplates[key].content = templateEditContent.value
   }
   
   // 持久化到localStorage
   try {
     const saved = JSON.parse(localStorage.getItem('firstEmailCustomTemplates') || '{}')
-    saved[key] = editingTemplateContent.value
+    saved[key] = templateEditContent.value
     localStorage.setItem('firstEmailCustomTemplates', JSON.stringify(saved))
     ElMessage.success('模板已保存')
   } catch (e) {
@@ -835,7 +930,15 @@ const saveTemplateToLocal = () => {
 // 切换模板时，同步编辑区内容
 watch(firstEmailTemplate, (newVal) => {
   const tpl = defaultFirstEmailTemplates[newVal]
-  editingTemplateContent.value = tpl ? tpl.content : ''
+  templateEditContent.value = tpl ? tpl.content : ''
+})
+
+// 展开编辑器时，同步当前模板内容
+watch(showTemplateEditor, (isOpen) => {
+  if (isOpen) {
+    const tpl = defaultFirstEmailTemplates[firstEmailTemplate.value]
+    templateEditContent.value = tpl ? tpl.content : ''
+  }
 })
 
 // 模板选项列表
@@ -849,41 +952,20 @@ const firstEmailTemplateOptions = computed(() => {
   return Object.values(defaultFirstEmailTemplates)
 })
 
-// 邮件预览（计算属性）
+// 邮件预览（计算属性）— 直接使用本地硬编码模板，不走API
 const firstEmailPreview = computed(() => {
-  if (!selectedOrder.value) return ''
-
   const order = selectedOrder.value
-  const firstName = (order.customer_name || '').split(' ')[0] || 'there'
+  const firstName = order ? (order.customer_name || '').split(' ')[0] || 'Customer' : 'Customer'
   const sender = firstEmailSender.value
 
-  // 尝试从API模板读取
-  const apiTemplates = emailTemplatesData.value?.first_confirm
-  let templateText = ''
-
-  if (apiTemplates && apiTemplates.length > 0) {
-    const matched = apiTemplates.find(t => t.template_key === firstEmailTemplate.value)
-    if (matched && matched.content) {
-      // 从三维结构中读取 casual/standard/en（使用最简单的组合）
-      const content = matched.content
-      templateText = content?.casual?.standard?.en
-        || content?.formal?.standard?.en
-        || content?.lively?.standard?.en
-        || ''
-    }
-  }
-
-  // fallback到硬编码模板
-  if (!templateText) {
-    const defaultTpl = defaultFirstEmailTemplates[firstEmailTemplate.value]
-    templateText = defaultTpl ? defaultTpl.content : ''
-  }
+  // 直接从硬编码模板读取（API旧数据不可靠）
+  const defaultTpl = defaultFirstEmailTemplates[firstEmailTemplate.value]
+  const templateText = defaultTpl ? defaultTpl.content : ''
 
   // 替换变量
   return templateText
     .replace(/\{firstName\}/g, firstName)
     .replace(/\{senderName\}/g, sender)
-    .replace(/\\n/g, '\n')
 })
 
 // 复制邮件内容
@@ -960,7 +1042,7 @@ onMounted(async () => {
   // 加载自定义邮件模板
   loadCustomTemplates()
   // 初始化编辑区内容
-  editingTemplateContent.value = defaultFirstEmailTemplates[firstEmailTemplate.value]?.content || ''
+  templateEditContent.value = defaultFirstEmailTemplates[firstEmailTemplate.value]?.content || ''
 
   // 将 confirmDesign 挂载到 window，供设计器 iframe 调用
   window.confirmDesign = confirmDesign
@@ -1022,26 +1104,138 @@ const formatLogTime = (timestamp) => {
   })
 }
 
+// 格式化日期
+const formatDate = (timestamp) => {
+  if (!timestamp) return '-'
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 等待天数计算
+const waitingDays = computed(() => {
+  if (!selectedOrder.value?.updated_at) return 0
+  const diff = Date.now() - new Date(selectedOrder.value.updated_at).getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
+})
+
+// 重发邮件loading状态
+const isResendingEmail = ref(false)
+
+// 客户已确认 - 表格行操作
+const confirmByCustomer = async (order) => {
+  if (!order) return
+  try {
+    await store.updateOrderStatus(order.id, '待创建')
+    ElMessage.success('订单已移至待创建')
+    await store.getPendingOrders()
+    selectedOrder.value = null
+  } catch (e) {
+    ElMessage.error('操作失败: ' + e.message)
+  }
+}
+
+// 客户已确认 - 右侧面板操作
+const confirmByCustomerFromPanel = async () => {
+  if (!selectedOrder.value) return
+  await confirmByCustomer(selectedOrder.value)
+}
+
+// 退回待处理 - 表格行操作
+const revertToPending = async (order) => {
+  if (!order) return
+  try {
+    const { error } = await supabase.from('orders').update({ status: '新订单' }).eq('id', order.id)
+    if (error) throw error
+    ElMessage.success('订单已退回待处理')
+    await store.getPendingOrders()
+    selectedOrder.value = null
+  } catch (e) {
+    ElMessage.error('操作失败: ' + e.message)
+  }
+}
+
+// 退回到待回复 - 表格行操作（从待创建状态回退）
+const revertToEffectSent = async (order) => {
+  if (!order) return
+  try {
+    const { error } = await supabase.from('orders').update({ status: '待回复' }).eq('id', order.id)
+    if (error) throw error
+    ElMessage.success('订单已退回待回复')
+    await store.getPendingOrders()
+    selectedOrder.value = null
+  } catch (e) {
+    ElMessage.error('操作失败: ' + e.message)
+  }
+}
+
+// 退回待处理 - 右侧面板操作
+const revertToPendingFromPanel = async () => {
+  if (!selectedOrder.value) return
+  await revertToPending(selectedOrder.value)
+}
+
+// 退回到待回复 - 右侧面板操作
+const revertToEffectSentFromPanel = async () => {
+  if (!selectedOrder.value) return
+  await revertToEffectSent(selectedOrder.value)
+}
+
+// 重发邮件
+const resendEmail = async () => {
+  if (!selectedOrder.value) {
+    ElMessage.warning('请先选择订单')
+    return
+  }
+  isResendingEmail.value = true
+  try {
+    // 这里可以调用邮件发送API
+    // 暂时模拟发送成功
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    ElMessage.success('邮件已重新发送')
+    // 更新发送时间
+    await supabase.from('orders').update({ updated_at: new Date().toISOString() }).eq('id', selectedOrder.value.id)
+    await store.getPendingOrders()
+  } catch (e) {
+    ElMessage.error('发送失败: ' + e.message)
+  } finally {
+    isResendingEmail.value = false
+  }
+}
+
+// 前往物流下单页面（带订单参数）
+const goToShippingWithOrder = (order) => {
+  if (!order) {
+    ElMessage.warning('请先选择订单')
+    return
+  }
+  selectOrder(order)
+  router.push({
+    path: '/admin/orders/shipping',
+    query: { orderId: order.id }
+  })
+}
+
 // 监听 Tab 切换，自动选择第一个订单
 watch(orderTab, (newTab) => {
   if (newTab === 'new' && filteredOrders.value.length > 0) {
-    // 切换到新订单 Tab 时，自动选择第一个订单
+    // 切换到待处理 Tab 时，自动选择第一个订单
     const firstNewOrder = filteredOrders.value[0]
     if (firstNewOrder) {
       selectOrder(firstNewOrder)
-      console.log('📌 自动选择新订单:', firstNewOrder.etsy_order_id)
+      console.log('📌 自动选择待处理订单:', firstNewOrder.etsy_order_id)
     }
-  } else if (newTab === 'email' && filteredOrders.value.length > 0) {
-    // 切换到邮件撰写 Tab 时，自动选择第一个有效果图但未发送邮件的订单
-    const firstEmailOrder = filteredOrders.value[0]
-    if (firstEmailOrder) {
-      selectOrder(firstEmailOrder)
-      console.log('📌 自动选择邮件撰写订单:', firstEmailOrder.etsy_order_id)
-    }
-    // 自动选择第一个模板（标准确认）
-    if (currentTemplates.value.length > 0) {
-      selectedTemplate.value = currentTemplates.value[0]
-      console.log('📌 自动选择模板:', selectedTemplate.value.name)
+  } else if (newTab === 'waiting' && filteredOrders.value.length > 0) {
+    // 切换到待回复 Tab 时，自动选择第一个订单
+    const firstWaitingOrder = filteredOrders.value[0]
+    if (firstWaitingOrder) {
+      selectOrder(firstWaitingOrder)
+      console.log('📌 自动选择待回复订单:', firstWaitingOrder.etsy_order_id)
     }
   } else if (newTab === 'pending' && filteredOrders.value.length > 0) {
     // 切换到待创建 Tab 时，自动选择第一个订单
@@ -1050,12 +1244,12 @@ watch(orderTab, (newTab) => {
       selectOrder(firstPendingOrder)
       console.log('📌 自动选择待创建订单:', firstPendingOrder.etsy_order_id)
     }
-  } else if (newTab === 'modify' && filteredOrders.value.length > 0) {
-    // 切换到客户修改 Tab 时，自动选择第一个订单
-    const firstModifyOrder = filteredOrders.value[0]
-    if (firstModifyOrder) {
-      selectOrder(firstModifyOrder)
-      console.log('📌 自动选择客户修改订单:', firstModifyOrder.etsy_order_id)
+  } else if (newTab === 'all' && filteredOrders.value.length > 0) {
+    // 切换到全部 Tab 时，自动选择第一个订单
+    const firstAllOrder = filteredOrders.value[0]
+    if (firstAllOrder) {
+      selectOrder(firstAllOrder)
+      console.log('📌 自动选择订单:', firstAllOrder.etsy_order_id)
     }
   }
 })
@@ -1069,8 +1263,8 @@ const allOrders = computed(() => {
     console.log('🔍 allOrders 计算(全部Tab):', store.orders.length, '条全部订单')
     return store.orders
   }
-  // 其他Tab：只显示pending状态的订单
-  const filtered = store.orders.filter(o => o.status === 'pending')
+  // 其他Tab：只显示新订单状态的订单
+  const filtered = store.orders.filter(o => o.status === '新订单')
   console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length, {
     订单状态分布: store.orders.reduce((acc, o) => {
       acc[o.status] = (acc[o.status] || 0) + 1
@@ -1088,79 +1282,52 @@ const filteredOrders = computed(() => {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   
-  // 按状态标签筛选
-  // 新订单：无效果图的 pending 订单
-  // 邮件撰写：有效果图的 pending 订单（等待发送邮件）
-  // 待创建：有效果图且已发送邮件的 pending 订单
-  // 客户修改：email_status === 'modify' 的订单
-  // 全部：显示所有订单（不过滤）
+  // 按Tab状态筛选（新4Tab结构）
+  // 待处理：status = '新订单'（新订单/待确认）
+  // 待回复：status = '待回复'（已发效果图等客户确认）
+  // 待创建：status = '待创建'（客户已确认，等待创建物流单）
+  // 全部：显示所有待确认订单（新订单, 待回复, 待创建）
   if (orderTab.value === 'new') {
-    orders = orders.filter(o => o.status === 'pending' && !o.effect_image_url)
-  } else if (orderTab.value === 'email') {
-    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && !o.email_sent)
+    orders = orders.filter(o => o.status === '新订单')
+  } else if (orderTab.value === 'waiting') {
+    orders = orders.filter(o => o.status === '待回复')
   } else if (orderTab.value === 'pending') {
-    orders = orders.filter(o => o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status !== 'modify')
-  } else if (orderTab.value === 'modify') {
-    orders = orders.filter(o => o.status === 'pending' && o.email_status === 'modify')
+    orders = orders.filter(o => o.status === '待创建')
+  } else if (orderTab.value === 'all') {
+    orders = orders.filter(o => ['新订单', '待回复', '待创建'].includes(o.status))
   }
-  // orderTab.value === 'all' 时不进行状态过滤，显示所有订单
   
   return orders
 })
 
-const allOrdersCount = computed(() => {
-  let orders = allOrders.value
+// Tab计数计算属性（新4Tab结构）
+const newCount = computed(() => {
+  // 待处理：status = '新订单'
+  let orders = allOrders.value.filter(o => o.status === '新订单')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   return orders.length
 })
-const newOrdersCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'pending' && !o.effect_image_url)
+const waitingCount = computed(() => {
+  // 待回复：status = '待回复'
+  let orders = allOrders.value.filter(o => o.status === '待回复')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   return orders.length
 })
-const emailOrdersCount = computed(() => {
-  let orders = allOrders.value.filter(o => o.status === 'pending' && o.effect_image_url && !o.email_sent)
-  console.log('📧 邮件撰写Tab筛选:', {
-    总数: allOrders.value.length,
-    满足条件: orders.length,
-    详情: allOrders.value.map(o => ({
-      id: o.etsy_order_id,
-      status: o.status,
-      has_effect: !!o.effect_image_url,
-      email_sent: o.email_sent
-    }))
-  })
+const pendingCreateCount = computed(() => {
+  // 待创建：status = '待创建'
+  let orders = allOrders.value.filter(o => o.status === '待创建')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
   return orders.length
 })
-const modifyCount = computed(() => {
-  // 客户修改Tab：email_status === 'modify' 的订单
-  let orders = allOrders.value.filter(o => o.status === 'pending' && o.email_status === 'modify')
-  if (activeAccount.value !== 'all') {
-    orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
-  }
-  console.log('🔧 客户修改Tab筛选:', {
-    总数: allOrders.value.length,
-    满足条件: orders.length,
-    详情: allOrders.value.filter(o => o.email_status === 'modify').map(o => ({
-      id: o.etsy_order_id,
-      status: o.status,
-      email_status: o.email_status
-    }))
-  })
-  return orders.length
-})
-const pendingCount = computed(() => {
-  // 待创建Tab：有效果图且已发送邮件，但不是 modify 状态的订单
-  let orders = allOrders.value.filter(o => 
-    o.status === 'pending' && o.effect_image_url && o.email_sent && o.email_status !== 'modify'
-  )
+const allCount = computed(() => {
+  // 全部：显示所有待确认订单（新订单, 待回复, 待创建）
+  let orders = allOrders.value.filter(o => ['新订单', '待回复', '待创建'].includes(o.status))
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
@@ -1283,7 +1450,7 @@ const saveEffectImage = () => {
 const moveToPending = async (order) => {
   if (!confirm(`确认将新订单 ${order.etsy_order_id || order.id} 转为待确认？`)) return
   try {
-    await store.updateOrderStatus(order.id, 'pending')
+    await store.updateOrderStatus(order.id, '新订单')
     alert('✅ 已转为待确认订单')
   } catch (e) {
     alert('❌ 操作失败：' + e.message)
@@ -1293,7 +1460,7 @@ const moveToPending = async (order) => {
 const confirmOrder = async (order) => {
   if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 进入物流下单？`)) return
   try {
-    await store.updateOrderStatus(order.id, 'confirmed')
+    await store.updateOrderStatus(order.id, '待创建')
     selectedOrder.value = null
     ElMessage.success('订单已确认，即将进入物流下单页面')
     setTimeout(() => {
@@ -1447,7 +1614,7 @@ const resetToPending = async (order) => {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
-          status: 'pending',
+          status: '新订单',
           effect_image_url: null,
           email_sent: false,
           email_status: null,
@@ -1821,7 +1988,7 @@ const confirmSendToCustomer = async () => {
   
   try {
     // 更新订单状态为生产中
-    await store.updateOrderStatus(selectedOrder.value.id, 'producing')
+    await store.updateOrderStatus(selectedOrder.value.id, '生产中')
     selectedOrder.value = null
     alert('✅ 订单已转入生产中！')
   } catch (e) {

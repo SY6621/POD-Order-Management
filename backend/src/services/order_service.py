@@ -115,7 +115,7 @@ class OrderService:
 
         order_data = {
             "etsy_order_id":   parsed.etsy_order_id,
-            "status":          "pending",
+            "status":          "新订单",
             "customer_name":   parsed.customer_name or parsed.shipping_name or "",
             "customer_email":  "",
             "total_amount":    parsed.order_total,

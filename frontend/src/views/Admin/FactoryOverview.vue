@@ -220,7 +220,7 @@ async function loadOrders() {
     const { data: producingData, error: producingError } = await supabase
       .from('orders')
       .select(`*, sku_mapping(*)`)
-      .eq('status', 'producing')
+      .eq('status', '生产中')
       .order('created_at', { ascending: false })
     
     if (producingError) throw producingError

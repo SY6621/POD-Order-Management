@@ -19,6 +19,14 @@
 - [check_order_flow.py](file://backend/scripts/check_order_flow.py)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 新增AIGenerateEmailRequest模型和参数验证机制
+- 增强邮件长度控制功能，支持short、standard、detailed三种长度
+- 新增客户请求规格和操作员备注功能
+- 完善API端点的错误处理和参数校验
+- 更新AI服务的邮件生成逻辑和模板系统
+
 ## 目录
 1. [项目概述](#项目概述)
 2. [项目结构](#项目结构)
@@ -42,6 +50,8 @@ AI邮件生成系统是一个基于Python和Vue.js的完整订单自动化处理
 - **PDF文档生成**：生产文档和物流标签的自动生成
 - **多语言支持**：中英文邮件内容的智能翻译
 - **物流集成**：与4PX物流系统的无缝对接
+- **参数验证**：严格的API参数验证和错误处理机制
+- **邮件长度控制**：支持多种邮件长度模式的智能生成
 
 ## 项目结构
 
@@ -86,7 +96,7 @@ BE3 --> ML
 
 ### 1. API服务层
 
-系统的核心是基于FastAPI构建的RESTful API服务，提供了完整的订单生命周期管理功能。
+系统的核心是基于FastAPI构建的RESTful API服务，提供了完整的订单生命周期管理功能。新增了严格的参数验证和错误处理机制。
 
 ### 2. 业务服务层
 
@@ -158,12 +168,29 @@ Services --> Logistics
 
 ### AI邮件生成服务
 
-AI邮件生成服务是系统的核心创新点，提供了智能化的邮件内容生成能力。
+AI邮件生成服务是系统的核心创新点，提供了智能化的邮件内容生成能力。经过增强后，系统现在支持更精细的参数控制和更强大的功能。
 
 #### 核心功能
 
 ```mermaid
 classDiagram
+class AIGenerateEmailRequest {
++scene : str
++customer_name : str
++product_name : str
++front_text : Optional[str]
++back_text : Optional[str]
++shape : str
++color : str
++size : str
++tone : str
++length : str
++sender_name : str
++modify_reason : Optional[str]
++customer_request : Optional[str]
++operator_note : Optional[str]
++effect_image_url : Optional[str]
+}
 class AIService {
 +SCENES : Dict
 +TONES : Dict
@@ -174,7 +201,7 @@ class AIService {
 +generate_email(params) Dict
 +_generate_by_ai(params) Dict
 +_generate_by_template(params) Dict
-+_build_system_prompt(scene, tone) str
++_build_system_prompt(scene, tone, length) str
 +_parse_ai_response(content, scene) Dict
 +get_supported_scenes() Dict
 +get_supported_tones() Dict
@@ -194,35 +221,73 @@ class TranslationService {
 +model : str
 +api_url : str
 }
+AIGenerateEmailRequest --> AIService : "参数输入"
 AIService --> EmailService : "生成邮件内容"
 AIService --> TranslationService : "多语言支持"
 ```
 
 **图表来源**
+- [main.py:1448-1466](file://backend/src/api/main.py#L1448-L1466)
 - [ai_service.py:26-464](file://backend/src/services/ai_service.py#L26-L464)
 - [email_service.py:29-352](file://backend/src/services/email_service.py#L29-L352)
 - [translation_service.py:13-160](file://backend/src/services/translation_service.py#L13-L160)
 
-#### 邮件场景支持
+#### 新增的邮件长度控制功能
 
-系统支持三种主要的邮件场景：
+系统现在支持三种不同的邮件长度模式：
 
-| 场景类型 | 描述 | 适用场景 |
-|---------|------|----------|
-| first_confirm | 首封确认邮件 | 订单收到后的首次确认 |
-| modify_confirm | 修改确认邮件 | 客户要求修改后的确认 |
-| review_request | 追评邮件 | 发货后的售后跟进 |
+| 长度模式 | 字数限制 | 适用场景 | 特点 |
+|---------|----------|----------|------|
+| short | 50字以内 | 紧急通知、简短确认 | 精简直接，快速阅读 |
+| standard | 100字以内 | 常规确认、修改确认 | 平衡简洁与完整 |
+| detailed | 300字以内 | 详细说明、复杂场景 | 完整详细，情感丰富 |
 
-#### 语气风格系统
+#### 增强的参数验证机制
 
-系统提供三种不同的语气风格：
+API端点现在包含严格的参数验证和错误处理：
 
-- **友好亲切**：适合日常沟通，语气温和
-- **专业正式**：适合商务场合，表达专业
-- **温暖关怀**：注重情感表达，体现关怀
+```mermaid
+flowchart TD
+Start([API请求)] --> ValidateScene[验证场景参数]
+ValidateScene --> SceneValid{场景有效?}
+SceneValid --> |否| ErrorScene[返回错误: 无效场景]
+SceneValid --> |是| ValidateTone[验证语气参数]
+ValidateTone --> ToneValid{语气有效?}
+ToneValid --> |否| ErrorTone[返回错误: 无效语气]
+ToneValid --> |是| ValidateLength[验证长度参数]
+ValidateLength --> LengthValid{长度有效?}
+LengthValid --> |否| ErrorLength[返回错误: 无效长度]
+LengthValid --> |是| ValidateModifyConfirm{modify_confirm场景?}
+ValidateModifyConfirm --> |是| CheckModifyReason[检查modify_reason]
+CheckModifyReason --> HasReason{有修改原因?}
+HasReason --> |否| ErrorReason[返回错误: 需要modify_reason]
+HasReason --> |是| BuildParams[构建参数]
+ValidateModifyConfirm --> |否| BuildParams
+BuildParams --> CallAI[调用AI服务]
+CallAI --> Success[返回成功响应]
+ErrorScene --> End([结束])
+ErrorTone --> End
+ErrorLength --> End
+ErrorReason --> End
+```
+
+**图表来源**
+- [main.py:1631-1710](file://backend/src/api/main.py#L1631-L1710)
+
+#### 新增的客户请求规格功能
+
+系统现在支持记录和处理客户的原始修改要求：
+
+- **customer_request**：客户的具体修改要求原文
+- **operator_note**：运营人员的修改说明
+- **modify_reason**：修改原因的总结
+
+这些功能使得系统能够更好地跟踪订单修改历史，提供更透明的服务流程。
 
 **章节来源**
-- [ai_service.py:26-464](file://backend/src/services/ai_service.py#L26-L464)
+- [main.py:1448-1466](file://backend/src/api/main.py#L1448-L1466)
+- [main.py:1631-1710](file://backend/src/api/main.py#L1631-L1710)
+- [ai_service.py:256-265](file://backend/src/services/ai_service.py#L256-L265)
 
 ### 效果图生成服务
 
@@ -446,6 +511,10 @@ ChangeLanguage --> Preview
 - **PDF生成**：分段生成减少内存占用
 - **批量操作**：数据库批量插入优化
 
+### 4. 参数验证优化
+
+新增的参数验证机制在API层进行早期错误检测，减少了无效请求对系统资源的消耗。
+
 ## 故障排除指南
 
 ### 常见问题及解决方案
@@ -466,7 +535,15 @@ ChangeLanguage --> Preview
 - 验证网络连接
 - 查看API响应状态
 
-#### 3. PDF生成错误
+#### 3. 参数验证错误
+
+**症状**：API返回参数验证错误
+**解决方案**：
+- 检查请求参数格式
+- 验证必填字段完整性
+- 确认参数值的有效性
+
+#### 4. PDF生成错误
 
 **症状**：PDF生成过程中出现异常
 **解决方案**：
@@ -474,7 +551,7 @@ ChangeLanguage --> Preview
 - 验证模板文件存在性
 - 确认磁盘空间充足
 
-#### 4. 数据库连接问题
+#### 5. 数据库连接问题
 
 **症状**：数据库操作失败
 **解决方案**：
@@ -489,14 +566,16 @@ ChangeLanguage --> Preview
 
 ## 结论
 
-AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台。系统的主要优势包括：
+AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台。经过显著增强后，系统现在具备了更强大的功能和更好的用户体验。
 
 ### 技术优势
 
 1. **智能化程度高**：AI驱动的邮件内容生成
 2. **自动化程度强**：从订单接收到生产的完整自动化
-3. **扩展性强**：模块化设计便于功能扩展
-4. **用户体验好**：直观的前端界面和实时预览
+3. **参数控制精确**：支持多种邮件长度和语气风格
+4. **扩展性强**：模块化设计便于功能扩展
+5. **用户体验好**：直观的前端界面和实时预览
+6. **可靠性高**：完善的参数验证和错误处理机制
 
 ### 应用价值
 
@@ -504,6 +583,7 @@ AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台
 2. **保证质量**：标准化的邮件内容和设计
 3. **降低成本**：减少人工成本和错误率
 4. **提升客户体验**：及时、个性化的客户服务
+5. **增强透明度**：完整的修改历史记录
 
 ### 发展前景
 
@@ -513,5 +593,6 @@ AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台
 - 支持更多的电商平台
 - 增强的分析和报告功能
 - 移动端应用支持
+- 实时协作功能
 
-该系统为电商订单处理提供了一个完整的解决方案，具有很高的实用价值和推广前景。
+该系统为电商订单处理提供了一个完整的解决方案，具有很高的实用价值和推广前景。新增的参数验证、邮件长度控制、客户请求规格和操作员备注功能使其在功能完整性和用户体验方面都有了显著提升。

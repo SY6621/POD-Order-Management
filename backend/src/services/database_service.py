@@ -70,7 +70,7 @@ class DatabaseService:
         return self.select_one("orders", {"etsy_order_id": etsy_order_id})
 
     def get_pending_orders(self) -> List[Dict]:
-        return self.select("orders", {"status": "pending"})
+        return self.select("orders", {"status": "新订单"})
 
     def create_order(self, data: Dict) -> Optional[Dict]:
         return self.insert("orders", data)

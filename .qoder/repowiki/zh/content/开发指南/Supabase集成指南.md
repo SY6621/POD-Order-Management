@@ -33,6 +33,11 @@
 - [backend/scripts/check_storage.py](file://backend/scripts/check_storage.py)
 - [backend/scripts/add_operator_email.sql](file://backend/scripts/add_operator_email.sql)
 - [docs/frontend-backend-api.md](file://docs/frontend-backend-api.md)
+- [docs/开发文档-页面状态按钮-v1.0.md](file://docs/开发文档-页面状态按钮-v1.0.md)
+- [frontend/src/main.js](file://frontend/src/main.js)
+- [frontend/src/App.vue](file://frontend/src/App.vue)
+- [frontend/src/views/ServiceLink/ServiceLink.vue](file://frontend/src/views/ServiceLink/ServiceLink.vue)
+- [frontend/src/views/ShippingOrder/ShippingOrder.vue](file://frontend/src/views/ShippingOrder/ShippingOrder.vue)
 </cite>
 
 ## 更新摘要
@@ -42,6 +47,8 @@
 - 更新数据库架构图，反映新的表结构和关系
 - 新增子账号权限管理功能说明
 - 更新前端多租户界面实现
+- **新增** 实时数据同步功能：基于Supabase Realtime的订单状态自动更新机制
+- **新增** 改进的状态管理架构：Pinia状态管理器的优化和增强
 - **新增** 订单存储功能重大改进：SVG格式图像处理、向量路径嵌入、错误处理增强
 - **新增** 效果图存储架构：SVG向量图形与JPG位图双轨存储
 - **新增** 设计器向量化功能：自动将文字转为SVG路径
@@ -53,15 +60,17 @@
 3. [核心组件分析](#核心组件分析)
 4. [多租户架构设计](#多租户架构设计)
 5. [权限管理体系](#权限管理体系)
-6. [订单存储架构](#订单存储架构)
-7. [向量化图像处理](#向量化图像处理)
-8. [错误处理增强](#错误处理增强)
-9. [架构概览](#架构概览)
-10. [详细组件分析](#详细组件分析)
-11. [依赖关系分析](#依赖关系分析)
-12. [性能考虑](#性能考虑)
-13. [故障排除指南](#故障排除指南)
-14. [结论](#结论)
+6. [实时数据同步功能](#实时数据同步功能)
+7. [改进的状态管理架构](#改进的状态管理架构)
+8. [订单存储架构](#订单存储架构)
+9. [向量化图像处理](#向量化图像处理)
+10. [错误处理增强](#错误处理增强)
+11. [架构概览](#架构概览)
+12. [详细组件分析](#详细组件分析)
+13. [依赖关系分析](#依赖关系分析)
+14. [性能考虑](#性能考虑)
+15. [故障排除指南](#故障排除指南)
+16. [结论](#结论)
 
 ## 简介
 
@@ -77,6 +86,7 @@ Supabase是一个开源的Firebase替代方案，提供了PostgreSQL数据库、
 - 支持多租户和权限控制
 - 实现主账号-子账号权限体系
 - **新增** 支持向量化图像存储和处理
+- **新增** 实现实时数据同步功能
 
 ## 项目结构概览
 
@@ -89,11 +99,13 @@ FE[Vue.js前端应用]
 FE_API[API接口调用]
 FE_STORE[Pinia状态管理]
 DESIGNER[独立设计器]
+REALTIME[实时数据同步]
 end
 subgraph "后端服务"
 BE[Python后端服务]
 DB[Supabase数据库]
 STORAGE[Supabase存储]
+REALTIME_WS[实时WebSocket]
 end
 subgraph "多租户架构"
 SHOPS[shops表 - 店铺信息]
@@ -116,7 +128,9 @@ FE --> FE_API
 FE_API --> BE
 FE_STORE --> FE_API
 DESIGNER --> FE_API
+REALTIME --> FE_STORE
 BE --> DB
+DB --> REALTIME_WS
 DB --> SHOPS
 DB --> USERS
 DB --> PERMISSIONS
@@ -340,6 +354,137 @@ CheckPermission --> AccessGranted
 - [backend/scripts/init_subaccount.sql:1-90](file://backend/scripts/init_subaccount.sql#L1-L90)
 - [frontend/src/views/Admin/AdminUsers.vue:146-359](file://frontend/src/views/Admin/AdminUsers.vue#L146-L359)
 
+## 实时数据同步功能
+
+### Supabase Realtime架构
+
+系统集成了Supabase Realtime功能，实现订单状态的实时更新：
+
+```mermaid
+sequenceDiagram
+participant Client as 前端客户端
+participant Realtime as Supabase Realtime
+participant Channel as 订单频道
+participant Server as Supabase服务器
+participant DB as PostgreSQL数据库
+Client->>Realtime : 连接到Realtime服务
+Realtime->>Server : 建立WebSocket连接
+Server-->>Realtime : 连接确认
+Realtime->>Channel : 订阅orders表
+Channel->>DB : 监听INSERT/UPDATE事件
+DB-->>Channel : 数据变更通知
+Channel-->>Realtime : 推送变更事件
+Realtime-->>Client : 实时更新数据
+Client->>Client : 更新本地状态管理器
+Client->>Client : 触发UI重新渲染
+```
+
+**图表来源**
+- [frontend/src/stores/orderStore.js:351-387](file://frontend/src/stores/orderStore.js#L351-L387)
+
+### 实时状态更新机制
+
+系统实现了完整的实时数据同步机制：
+
+1. **频道订阅**: 前端应用订阅orders表的实时更新
+2. **事件监听**: 监听数据库的INSERT、UPDATE、DELETE事件
+3. **状态同步**: 自动更新本地Pinia状态管理器
+4. **UI响应**: 实时更新用户界面，无需手动刷新
+5. **错误处理**: 处理网络中断和重连机制
+
+### 实时功能实现
+
+```mermaid
+flowchart TD
+Start([应用启动]) --> InitRealtime["初始化Realtime客户端"]
+InitRealtime --> SubscribeOrders["订阅orders表"]
+SubscribeOrders --> ListenEvents["监听数据库事件"]
+ListenEvents --> ProcessEvent["处理事件类型"]
+ProcessEvent --> UpdateLocalState["更新本地状态"]
+UpdateLocalState --> TriggerUIUpdate["触发UI更新"]
+TriggerUIUpdate --> WaitEvent["等待下一个事件"]
+ProcessUpdate["处理UPDATE事件"] --> UpdateLocalState
+ProcessInsert["处理INSERT事件"] --> UpdateLocalState
+ProcessDelete["处理DELETE事件"] --> UpdateLocalState
+WaitEvent --> ListenEvents
+```
+
+**图表来源**
+- [frontend/src/stores/orderStore.js:351-387](file://frontend/src/stores/orderStore.js#L351-L387)
+
+**章节来源**
+- [frontend/src/stores/orderStore.js:351-387](file://frontend/src/stores/orderStore.js#L351-L387)
+
+## 改进的状态管理架构
+
+### Pinia状态管理器优化
+
+系统采用Pinia作为状态管理解决方案，实现了优化的状态管理架构：
+
+```mermaid
+graph TB
+subgraph "状态管理架构"
+OrderStore[订单状态管理器]
+ShopStore[店铺状态管理器]
+AdminStore[管理员状态管理器]
+RemoteStore[远程协作状态管理器]
+end
+subgraph "状态属性"
+Orders[orders数组]
+Loading[loading状态]
+Error[error状态]
+Stats[统计信息]
+end
+subgraph "计算属性"
+ComputedOrders[computed订单过滤]
+PendingCount[待确认数量]
+ProducingCount[生产中数量]
+CompletedCount[已完成数量]
+end
+OrderStore --> Orders
+OrderStore --> Loading
+OrderStore --> Error
+OrderStore --> Stats
+Orders --> ComputedOrders
+Stats --> PendingCount
+Stats --> ProducingCount
+Stats --> CompletedCount
+```
+
+**图表来源**
+- [frontend/src/stores/orderStore.js:1-880](file://frontend/src/stores/orderStore.js#L1-L880)
+
+### 状态管理功能
+
+系统实现了以下状态管理功能：
+
+1. **订单状态管理**: 管理订单的完整生命周期状态
+2. **加载状态控制**: 统一的加载状态管理
+3. **错误状态处理**: 完善的错误状态处理机制
+4. **计算属性**: 基于状态的计算属性
+5. **本地缓存**: 本地状态缓存和同步
+
+### 状态同步机制
+
+```mermaid
+sequenceDiagram
+participant API as API调用
+participant Store as 状态管理器
+participant LocalCache as 本地缓存
+participant UI as 用户界面
+API->>Store : 更新订单状态
+Store->>LocalCache : 同步本地状态
+Store->>UI : 触发状态变化
+UI->>UI : 重新渲染组件
+LocalCache->>LocalCache : 更新缓存数据
+```
+
+**图表来源**
+- [frontend/src/stores/orderStore.js:372-386](file://frontend/src/stores/orderStore.js#L372-L386)
+
+**章节来源**
+- [frontend/src/stores/orderStore.js:1-880](file://frontend/src/stores/orderStore.js#L1-L880)
+
 ## 订单存储架构
 
 ### 存储桶设计
@@ -393,10 +538,10 @@ OrderStore-->>Designer : 返回存储结果
 ```
 
 **图表来源**
-- [frontend/src/stores/orderStore.js:496-609](file://frontend/src/stores/orderStore.js#L496-L609)
+- [frontend/src/stores/orderStore.js:614-726](file://frontend/src/stores/orderStore.js#L614-L726)
 
 **章节来源**
-- [frontend/src/stores/orderStore.js:496-609](file://frontend/src/stores/orderStore.js#L496-L609)
+- [frontend/src/stores/orderStore.js:614-726](file://frontend/src/stores/orderStore.js#L614-L726)
 - [backend/src/models/order.py:147-171](file://backend/src/models/order.py#L147-L171)
 
 ## 向量化图像处理
@@ -480,6 +625,8 @@ UI[用户界面]
 API[REST API]
 STORE[Pinia状态管理]
 DESIGNER[独立设计器]
+REALTIME[实时数据同步]
+SERVICE_LINK[服务链接]
 end
 subgraph "业务逻辑层"
 OrderService[订单服务]
@@ -489,6 +636,7 @@ ShopService[店铺服务]
 UserService[用户服务]
 EffectImageService[效果图像服务]
 DesignService[设计服务]
+ServiceLinkService[服务链接服务]
 end
 subgraph "数据访问层"
 DBService[数据库服务]
@@ -497,6 +645,7 @@ AuthManager[认证管理器]
 PermissionManager[权限管理器]
 EffectImageManager[效果图像管理器]
 DesignDataManager[设计数据管理器]
+ServiceDataManager[服务数据管理器]
 end
 subgraph "多租户管理层"
 TenantManager[多租户管理器]
@@ -518,6 +667,7 @@ ShopService --> PermissionManager
 UserService --> AuthManager
 EffectImageService --> EffectImageManager
 DesignService --> DesignDataManager
+ServiceLinkService --> ServiceDataManager
 DBService --> PostgreSQL
 StorageService --> Storage
 DBService --> Auth
@@ -526,6 +676,7 @@ PermissionManager --> TenantManager
 TenantManager --> PostgreSQL
 EffectImageManager --> Storage
 DesignDataManager --> Storage
+ServiceDataManager --> Storage
 ```
 
 **图表来源**
@@ -742,10 +893,36 @@ OrderStore-->>Client : 返回存储结果
 ```
 
 **图表来源**
-- [frontend/src/stores/orderStore.js:496-609](file://frontend/src/stores/orderStore.js#L496-L609)
+- [frontend/src/stores/orderStore.js:614-726](file://frontend/src/stores/orderStore.js#L614-L726)
 
 **章节来源**
-- [frontend/src/stores/orderStore.js:496-609](file://frontend/src/stores/orderStore.js#L496-L609)
+- [frontend/src/stores/orderStore.js:614-726](file://frontend/src/stores/orderStore.js#L614-L726)
+
+### 服务链接数据管理
+
+**新增** 服务链接功能实现了客服与订单的关联管理：
+
+#### 服务链接流程
+
+```mermaid
+sequenceDiagram
+participant Customer as 客服
+participant ServiceLink as 服务链接
+participant ServiceLinkLogs as 服务链接日志
+participant OrdersTable as Orders表
+Customer->>ServiceLink : 创建服务链接
+ServiceLink->>OrdersTable : 关联订单
+OrdersTable-->>ServiceLink : 订单状态更新
+ServiceLink->>ServiceLinkLogs : 记录操作日志
+ServiceLinkLogs-->>ServiceLink : 日志保存成功
+ServiceLink-->>Customer : 返回链接信息
+```
+
+**图表来源**
+- [frontend/src/views/ServiceLink/ServiceLink.vue:644-672](file://frontend/src/views/ServiceLink/ServiceLink.vue#L644-L672)
+
+**章节来源**
+- [frontend/src/views/ServiceLink/ServiceLink.vue:644-672](file://frontend/src/views/ServiceLink/ServiceLink.vue#L644-L672)
 
 ## 依赖关系分析
 
@@ -794,6 +971,7 @@ SupabaseJS[@supabase/supabase-js ^2.93.3]
 Vue[vue ^3.5.24]
 ElementPlus[element-plus ^2.13.2]
 Pinia[Pinia ^2.3.0]
+RealtimeJS[Realtime JS ^2.93.3]
 end
 subgraph "开发依赖"
 Vite[vite ^7.2.4]
@@ -804,6 +982,7 @@ NPM --> SupabaseJS
 NPM --> Vue
 NPM --> ElementPlus
 NPM --> Pinia
+NPM --> RealtimeJS
 NPM --> Vite
 NPM --> TailwindCSS
 ```
@@ -822,6 +1001,20 @@ NPM --> TailwindCSS
 1. **连接池管理**: 使用单例模式避免重复创建数据库连接
 2. **超时设置**: 合理设置数据库操作超时时间
 3. **批量操作**: 对于大量数据操作使用批量处理
+
+### 实时数据同步优化
+
+1. **频道订阅**: 优化订阅策略，减少不必要的数据传输
+2. **事件过滤**: 在客户端侧过滤不需要的事件类型
+3. **状态缓存**: 利用本地缓存减少重复查询
+4. **增量更新**: 实现增量数据更新，避免全量刷新
+
+### 状态管理优化
+
+1. **计算属性**: 使用Vue的计算属性避免重复计算
+2. **懒加载**: 按需加载数据，减少初始负载
+3. **状态分片**: 将大型状态分解为更小的管理器
+4. **内存管理**: 及时清理不再使用的状态数据
 
 ### 存储优化
 
@@ -865,6 +1058,15 @@ NPM --> TailwindCSS
 | 认证失败 | 密钥错误 | 验证SUPABASE_URL和SUPABASE_KEY配置 |
 | 数据库不可用 | 服务暂停 | 运行保活脚本或检查服务状态 |
 
+#### 实时数据同步问题
+
+| 问题症状 | 可能原因 | 解决方案 |
+|---------|----------|----------|
+| 实时更新延迟 | 网络延迟 | 检查网络连接质量 |
+| 订阅失败 | 权限不足 | 验证RLS策略配置 |
+| 事件丢失 | WebSocket断开 | 实现自动重连机制 |
+| 状态不一致 | 缓存同步问题 | 清理本地缓存，重新加载数据 |
+
 #### 多租户问题
 
 | 问题症状 | 可能原因 | 解决方案 |
@@ -883,31 +1085,36 @@ NPM --> TailwindCSS
 | 访问被拒绝 | CORS配置 | 配置正确的CORS规则 |
 | SVG文件损坏 | 向量化失败 | 检查图像质量和向量化参数 |
 
-#### 数据完整性问题
+#### 状态管理问题
 
 ```mermaid
 flowchart TD
 Problem([发现问题]) --> IdentifyType{"识别问题类型"}
 IdentifyType --> ConnectionIssue["连接问题"]
+IdentifyType --> RealtimeIssue["实时同步问题"]
 IdentifyType --> MultiTenantIssue["多租户问题"]
 IdentifyType --> StorageIssue["存储问题"]
-IdentifyType --> DataIssue["数据问题"]
+IdentifyType --> StateIssue["状态管理问题"]
 ConnectionIssue --> CheckEnv["检查环境配置"]
 CheckEnv --> TestConn["运行连接测试"]
 TestConn --> FixConfig["修复配置问题"]
+RealtimeIssue --> CheckSubscription["检查订阅状态"]
+CheckSubscription --> VerifyRLS["验证RLS策略"]
+VerifyRLS --> FixRLS["修复权限配置"]
 MultiTenantIssue --> CheckStructure["检查数据库结构"]
 CheckStructure --> VerifyPermissions["验证权限配置"]
 VerifyPermissions --> FixPermissions["修复权限问题"]
 StorageIssue --> VerifyBucket["验证bucket状态"]
 VerifyBucket --> CheckPermission["检查权限设置"]
 CheckPermission --> FixPermission["修复权限问题"]
-DataIssue --> ValidateSchema["验证数据结构"]
-ValidateSchema --> CheckConstraints["检查约束条件"]
-CheckConstraints --> FixData["修复数据问题"]
+StateIssue --> CheckCache["检查缓存状态"]
+CheckCache --> ClearCache["清理缓存数据"]
+ClearCache --> ReloadData["重新加载数据"]
 FixConfig --> Monitor["监控系统状态"]
+FixRLS --> Monitor
 FixPermissions --> Monitor
 FixPermission --> Monitor
-FixData --> Monitor
+ReloadData --> Monitor
 Monitor --> Resolution([问题解决])
 ```
 
@@ -938,6 +1145,7 @@ Monitor --> Resolution([问题解决])
 4. **保活脚本**: 确保数据库服务保持活跃状态
 5. **多租户检查**: 验证数据库结构和权限配置
 6. **存储检查**: 验证Storage桶的配置和访问权限
+7. **实时监控**: 监控实时数据同步状态
 
 **章节来源**
 - [backend/scripts/check_supabase_resources.py:14-58](file://backend/scripts/check_supabase_resources.py#L14-L58)
@@ -949,15 +1157,19 @@ Supabase集成为ETSY订单自动化系统提供了强大的数据基础设施�
 
 **更新** 系统的订单存储功能得到了重大改进，实现了SVG格式图像处理、向量路径嵌入和增强的错误处理机制。这些改进不仅提升了用户体验，还为后续的PDF生成和生产文档管理奠定了坚实基础。
 
+**新增** 实时数据同步功能的集成，使得系统能够实现实时的订单状态更新，大大提升了系统的响应性和用户体验。同时，改进的状态管理架构采用了Pinia作为状态管理解决方案，提供了更好的开发体验和性能表现。
+
 ### 关键优势
 
 1. **可靠性**: 使用单例模式和连接池管理确保连接稳定性
-2. **可扩展性**: 支持水平扩展和分布式部署
-3. **安全性**: 内置认证和授权机制，实现严格的多租户隔离
-4. **易用性**: 提供直观的API和丰富的工具链
-5. **灵活性**: 支持主账号-子账号的灵活权限管理
-6. **向量化优势**: SVG格式提供无损缩放和高精度显示
-7. **错误处理**: 多层次的异常处理确保系统稳定性
+2. **实时性**: 基于Supabase Realtime的实时数据同步
+3. **可扩展性**: 支持水平扩展和分布式部署
+4. **安全性**: 内置认证和授权机制，实现严格的多租户隔离
+5. **易用性**: 提供直观的API和丰富的工具链
+6. **灵活性**: 支持主账号-子账号的灵活权限管理
+7. **向量化优势**: SVG格式提供无损缩放和高精度显示
+8. **错误处理**: 多层次的异常处理确保系统稳定性
+9. **状态管理**: 基于Pinia的现代化状态管理架构
 
 ### 多租户架构优势
 
@@ -966,6 +1178,22 @@ Supabase集成为ETSY订单自动化系统提供了强大的数据基础设施�
 3. **审计跟踪**: 完整的操作日志，便于合规审计
 4. **性能优化**: 针对多租户场景的查询优化
 5. **扩展性**: 支持动态添加新店铺和用户
+
+### 实时数据同步优势
+
+1. **即时更新**: 订单状态变更立即反映在所有客户端
+2. **降低延迟**: 减少轮询机制，提高系统响应速度
+3. **节省资源**: 避免频繁的HTTP请求
+4. **用户体验**: 提供更流畅的交互体验
+5. **数据一致性**: 确保所有客户端看到相同的数据状态
+
+### 改进的状态管理优势
+
+1. **响应式更新**: 基于Vue响应式的自动状态更新
+2. **类型安全**: TypeScript支持提供更好的开发体验
+3. **模块化**: 状态管理器按功能模块组织
+4. **可测试性**: 独立的状态管理器便于单元测试
+5. **性能优化**: 计算属性和懒加载机制
 
 ### 订单存储架构优势
 
@@ -985,5 +1213,7 @@ Supabase集成为ETSY订单自动化系统提供了强大的数据基础设施�
 6. **安全审计**: 建立完善的安全审计机制
 7. **向量化优化**: 定期优化向量化算法和参数
 8. **存储管理**: 建立存储桶的生命周期管理策略
+9. **实时监控**: 监控实时数据同步的健康状况
+10. **状态管理**: 建立状态管理的最佳实践规范
 
-通过遵循这些指导原则，可以确保Supabase集成在生产环境中稳定可靠地运行，为多租户订单自动化系统提供坚实的技术基础。新增的向量化图像处理功能和增强的错误处理机制将进一步提升系统的专业性和用户体验。
+通过遵循这些指导原则，可以确保Supabase集成在生产环境中稳定可靠地运行，为多租户订单自动化系统提供坚实的技术基础。新增的实时数据同步功能、改进的状态管理架构以及向量化的图像处理功能将进一步提升系统的专业性和用户体验。

@@ -10,7 +10,7 @@
     <div class="flex gap-4">
       <!-- ══ 左侧：订单列表 + 设计器/邮件撰写 ══ -->
       <!-- 待创建Tab时左侧缩小，其他Tab时左侧占满 -->
-      <div class="flex-1 space-y-3 min-w-0">
+      <div class="w-[60%] space-y-3 min-w-0">
         <!-- 版块1：合并订单表格 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -28,7 +28,7 @@
           </div>
 
           <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-3 text-xs">
-            <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">新订单 {{ newOrdersCount }}</button>
+            <button class="px-3 py-1 rounded-full" :class="orderTab === 'new' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-slate-500'" @click="orderTab = 'new'">待处理 {{ newOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'email' ? 'bg-purple-50 text-purple-600 font-medium' : 'text-slate-500'" @click="orderTab = 'email'">邮件撰写 {{ emailOrdersCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'modify' ? 'bg-pink-50 text-pink-600 font-medium' : 'text-slate-500'" @click="orderTab = 'modify'">客户修改 {{ modifyCount }}</button>
             <button class="px-3 py-1 rounded-full" :class="orderTab === 'pending' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500'" @click="orderTab = 'pending'">待创建 {{ pendingCount }}</button>
@@ -47,7 +47,7 @@
                   <th class="px-3 whitespace-nowrap font-medium">数量</th>
                   <th class="px-3 whitespace-nowrap font-medium">状态</th>
                   <th class="px-3 whitespace-nowrap font-medium">效果图</th>
-                  <th class="px-3 whitespace-nowrap font-medium">操作</th>
+                  <th class="px-3 whitespace-nowrap font-medium min-w-[180px]">操作</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -71,20 +71,32 @@
                   </td>
                   <td class="px-3 whitespace-nowrap">
                     <div class="flex items-center gap-1">
-                      <!-- 新订单状态：生成效果图 + 详情 -->
+                      <!-- 新订单状态：生成效果图 + 回退到新建(全部Tab显示) -->
                       <template v-if="order.status === 'pending' && !order.effect_image_url">
                         <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'new'">生成效果图</el-button>
                         <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
+                        <!-- 全部Tab显示重置按钮 -->
+                        <el-button v-if="orderTab === 'all'" size="small" type="danger" link @click.stop="resetOrderToNew(order)">重置</el-button>
                       </template>
-                      <!-- 邮件撰写状态：回退编辑 + 写邮件 -->
+                      <!-- 邮件撰写状态：回退到新订单 + 写邮件 -->
                       <template v-else-if="order.status === 'pending' && order.effect_image_url && !order.email_sent">
-                        <el-button size="small" type="warning" link @click.stop="rollbackToEdit(order)">回退编辑</el-button>
+                        <el-button size="small" type="warning" link @click.stop="rollbackToEdit(order)">回退到新订单</el-button>
                         <el-button size="small" type="primary" link @click.stop="goToEmailTab(order)">写邮件</el-button>
                       </template>
-                      <!-- 待创建状态：回退邮件 + 创建订单 -->
-                      <template v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent">
-                        <el-button size="small" type="warning" link @click.stop="rollbackToEmail(order)">回退邮件</el-button>
+                      <!-- 待创建状态：回退到邮件撰写 + 物流下单 -->
+                      <template v-else-if="order.status === 'pending' && order.effect_image_url && order.email_sent && order.email_status !== 'modify'">
+                        <el-button size="small" type="warning" link @click.stop="rollbackToEmail(order)">回退到邮件撰写</el-button>
                         <el-button size="small" type="success" link @click.stop="confirmOrder(order)">物流下单</el-button>
+                      </template>
+                      <!-- 客户修改状态：回退到待创建 + 处理修改 -->
+                      <template v-else-if="order.status === 'pending' && order.email_status === 'modify'">
+                        <el-button size="small" type="warning" link @click.stop="rollbackToPending(order)">回退到待创建</el-button>
+                        <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'modify'">处理修改</el-button>
+                      </template>
+                      <!-- 生产中状态：重置为新订单(测试用) -->
+                      <template v-else-if="order.status === 'producing' || order.status === 'confirmed'">
+                        <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
+                        <el-button size="small" type="danger" link @click.stop="resetToPending(order)">重置为新订单</el-button>
                       </template>
                       <!-- 其他状态 -->
                       <template v-else>
@@ -354,14 +366,14 @@
                 <div class="flex items-center gap-2 flex-1">
                   <span class="text-xs text-slate-500 shrink-0">落款:</span>
                   <div class="flex gap-0.5 flex-wrap">
-                    <button v-for="name in senderOptions.slice(0, 4)" :key="name"
+                    <button v-for="name in senderOptions" :key="name"
                       :class="['px-2 py-0.5 rounded text-xs border transition-all',
                         senderName === name ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300']"
                       @click="senderName = name">
                       {{ name }}
                     </button>
                   </div>
-                  <input v-if="!senderOptions.slice(0, 4).includes(senderName)" 
+                  <input v-if="!senderOptions.includes(senderName)"
                     v-model="senderName" 
                     type="text" 
                     class="flex-1 min-w-[80px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
@@ -372,18 +384,23 @@
 
             <!-- 操作按钮 -->
             <div class="flex gap-2">
-              <button @click="generateEmail" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                ✨ 生成邮件
+              <button @click="generateEmail" :disabled="isGeneratingEmail" class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
+                <svg v-if="!isGeneratingEmail" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                <svg v-else class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                {{ isGeneratingEmail ? '生成中...' : '✨ 生成邮件' }}
               </button>
               <button @click="copyEmail" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 复制
               </button>
+              <button @click="clearEmailContent" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                清除
+              </button>
               <button @click="submitEmail" :disabled="isSendingEmail" class="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 shadow-sm transition-all">
                 <svg v-if="!isSendingEmail" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
                 <svg v-else class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                {{ isSendingEmail ? '发送中...' : '✅ 邮件确认' }}
+                {{ isSendingEmail ? '发送中...' : '确认并发送' }}
               </button>
             </div>
           </div>
@@ -391,7 +408,7 @@
       </div>
 
       <!-- 右侧：订单详情 + 发送面板（所有Tab右侧宽度一致） -->
-      <div class="w-[320px] shrink-0 space-y-3">
+      <div class="w-[40%] shrink-0 space-y-3 min-w-[300px]">
         <!-- 订单详情 -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
@@ -429,6 +446,70 @@
             </div>
           </div>
           <div v-else class="p-3 text-center text-sm text-slate-400">请在左侧选择订单</div>
+        </div>
+
+        <!-- 红框4：首封邮件区域 -->
+        <div v-if="orderTab === 'new' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <!-- 头部 -->
+          <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-1">
+              <span>📧</span> 首封邮件
+            </h3>
+          </div>
+
+          <div class="p-3 space-y-3">
+            <!-- 模板 + 落款 选择行 -->
+            <div class="flex items-center gap-3 text-xs">
+              <div class="flex items-center gap-1">
+                <span class="text-slate-500">模板:</span>
+                <select v-model="firstEmailTemplate" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
+                  <option v-for="tpl in firstEmailTemplateOptions" :key="tpl.key" :value="tpl.key">{{ tpl.name }}</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="text-slate-500">落款:</span>
+                <select v-model="firstEmailSender" class="border border-slate-200 rounded px-2 py-1 text-xs bg-white">
+                  <option value="Sophia">Sophia</option>
+                  <option value="Customer Support Team">Customer Support Team</option>
+                  <option value="Pet Tag Studio">Pet Tag Studio</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 邮件预览框 -->
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 leading-relaxed max-h-[300px] overflow-y-auto whitespace-pre-wrap">
+              {{ firstEmailPreview }}
+            </div>
+
+            <!-- 模板编辑（折叠区） -->
+            <div class="border-t border-slate-100 pt-2">
+              <div class="flex items-center justify-between cursor-pointer" @click="showTemplateEditor = !showTemplateEditor">
+                <span class="text-xs text-slate-400 flex items-center gap-1">
+                  ✏️ 编辑模板
+                </span>
+                <svg :class="['w-3 h-3 text-slate-400 transition-transform', showTemplateEditor ? 'rotate-180' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </div>
+              <div v-if="showTemplateEditor" class="mt-2 space-y-2">
+                <textarea v-model="editingTemplateContent" rows="10" class="w-full border border-slate-200 rounded-lg p-2 text-xs text-slate-700 leading-relaxed resize-y" placeholder="模板正文（支持{firstName}、{senderName}占位符）"></textarea>
+                <button @click="saveTemplateToLocal" class="w-full px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium">
+                  💾 保存模板
+                </button>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex gap-2">
+              <button @click="copyFirstEmail" class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 text-xs">
+                📋 复制
+              </button>
+              <button @click="sendFirstEmail" :disabled="isSendingFirstEmail" class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-xs font-medium">
+                <span v-if="isSendingFirstEmail">发送中...</span>
+                <span v-else>✅ 确认并发送 →</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- 效果图展示框（邮件撰写Tab和待创建Tab显示） -->
@@ -574,11 +655,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrderStore } from '../../stores/orderStore'
 import { sendConfirmationEmail } from '../../utils/api.js'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import supabase from '../../utils/supabase'
 
 const router = useRouter()
 const store = useOrderStore()
@@ -597,7 +679,8 @@ const emailContentEnglish = ref('')
 const confirmedEmailContent = ref('') // 点击"邮件确认"后才显示在右侧栏
 const pendingEmailContent = ref('') // 待创建Tab的邮件预览内容（从 email_logs 加载）
 const isTranslating = ref(false)
-const showCustomerNote = ref(false) // 客户需求折叠状态
+const isGeneratingEmail = ref(false) // AI邮件生成loading状态
+const showCustomerNote = ref(true) // 客户需求折叠状态
 const settingsSaved = ref(false) // 设置保存状态
 const showHistory = ref(false) // 客户修改Tab：历史记录折叠状态
 const replyContent = ref('') // 客户修改Tab：邮件/信息回复内容
@@ -679,10 +762,185 @@ const loadEmailTemplates = async () => {
 const senderOptions = [
   'Customer Support Team',
   'Pet Tag Studio',
-  'Sarah',
-  'Emily',
-  'Custom...'
+  'Sophia'
 ]
+
+// ===== 首封邮件区域 =====
+const firstEmailTemplate = ref('standard')
+const firstEmailSender = ref('Sophia')
+const isSendingFirstEmail = ref(false)
+
+// 硬编码默认模板（如果API读不到就用这些）- 使用reactive使其响应式
+const defaultFirstEmailTemplates = reactive({
+  standard: {
+    name: '标准确认',
+    key: 'standard',
+    content: `Hi {firstName},\n\nThank you so much for your order!\nI've finished your design proof for the custom heart pet ID tag.\nPlease kindly check and confirm the details within 24 hours if you need any changes.\nIf I don't hear from you within 24 hours, I will proceed with production as requested to avoid delay.\nThank you for your support!\n\nBest regards,\n{senderName}`
+  },
+  urgent: {
+    name: '加急确认',
+    key: 'urgent',
+    content: `Hi {firstName},\n\nThank you for your order!\nYour design proof is ready. Since this is a rush order, please review and confirm within 12 hours so we can start production right away.\nIf I don't hear back within 12 hours, I'll proceed as requested.\nThank you!\n\nBest regards,\n{senderName}`
+  },
+  custom_request: {
+    name: '定制需求确认',
+    key: 'custom_request',
+    content: `Hi {firstName},\n\nThank you so much for your order!\nI've carefully prepared your custom design based on your special requirements. Please take a moment to review everything, especially the personalization details.\nPlease confirm within 24 hours if everything looks good, or let me know if you'd like any changes.\nLooking forward to hearing from you!\n\nBest regards,\n{senderName}`
+  }
+})
+
+// 模板编辑相关
+const showTemplateEditor = ref(false)
+const editingTemplateContent = ref('')
+
+// 从localStorage加载自定义模板
+const loadCustomTemplates = () => {
+  try {
+    const saved = localStorage.getItem('firstEmailCustomTemplates')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      // 合并到 defaultFirstEmailTemplates 中
+      Object.keys(parsed).forEach(key => {
+        if (defaultFirstEmailTemplates[key]) {
+          defaultFirstEmailTemplates[key].content = parsed[key]
+        }
+      })
+    }
+  } catch (e) {
+    console.warn('加载自定义模板失败:', e)
+  }
+}
+
+// 保存模板到localStorage
+const saveTemplateToLocal = () => {
+  const key = firstEmailTemplate.value
+  if (!key) return
+  
+  // 更新运行时数据
+  if (defaultFirstEmailTemplates[key]) {
+    defaultFirstEmailTemplates[key].content = editingTemplateContent.value
+  }
+  
+  // 持久化到localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('firstEmailCustomTemplates') || '{}')
+    saved[key] = editingTemplateContent.value
+    localStorage.setItem('firstEmailCustomTemplates', JSON.stringify(saved))
+    ElMessage.success('模板已保存')
+  } catch (e) {
+    ElMessage.error('保存失败')
+  }
+}
+
+// 切换模板时，同步编辑区内容
+watch(firstEmailTemplate, (newVal) => {
+  const tpl = defaultFirstEmailTemplates[newVal]
+  editingTemplateContent.value = tpl ? tpl.content : ''
+})
+
+// 模板选项列表
+const firstEmailTemplateOptions = computed(() => {
+  // 先尝试从已加载的emailTemplatesData中读取first_confirm类型
+  const apiTemplates = emailTemplatesData.value?.first_confirm
+  if (apiTemplates && apiTemplates.length > 0) {
+    return apiTemplates.map(t => ({ key: t.template_key, name: t.name }))
+  }
+  // fallback到硬编码
+  return Object.values(defaultFirstEmailTemplates)
+})
+
+// 邮件预览（计算属性）
+const firstEmailPreview = computed(() => {
+  if (!selectedOrder.value) return ''
+
+  const order = selectedOrder.value
+  const firstName = (order.customer_name || '').split(' ')[0] || 'there'
+  const sender = firstEmailSender.value
+
+  // 尝试从API模板读取
+  const apiTemplates = emailTemplatesData.value?.first_confirm
+  let templateText = ''
+
+  if (apiTemplates && apiTemplates.length > 0) {
+    const matched = apiTemplates.find(t => t.template_key === firstEmailTemplate.value)
+    if (matched && matched.content) {
+      // 从三维结构中读取 casual/standard/en（使用最简单的组合）
+      const content = matched.content
+      templateText = content?.casual?.standard?.en
+        || content?.formal?.standard?.en
+        || content?.lively?.standard?.en
+        || ''
+    }
+  }
+
+  // fallback到硬编码模板
+  if (!templateText) {
+    const defaultTpl = defaultFirstEmailTemplates[firstEmailTemplate.value]
+    templateText = defaultTpl ? defaultTpl.content : ''
+  }
+
+  // 替换变量
+  return templateText
+    .replace(/\{firstName\}/g, firstName)
+    .replace(/\{senderName\}/g, sender)
+    .replace(/\\n/g, '\n')
+})
+
+// 复制邮件内容
+const copyFirstEmail = async () => {
+  if (!firstEmailPreview.value) return
+  try {
+    await navigator.clipboard.writeText(firstEmailPreview.value)
+    ElMessage.success('邮件内容已复制到剪贴板')
+  } catch (err) {
+    // fallback
+    const textarea = document.createElement('textarea')
+    textarea.value = firstEmailPreview.value
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    ElMessage.success('邮件内容已复制到剪贴板')
+  }
+}
+
+// 确认并发送
+const sendFirstEmail = async () => {
+  if (!selectedOrder.value) {
+    ElMessage.warning('请先选择一条订单')
+    return
+  }
+  if (!firstEmailPreview.value) {
+    ElMessage.warning('邮件内容为空')
+    return
+  }
+
+  isSendingFirstEmail.value = true
+  try {
+    // 1. 保存邮件记录到 email_logs 表
+    await store.saveEmailLog({
+      order_id: selectedOrder.value.id,
+      email_type: 'first_confirm',
+      subject: `Your Custom Pet Tag Design Preview - Order #${selectedOrder.value.etsy_order_id || selectedOrder.value.id}`,
+      content: firstEmailPreview.value,
+      effect_image_url: selectedOrder.value.effect_image_url || '',
+      sender_name: firstEmailSender.value
+    })
+
+    // 2. 更新订单 email_sent 状态
+    await store.updateEmailSentStatus(selectedOrder.value.id, true)
+
+    // 3. 刷新订单列表
+    await store.getPendingOrders()
+
+    ElMessage.success('邮件已保存，订单已流转！')
+  } catch (err) {
+    console.error('发送失败:', err)
+    ElMessage.error('发送失败：' + (err.message || '未知错误'))
+  } finally {
+    isSendingFirstEmail.value = false
+  }
+}
 
 onMounted(async () => {
   await store.getPendingOrders()
@@ -698,6 +956,11 @@ onMounted(async () => {
   
   // 加载保存的邮件设置
   loadEmailSettings()
+  
+  // 加载自定义邮件模板
+  loadCustomTemplates()
+  // 初始化编辑区内容
+  editingTemplateContent.value = defaultFirstEmailTemplates[firstEmailTemplate.value]?.content || ''
 
   // 将 confirmDesign 挂载到 window，供设计器 iframe 调用
   window.confirmDesign = confirmDesign
@@ -798,7 +1061,15 @@ watch(orderTab, (newTab) => {
 })
 
 const allOrders = computed(() => {
-  // 待确认订单页面显示所有 status === 'pending' 的订单
+  // 根据当前Tab决定显示哪些订单
+  // 全部Tab：显示所有订单（包括pending, producing, confirmed等）
+  // 其他Tab：只显示pending状态的订单（由filteredOrders进一步过滤）
+  if (orderTab.value === 'all') {
+    // 全部Tab：显示所有状态的订单
+    console.log('🔍 allOrders 计算(全部Tab):', store.orders.length, '条全部订单')
+    return store.orders
+  }
+  // 其他Tab：只显示pending状态的订单
   const filtered = store.orders.filter(o => o.status === 'pending')
   console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length, {
     订单状态分布: store.orders.reduce((acc, o) => {
@@ -822,6 +1093,7 @@ const filteredOrders = computed(() => {
   // 邮件撰写：有效果图的 pending 订单（等待发送邮件）
   // 待创建：有效果图且已发送邮件的 pending 订单
   // 客户修改：email_status === 'modify' 的订单
+  // 全部：显示所有订单（不过滤）
   if (orderTab.value === 'new') {
     orders = orders.filter(o => o.status === 'pending' && !o.effect_image_url)
   } else if (orderTab.value === 'email') {
@@ -831,6 +1103,7 @@ const filteredOrders = computed(() => {
   } else if (orderTab.value === 'modify') {
     orders = orders.filter(o => o.status === 'pending' && o.email_status === 'modify')
   }
+  // orderTab.value === 'all' 时不进行状态过滤，显示所有订单
   
   return orders
 })
@@ -994,10 +1267,10 @@ const saveEffectImage = () => {
           // 更新本地订单数据（使用返回的URL）
           selectedOrder.value.effect_image_url = result.url
           
-          alert('✅ 效果图已保存')
-          resolve()
+          console.log('✅ 效果图已保存:', result.url)
+          resolve(result)
         } catch (e) {
-          alert('❌ 保存失败：' + e.message)
+          ElMessage.error('❌ 保存失败：' + e.message)
           reject(e)
         }
       }
@@ -1035,19 +1308,37 @@ const confirmOrder = async (order) => {
 }
 
 const rollbackToEdit = async (order) => {
-  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到编辑状态？\n此操作会清空效果图数据，订单将回到"新订单"Tab。`)) return
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到新订单状态？\n此操作会清空效果图数据，订单将回到"新订单"Tab。`)) return
   try {
     await store.clearEffectImage(order.id)
     selectedOrder.value = null
-    alert('✅ 订单已回退到编辑状态！')
+    await store.getPendingOrders()
+    ElMessage.success('✅ 订单已回退到新订单状态！')
   } catch (e) {
-    alert('❌ 操作失败：' + e.message)
+    ElMessage.error('❌ 操作失败：' + e.message)
   }
 }
 
 const confirmDesign = async () => {
   if (!selectedOrder.value) {
-    alert('请先选择一条订单')
+    ElMessage.warning('请先选择一条订单')
+    return
+  }
+  
+  // 确认弹窗
+  try {
+    await ElMessageBox.confirm(
+      `确认发送效果图并流转订单？\n\n订单号: ${selectedOrder.value.etsy_order_id || selectedOrder.value.id}\n客户: ${selectedOrder.value.customer_name || '-'}\n\n点击确认后：\n1. 效果图将保存到服务器\n2. 订单将流转到「邮件撰写」Tab\n3. 请编写邮件发送给客户确认`,
+      '确认发送效果图',
+      {
+        confirmButtonText: '确认发送',
+        cancelButtonText: '取消',
+        type: 'primary',
+        dangerouslyUseHTMLString: false
+      }
+    )
+  } catch (e) {
+    // 用户取消
     return
   }
   
@@ -1068,7 +1359,7 @@ const confirmDesign = async () => {
     console.log('🔍 查找订单:', savedOrder ? {
       id: savedOrder.id,
       status: savedOrder.status,
-      effect_image_url: savedOrder.effect_image_url,  // 显示完整URL
+      effect_image_url: savedOrder.effect_image_url ? '已设置' : '未设置',
       email_sent: savedOrder.email_sent
     } : '未找到')
     
@@ -1080,10 +1371,10 @@ const confirmDesign = async () => {
     // 跳转到邮件撰写Tab
     orderTab.value = 'email'
     
-    alert('✅ 设计稿已确认，请编写邮件发送给客户确认')
+    ElMessage.success('✅ 效果图已保存，订单已流转到「邮件撰写」Tab，请编写邮件发送给客户确认')
   } catch (e) {
     console.error('❌ confirmDesign 失败:', e)
-    alert('❌ 操作失败：' + e.message)
+    ElMessage.error('❌ 操作失败：' + e.message)
   }
 }
 
@@ -1096,10 +1387,84 @@ const rollbackToEmail = async (order) => {
   if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到邮件撰写状态？\n此操作会标记邮件为未发送，订单将回到"邮件撰写"Tab。`)) return
   try {
     await store.updateEmailSentStatus(order.id, false)
+    // 同时清空 email_status
+    await supabase.from('orders').update({ 
+      email_status: null,
+      updated_at: new Date().toISOString()
+    }).eq('id', order.id)
     selectedOrder.value = null
-    alert('✅ 订单已回退到邮件撰写状态！')
+    await store.getPendingOrders()
+    ElMessage.success('✅ 订单已回退到邮件撰写状态！')
   } catch (e) {
-    alert('❌ 操作失败：' + e.message)
+    ElMessage.error('❌ 操作失败：' + e.message)
+  }
+}
+
+// 回退到待创建状态（从客户修改回退）
+const rollbackToPending = async (order) => {
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 回退到待创建状态？\n此操作会清空客户修改状态，订单将回到"待创建"Tab。`)) return
+  try {
+    await supabase.from('orders').update({ 
+      email_status: null,
+      updated_at: new Date().toISOString()
+    }).eq('id', order.id)
+    selectedOrder.value = null
+    await store.getPendingOrders()
+    ElMessage.success('✅ 订单已回退到待创建状态！')
+  } catch (e) {
+    ElMessage.error('❌ 操作失败：' + e.message)
+  }
+}
+
+// 重置订单为新订单（清空所有状态，用于测试）
+const resetOrderToNew = async (order) => {
+  if (!confirm(`确认将订单 ${order.etsy_order_id || order.id} 重置为新订单？\n此操作会清空效果图和邮件状态，订单将回到"新订单"Tab。`)) return
+  try {
+    await store.clearEffectImage(order.id)
+    selectedOrder.value = null
+    await store.getPendingOrders()
+    ElMessage.success('✅ 订单已重置为新订单状态！')
+  } catch (e) {
+    ElMessage.error('❌ 操作失败：' + e.message)
+  }
+}
+
+// 全局重置：将生产中/已确认订单回退到pending新订单状态（测试用）
+const resetToPending = async (order) => {
+  if (!confirm(`⚠️ 测试功能：确认将订单 ${order.etsy_order_id || order.id} 重置为新订单？\n\n此操作会将订单状态重置为pending，并清空：\n- 效果图\n- 邮件发送状态\n- 邮件状态标记\n\n订单将回到"新订单"Tab。`)) return
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/orders?id=eq.${order.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          status: 'pending',
+          effect_image_url: null,
+          email_sent: false,
+          email_status: null,
+          updated_at: new Date().toISOString()
+        })
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error('重置订单状态失败')
+    }
+    
+    selectedOrder.value = null
+    await store.getPendingOrders()
+    ElMessage.success('✅ 订单已重置为新订单状态！')
+  } catch (e) {
+    ElMessage.error('❌ 操作失败：' + e.message)
   }
 }
 
@@ -1108,13 +1473,9 @@ const initials = computed(() => {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
-const generateEmail = () => {
+const generateEmail = async () => {
   if (!selectedOrder.value) {
-    alert('请先选择一条订单')
-    return
-  }
-  if (!selectedTemplate.value) {
-    alert('请先选择一个场景模板')
+    ElMessage.warning('请先选择一条订单')
     return
   }
   
@@ -1131,24 +1492,84 @@ const generateEmail = () => {
   })
   confirmationDeadline.value = deadlineStr
   
+  // 修改确认类型：调用AI API生成
+  if (emailType.value === 'modification') {
+    isGeneratingEmail.value = true
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+      const response = await fetch(`${apiBase}/api/ai/generate-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scene: 'modify_confirm',
+          customer_name: firstName,
+          product_name: order.sku_mapping?.product_name || 'Custom Pet Tag',
+          front_text: order.front_text || '',
+          back_text: order.back_text || '',
+          shape: order.sku_mapping?.shape || '',
+          color: order.sku_mapping?.color || '',
+          size: order.sku_mapping?.size || '',
+          tone: emailTone.value,
+          length: emailLength.value,
+          sender_name: senderName.value,
+          customer_request: customerNote.value,
+          operator_note: '',
+          effect_image_url: effectImageUrl,
+          confirmation_deadline: deadlineStr,
+          order_id: orderId
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        // 处理换行符：字面\n转为真实换行
+        const processNewlines = (text) => text.replace(/\\n/g, '\n')
+        emailContentChinese.value = processNewlines(result.data.chinese_content || '')
+        emailContentEnglish.value = processNewlines(result.data.english_content || '')
+        emailContent.value = emailContentEnglish.value
+        ElMessage.success('AI邮件生成成功！')
+      } else {
+        ElMessage.error('AI生成失败：' + (result.message || '未知错误'))
+      }
+    } catch (e) {
+      ElMessage.error('AI生成异常：' + e.message)
+    } finally {
+      isGeneratingEmail.value = false
+    }
+    return
+  }
+  
+  // 首封确认 / 追评邮件：用模板填充
+  if (!selectedTemplate.value) {
+    ElMessage.warning('请先选择一个场景模板')
+    return
+  }
+  
   // 获取模板内容
   const tone = emailTone.value
   const length = emailLength.value
   const templateContent = selectedTemplate.value.content[tone]?.[length]
   
   if (!templateContent) {
-    alert('模板内容不存在，请检查模板配置')
+    ElMessage.warning('模板内容不存在，请检查模板配置')
     return
   }
   
-  // 替换变量
+  // 替换变量 - URL掩码处理
   const replaceVars = (text) => {
+    // 将supabase存储URL替换为友好文本
+    const maskedUrl = effectImageUrl && effectImageUrl.includes('supabase.co') 
+      ? '[View Design Preview]' 
+      : effectImageUrl
+    
     return text
       .replace(/\{firstName\}/g, firstName)
       .replace(/\{orderId\}/g, orderId)
-      .replace(/\{effectImageUrl\}/g, effectImageUrl)
+      .replace(/\{effectImageUrl\}/g, maskedUrl)
       .replace(/\{senderName\}/g, senderName.value)
       .replace(/\{confirmationDeadline\}/g, deadlineStr)
+      .replace(/\\n/g, '\n') // 换行符处理：字面\n转为真实换行
   }
   
   // 根据称呼类型调整开头
@@ -1166,11 +1587,15 @@ const generateEmail = () => {
   }
   
   const greeting = greetingMap[emailGreeting.value]
-  const sign = signMap[tone]
   
-  // 生成邮件内容
-  emailContentEnglish.value = `${greeting.en}\n\n${replaceVars(templateContent.en)}\n\n${sign.en}`
-  emailContentChinese.value = `${greeting.zh}\n\n${replaceVars(templateContent.zh)}\n\n${customerNote.value ? `\n备注：${customerNote.value}\n` : ''}${sign.zh}`
+  // 生成邮件内容（模板已包含完整的问候、正文和落款，直接替换变量即可）
+  // 模板content字段中已经包含落款如 "Best,\n{senderName}" 或 "祝好，\n{senderName}"
+  emailContentEnglish.value = replaceVars(templateContent.en)
+  emailContentChinese.value = replaceVars(templateContent.zh)
+  // 如果有客户备注，追加到中文邮件末尾
+  if (customerNote.value) {
+    emailContentChinese.value += `\n\n备注：${customerNote.value}`
+  }
   emailContent.value = emailContentEnglish.value
 }
 
@@ -1183,7 +1608,8 @@ const translateEmail = async () => {
   isTranslating.value = true
   try {
     // 调用后端翻译API
-    const response = await fetch('http://localhost:8000/api/translate/email', {
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+    const response = await fetch(`${apiBase}/api/translate/email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1223,6 +1649,15 @@ const copyEmail = async () => {
   }
 }
 
+// 清除邮件内容
+const clearEmailContent = () => {
+  emailContentChinese.value = ''
+  emailContentEnglish.value = ''
+  emailContent.value = ''
+  customerNote.value = ''
+  ElMessage.success('邮件内容已清除')
+}
+
 // 邮件发送loading状态
 const isSendingEmail = ref(false)
 
@@ -1233,12 +1668,6 @@ const submitEmail = async () => {
   }
   if (!selectedOrder.value) {
     ElMessage.warning('请先选择订单')
-    return
-  }
-  
-  // 检查客户邮箱
-  if (!selectedOrder.value.customer_email) {
-    ElMessage.warning('该订单缺少客户邮箱，请手动复制邮件内容发送')
     return
   }
   
@@ -1266,32 +1695,32 @@ const submitEmail = async () => {
       confirmation_deadline: emailType.value === 'first_confirm' ? confirmationDeadline.value : null
     })
     
-    // 2. 调用后端API发送邮件
+    // 2. 尝试发送邮件（有客户邮箱时才发送，发送失败不阻断主流程）
     let emailSendSuccess = false
-    let emailSendError = null
-    
-    try {
-      // 从效果图URL中提取文件名作为effect_image_path
-      const effectImageUrl = selectedOrder.value.effect_image_url || ''
-      const effectImagePath = effectImageUrl.split('/').pop() || ''
-      
-      // 构建产品信息
-      const productInfo = `${selectedOrder.value.sku_mapping?.product_name || 'Custom Product'} (${selectedOrder.value.sku_mapping?.sku_code || selectedOrder.value.sku_id || 'N/A'})`
-      
-      await sendConfirmationEmail({
-        order_id: selectedOrder.value.id,
-        to_email: selectedOrder.value.customer_email || '',
-        customer_name: selectedOrder.value.customer_name || '',
-        product_info: productInfo,
-        effect_image_path: effectImagePath
-      })
-      
-      emailSendSuccess = true
-      ElMessage.success('邮件已发送至客户邮箱')
-    } catch (sendError) {
-      emailSendError = sendError.message
-      // 发送失败不阻断主流程，继续执行后续操作
-      ElMessage.warning(`自动发送邮件失败: ${sendError.message}，请使用「复制内容」手动发送`)
+    if (selectedOrder.value.customer_email) {
+      try {
+        // 从效果图URL中提取文件名作为effect_image_path
+        const effectImageUrl = selectedOrder.value.effect_image_url || ''
+        const effectImagePath = effectImageUrl.split('/').pop() || ''
+        
+        // 构建产品信息
+        const productInfo = `${selectedOrder.value.sku_mapping?.product_name || 'Custom Product'} (${selectedOrder.value.sku_mapping?.sku_code || selectedOrder.value.sku_id || 'N/A'})`
+        
+        await sendConfirmationEmail({
+          order_id: selectedOrder.value.id,
+          to_email: selectedOrder.value.customer_email || '',
+          customer_name: selectedOrder.value.customer_name || '',
+          product_info: productInfo,
+          effect_image_path: effectImagePath
+        })
+        
+        emailSendSuccess = true
+        console.log('✅ 邮件已自动发送至客户邮箱')
+      } catch (sendError) {
+        console.log('⚠️ 自动发送邮件跳过:', sendError.message)
+      }
+    } else {
+      console.log('⚠️ 订单无客户邮箱，跳过自动发送')
     }
     
     // 3. 更新订单状态为已发送邮件
@@ -1318,10 +1747,11 @@ const submitEmail = async () => {
     // 8. 设置待创建Tab的邮件预览内容（流转时直接使用已保存的内容）
     pendingEmailContent.value = fullContent
     
+    // 9. 显示成功提示
     if (emailSendSuccess) {
       ElMessage.success('✅ 邮件已保存并发送，订单已流转到待创建状态！')
     } else {
-      ElMessage.info('✅ 邮件记录已保存，订单已流转到待创建状态。邮件发送失败，请手动复制发送。')
+      ElMessage.success('✅ 邮件已保存，订单已流转到待创建状态！')
     }
   } catch (e) {
     ElMessage.error('❌ 邮件保存失败：' + e.message)

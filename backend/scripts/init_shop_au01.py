@@ -117,6 +117,7 @@ def init_shop_au01():
             'code': shop_code,
             'region': 'AU',
             'status': 'active',
+            'operator': 'A',
             'service_token': service_token,
             'service_link_enabled': True,
             'service_link_created_at': now,

@@ -22,6 +22,25 @@
 
       <!-- 导航菜单 -->
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <!-- 当前运营/店铺信息 -->
+        <div class="mb-4 px-4 py-3 bg-slate-800/50 rounded-xl">
+          <div class="flex items-center gap-2 text-slate-400 text-xs mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>当前运营</span>
+          </div>
+          <p class="text-white font-medium text-sm">A运营</p>
+          <div class="mt-2 flex items-center gap-2 text-slate-400 text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>澳洲店01 (AU01)</span>
+          </div>
+        </div>
+
         <!-- 7项核心工作流导航（所有账号可见） -->
         <div class="mb-4">
           <p class="px-4 py-2 text-xs text-slate-500 uppercase tracking-wider">订单工作流</p>

@@ -41,12 +41,12 @@
 
 ## 更新摘要
 **所做更改**
-- ServiceLink页面UI重构与样式优化：从简单布局升级为三栏式布局（左侧订单列表、中间订单详情、右侧操作面板），新增Notion风格左侧栏样式
-- 生产订单页面改进：OrdersProducing组件从简单任务列表升级为完整的生产任务管理系统，新增三栏式布局和任务分组管理
-- 新增客服外链左侧栏HTML模板：提供完整的左侧栏样式参考和设计规范
-- 新增页面开发问题需求模板：标准化页面开发流程和需求收集格式
-- 增强组件间通信机制：支持更复杂的数据传递和状态管理
-- 优化样式系统：新增大量样式类和布局优化，提升用户体验和操作效率
+- DesignLink组件重大增强：实现实时Supabase数据获取、AI邮件生成功能集成和改进的用户界面
+- 实时数据同步：从Supabase实时加载订单数据，支持并行查询SKU信息和产品图片
+- AI邮件生成功能：集成AI生成回复邮件功能，支持多种邮件风格和长度控制
+- 改进的用户界面：采用两栏布局设计，左侧设计器区域，右侧订单详情面板
+- 增强的订单管理：支持订单状态实时更新、操作历史记录和草稿保存功能
+- 客服外链系统完善：ServiceLink和DesignLink组件实现完整的客服沟通和设计修改流程
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -182,7 +182,7 @@ K --> M
 - [frontend/src/layouts/AdminLayout.vue:1-234](file://frontend/src/layouts/AdminLayout.vue#L1-L234)
 - [frontend/src/views/StorePortal/StoreLogin.vue:1-161](file://frontend/src/views/StorePortal/StoreLogin.vue#L1-L161)
 - [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
-- [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
+- [frontend/src/views/DesignLink/DesignLink.vue:1-972](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L972)
 
 **章节来源**
 - [frontend/src/App.vue:1-15](file://frontend/src/App.vue#L1-L15)
@@ -717,12 +717,96 @@ AdminEffects --> EmailTemplateSystem : "重构"
 5. **模板预览功能**：实时预览邮件效果
 6. **模板保存功能**：支持保存模板到本地存储
 
+### DesignLink组件
+
+**更新** DesignLink组件是本次更新的核心增强组件，提供独立的设计修改链接，支持实时Supabase数据获取、AI邮件生成功能集成和改进的用户界面：
+
+```mermaid
+classDiagram
+class DesignLink {
++Object shopInfo
++Array orders
++Object selectedOrder
++Object replyContent
++String replySender
++Boolean showHistory
++Array operationLogs
++validateToken() Boolean
++fetchOrders() void
++selectOrder(order) void
++onDesignerLoad() void
++loadOrderToDesigner(order) void
++goToServiceLink() void
++saveDraft() void
++markAsProcessed() void
+}
+class DesignerCommunication {
++loadOrderToDesigner(order) void
++onDesignerLoad() void
+}
+class SupabaseIntegration {
++fetchOrders() Promise~Array~
++fetchSkuInfo() Promise~Object~
++fetchProductPhotos() Promise~Object~
+}
+DesignLink --> DesignerCommunication : "集成"
+DesignLink --> SupabaseIntegration : "使用"
+```
+
+**图表来源**
+- [frontend/src/views/DesignLink/DesignLink.vue:238-493](file://frontend/src/views/DesignLink/DesignLink.vue#L238-L493)
+
+**更新** DesignLink组件的主要功能包括：
+
+1. **Token验证**：验证设计链接的有效性，支持开发模式测试
+2. **实时订单获取**：从Supabase实时加载订单数据，支持并行查询
+3. **独立设计器集成**：集成EffectDesigner组件进行设计修改
+4. **订单详情展示**：显示订单的详细信息和产品实拍图
+5. **邮件回复功能**：支持邮件回复和AI生成
+6. **操作历史记录**：记录客服的操作历史
+7. **草稿保存功能**：支持草稿保存和订单状态标记
+
+**更新** DesignLink组件的实时Supabase数据获取功能：
+
+1. **并行查询优化**：同时查询SKU信息和产品图片，提升加载速度
+2. **SKU映射系统**：将SKU ID映射到产品信息，支持形状、颜色、尺寸
+3. **产品图片处理**：从Supabase存储获取产品实拍图URL
+4. **订单数据转换**：将数据库数据转换为组件可用格式
+5. **模拟数据降级**：当Supabase查询失败时使用模拟数据
+
+**更新** DesignLink组件的AI邮件生成功能：
+
+1. **AI生成按钮**：集成AI生成回复邮件功能
+2. **邮件风格控制**：支持正式、随和、活泼三种语气
+3. **邮件长度控制**：支持简短、标准、详细三种长度
+4. **邮件模板系统**：支持多种邮件类型和风格
+5. **实时预览功能**：显示生成的邮件内容预览
+
+**更新** DesignLink组件的改进用户界面：
+
+1. **两栏布局设计**：左侧设计器区域，右侧订单详情面板
+2. **顶部导航栏**：显示店铺信息和返回按钮
+3. **当前订单信息栏**：显示当前选中订单的状态和基本信息
+4. **订单详情面板**：包含产品图片、订单信息、邮件历史等
+5. **邮件回复区域**：支持AI生成、回复输入和发送操作
+6. **操作按钮组**：支持草稿保存和订单标记功能
+
+**更新** DesignLink组件的样式系统改进：
+
+1. **现代化布局**：采用Flexbox布局，支持响应式设计
+2. **卡片式设计**：使用卡片样式展示不同功能区域
+3. **状态指示器**：使用标签显示订单状态
+4. **滚动区域**：支持长内容的滚动显示
+5. **交互反馈**：提供按钮悬停和点击反馈
+6. **图标系统**：使用Element Plus图标库提升视觉效果
+
 **章节来源**
 - [frontend/src/views/Admin/OrdersShipping.vue:1-917](file://frontend/src/views/Admin/OrdersShipping.vue#L1-L917)
 - [frontend/src/views/Admin/FactoryOverview.vue:1-279](file://frontend/src/views/Admin/FactoryOverview.vue#L1-L279)
 - [frontend/src/views/Admin/OrdersCompleted.vue:1-463](file://frontend/src/views/Admin/OrdersCompleted.vue#L1-L463)
-- [frontend/src/views/Admin/OrdersPending.vue:1-1129](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1129)
+- [frontend/src/views/Admin/OrdersPending.vue:1-1627](file://frontend/src/views/Admin/OrdersPending.vue#L1-L1627)
 - [frontend/src/views/Admin/AdminEffects.vue:1-434](file://frontend/src/views/Admin/AdminEffects.vue#L1-L434)
+- [frontend/src/views/DesignLink/DesignLink.vue:1-972](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L972)
 
 ## 客服外链系统
 
@@ -750,7 +834,7 @@ end
 
 **图表来源**
 - [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
-- [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
+- [frontend/src/views/DesignLink/DesignLink.vue:1-972](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L972)
 
 ### ServiceLink组件
 
@@ -845,11 +929,47 @@ DesignLink --> DesignerCommunication : "集成"
 **更新** DesignLink组件的主要功能包括：
 
 1. **Token验证**：验证设计链接的有效性
-2. **订单列表**：显示待处理的订单
+2. **实时订单获取**：从Supabase实时加载订单数据
 3. **独立设计器**：集成EffectDesigner组件
 4. **订单详情**：显示订单的详细信息
 5. **邮件回复**：支持邮件回复和AI生成
 6. **操作历史**：记录客服的操作历史
+7. **草稿保存**：支持草稿保存功能
+8. **订单标记**：支持标记订单为已处理
+
+**更新** DesignLink组件的实时Supabase数据获取功能：
+
+1. **并行查询优化**：同时查询订单、SKU信息和产品图片
+2. **SKU映射系统**：将SKU ID映射到产品信息
+3. **产品图片处理**：从Supabase存储获取产品实拍图URL
+4. **订单数据转换**：将数据库数据转换为组件可用格式
+5. **模拟数据降级**：当Supabase查询失败时使用模拟数据
+
+**更新** DesignLink组件的AI邮件生成功能：
+
+1. **AI生成按钮**：集成AI生成回复邮件功能
+2. **邮件风格控制**：支持正式、随和、活泼三种语气
+3. **邮件长度控制**：支持简短、标准、详细三种长度
+4. **邮件模板系统**：支持多种邮件类型和风格
+5. **实时预览功能**：显示生成的邮件内容预览
+
+**更新** DesignLink组件的改进用户界面：
+
+1. **两栏布局设计**：左侧设计器区域，右侧订单详情面板
+2. **顶部导航栏**：显示店铺信息和返回按钮
+3. **当前订单信息栏**：显示当前选中订单的状态和基本信息
+4. **订单详情面板**：包含产品图片、订单信息、邮件历史等
+5. **邮件回复区域**：支持AI生成、回复输入和发送操作
+6. **操作按钮组**：支持草稿保存和订单标记功能
+
+**更新** DesignLink组件的样式系统改进：
+
+1. **现代化布局**：采用Flexbox布局，支持响应式设计
+2. **卡片式设计**：使用卡片样式展示不同功能区域
+3. **状态指示器**：使用标签显示订单状态
+4. **滚动区域**：支持长内容的滚动显示
+5. **交互反馈**：提供按钮悬Hover和点击反馈
+6. **图标系统**：使用Element Plus图标库提升视觉效果
 
 ### 组件间通信机制
 
@@ -896,11 +1016,15 @@ C --> D[记录操作日志]
 E[设计链接Token] --> F[validateDesignToken]
 F --> G[获取设计链接信息]
 G --> H[切换设计链接状态]
+I[设计链接API] --> J[fetchOrders]
+J --> K[并行查询SKU和图片]
+K --> L[订单数据转换]
 end
 ```
 
 **图表来源**
 - [backend/src/api/service_link_routes.py:90-330](file://backend/src/api/service_link_routes.py#L90-L330)
+- [backend/src/api/service_link_routes.py:480-522](file://backend/src/api/service_link_routes.py#L480-L522)
 
 **更新** 客服外链API包含：
 
@@ -908,11 +1032,12 @@ end
 2. **订单管理**：获取待确认订单列表
 3. **操作日志**：记录客服的操作历史
 4. **设计链接**：独立的设计链接管理功能
+5. **实时数据获取**：支持并行查询和数据转换
 
 **章节来源**
 - [frontend/src/views/ServiceLink/ServiceLink.vue:1-2061](file://frontend/src/views/ServiceLink/ServiceLink.vue#L1-L2061)
-- [frontend/src/views/DesignLink/DesignLink.vue:1-925](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L925)
-- [backend/src/api/service_link_routes.py:1-516](file://backend/src/api/service_link_routes.py#L1-L516)
+- [frontend/src/views/DesignLink/DesignLink.vue:1-972](file://frontend/src/views/DesignLink/DesignLink.vue#L1-L972)
+- [backend/src/api/service_link_routes.py:1-522](file://backend/src/api/service_link_routes.py#L1-L522)
 
 ## 字体管理系统
 
@@ -1472,6 +1597,15 @@ AD[ServiceLink组件] --> AE[DesignLink组件]
 AE --> AF[EffectDesigner组件]
 AF --> AG[postMessage通信]
 AH[DesignLink组件] --> AI[iFrame通信]
+AJ[DesignLink组件] --> AK[Supabase数据获取]
+AK --> AL[并行查询]
+AL --> AM[SKU信息]
+AL --> AN[产品图片]
+AO[DesignLink组件] --> AP[AI邮件生成]
+AP --> AQ[邮件模板系统]
+AR[DesignLink组件] --> AS[两栏布局]
+AS --> AT[设计器区域]
+AS --> AU[详情面板]
 ```
 
 **图表来源**
@@ -1492,6 +1626,10 @@ AH[DesignLink组件] --> AI[iFrame通信]
 10. **API依赖**：FastAPI后端提供客服外链的完整API支持
 11. **样式依赖**：新增的CSS样式文件支持ServiceLink和OrdersProducing组件的样式需求
 12. **模板依赖**：新增的HTML模板文件为客服外链提供设计参考
+13. **Supabase依赖**：DesignLink组件依赖Supabase进行实时数据获取
+14. **AI功能依赖**：DesignLink组件集成AI邮件生成功能
+15. **并行查询依赖**：DesignLink组件使用并行查询优化数据加载
+16. **两栏布局依赖**：DesignLink组件采用现代化的两栏布局设计
 
 **章节来源**
 - [frontend/package.json:1-31](file://frontend/package.json#L1-L31)
@@ -1517,6 +1655,9 @@ AH[DesignLink组件] --> AI[iFrame通信]
 15. **API调用优化**：后端API使用异步处理，避免阻塞主线程
 16. **样式文件优化**：新增的CSS文件采用scoped样式，避免全局样式污染
 17. **模板文件优化**：HTML模板文件内联样式，减少HTTP请求数量
+18. **Supabase查询优化**：DesignLink组件使用并行查询，提升数据加载性能
+19. **AI功能优化**：DesignLink组件的AI邮件生成功能采用异步处理，避免阻塞UI
+20. **两栏布局优化**：DesignLink组件的两栏布局采用Flexbox，提升响应式性能
 
 ### 数据加载策略
 
@@ -1530,7 +1671,9 @@ AH[DesignLink组件] --> AI[iFrame通信]
 8. **字体缓存机制**：opentype.js字体缓存，避免重复加载相同字体文件
 9. **Token缓存机制**：客服外链Token在验证后缓存，避免重复验证
 10. **订单数据缓存**：DesignLink组件缓存订单数据，避免重复加载
-11. **样式缓存机制**：CSS文件缓存到浏览器，避免重复加载
+11. **并行查询优化**：DesignLink组件使用Promise.all进行并行查询，提升加载速度
+12. **Supabase连接池**：优化Supabase连接管理，提升数据库访问性能
+13. **AI生成缓存**：DesignLink组件的AI生成结果缓存，避免重复计算
 
 ### 构建优化
 
@@ -1542,6 +1685,8 @@ AH[DesignLink组件] --> AI[iFrame通信]
 6. **API文档优化**：后端API文档自动生成，提升开发效率
 7. **样式文件优化**：CSS文件按需加载，减少初始包大小
 8. **模板文件优化**：HTML模板文件内联关键样式，提升首屏渲染速度
+9. **Supabase优化**：优化Supabase客户端配置，提升数据库访问性能
+10. **AI服务优化**：优化AI邮件生成功能，提升生成速度和质量
 
 ## 故障排除指南
 
@@ -1687,6 +1832,26 @@ AH[DesignLink组件] --> AI[iFrame通信]
 - **原因**: 文本文件格式错误或编码问题
 - **解决**: 检查文本文件编码，确认文件格式正确
 
+#### DesignLink数据加载失败
+- **症状**: DesignLink页面订单数据无法加载
+- **原因**: Supabase查询失败或网络连接问题
+- **解决**: 检查Supabase连接状态，确认查询条件正确
+
+#### DesignLink并行查询异常
+- **症状**: DesignLink页面数据加载缓慢或失败
+- **原因**: 并行查询中某个查询失败
+- **解决**: 检查各个查询的错误状态，单独处理失败的查询
+
+#### DesignLinkAI生成功能异常
+- **症状**: DesignLink页面AI生成按钮无响应
+- **原因**: AI服务未配置或网络连接问题
+- **解决**: 检查AI服务配置，确认网络连接正常
+
+#### DesignLink两栏布局异常
+- **症状**: DesignLink页面布局显示异常
+- **原因**: CSS样式冲突或响应式断点设置错误
+- **解决**: 检查CSS样式文件，确认响应式断点设置正确
+
 **章节来源**
 - [frontend/src/utils/supabase.js:7-10](file://frontend/src/utils/supabase.js#L7-L10)
 - [frontend/src/stores/orderStore.js:68-75](file://frontend/src/stores/orderStore.js#L68-L75)
@@ -1737,6 +1902,11 @@ AH[DesignLink组件] --> AI[iFrame通信]
 21. **样式文件优化**: 新增的CSS文件支持组件的样式需求
 22. **模板文件支持**: HTML模板为客服外链提供设计参考
 23. **问题需求模板**: 标准化页面开发流程和需求收集格式
+24. **实时Supabase数据获取**: DesignLink组件实现真正的实时数据同步
+25. **AI邮件生成功能**: DesignLink组件集成AI生成回复邮件功能
+26. **并行查询优化**: DesignLink组件使用Promise.all提升数据加载性能
+27. **两栏布局设计**: DesignLink组件采用现代化的两栏布局设计
+28. **状态管理增强**: DesignLink组件集成完整的状态管理功能
 
 ### 改进建议
 1. **类型安全**: 可以考虑添加TypeScript支持
@@ -1759,6 +1929,11 @@ AH[DesignLink组件] --> AI[iFrame通信]
 18. **API性能优化**: 优化后端API的响应时间和并发处理能力
 19. **样式文件优化**: 优化CSS文件的加载和缓存策略
 20. **模板文件优化**: 优化HTML模板文件的加载和渲染性能
+21. **Supabase查询优化**: 优化DesignLink组件的查询性能和错误处理
+22. **AI服务优化**: 优化AI邮件生成功能的性能和质量
+23. **并行查询监控**: 添加并行查询的监控和错误处理机制
+24. **两栏布局响应式**: 优化两栏布局在不同设备上的显示效果
+25. **状态管理扩展**: 为DesignLink组件添加更完善的状态管理功能
 
 该架构为订单管理系统的开发提供了坚实的基础，具有良好的可扩展性和维护性，能够支持复杂的多门户业务场景。新增的四个核心组件、字体处理系统的进一步完善、客服外链系统的完整实现，以及组件间的通信机制，都体现了现代前端开发的创新思维，通过统一的布局设计、高效的批量操作、精确的字体处理、完整的客服功能显著提升了用户的操作效率和体验质量。
 

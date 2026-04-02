@@ -831,9 +831,9 @@ export const useOrderStore = defineStore('order', () => {
         .eq('order_id', orderId)
         .order('sent_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       
-      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError
+      if (fetchError) throw fetchError
       
       return data
     } catch (err) {

@@ -129,9 +129,10 @@ class AIService:
         
         scene = params.get("scene", "first_confirm")
         tone = params.get("tone", "friendly")
+        length = params.get("length", "standard")
         
         # 构建系统提示词
-        system_prompt = self._build_system_prompt(scene, tone)
+        system_prompt = self._build_system_prompt(scene, tone, length)
         
         # 构建用户输入
         user_content = self._build_user_input(params)
@@ -188,10 +189,27 @@ class AIService:
             print(f"❌ AI服务异常: {e}")
             return None
     
-    def _build_system_prompt(self, scene: str, tone: str) -> str:
+    def _build_system_prompt(self, scene: str, tone: str, length: str = "standard") -> str:
         """构建系统提示词"""
         tone_desc = self.TONES.get(tone, "友好亲切")
         scene_desc = self.SCENES.get(scene, "首封确认邮件")
+        
+        # 字数约束
+        length_constraints = {
+            "short": "请将回复控制在50字以内",
+            "standard": "请将回复控制在100字以内",
+            "detailed": "请将回复控制在300字以内"
+        }
+        length_constraint = length_constraints.get(length, length_constraints["standard"])
+        
+        # 修改确认场景的特殊提示
+        natural_language_hint = ""
+        if scene == "modify_confirm":
+            natural_language_hint = """
+7. IMPORTANT: Write like a real human customer service representative having a conversation, NOT a template
+8. Be natural and personalized - respond to the customer's specific modification request
+9. Avoid generic template phrases like "We have received your request" or "Thank you for contacting us"
+10. Use conversational, warm language as if writing to a friend"""
         
         return f"""You are a professional e-commerce customer service email writer.
 Your task: Write a {tone_desc} email for the following scenario: {scene_desc}
@@ -203,6 +221,7 @@ REQUIREMENTS:
 4. Include specific product details provided
 5. Add appropriate emojis (1-3 emojis max)
 6. Keep it concise but complete
+7. {length_constraint}{natural_language_hint}
 
 OUTPUT FORMAT (must follow exactly):
 SUBJECT: [email subject line]
@@ -236,8 +255,14 @@ Do not include any explanations or additional text."""
         
         # 场景特定参数
         scene = params.get('scene', 'first_confirm')
-        if scene == "modify_confirm" and params.get('modify_reason'):
-            lines.append(f"Modification Request: {params.get('modify_reason')}")
+        if scene == "modify_confirm":
+            if params.get('modify_reason'):
+                lines.append(f"Modification Request: {params.get('modify_reason')}")
+            # 新增：客户修改要求和运营说明
+            if params.get('customer_request'):
+                lines.append(f"Customer's Specific Request: {params.get('customer_request')}")
+            if params.get('operator_note'):
+                lines.append(f"Operator Note (what was changed): {params.get('operator_note')}")
         
         if params.get('effect_image_url'):
             lines.append(f"Effect Image URL: {params.get('effect_image_url')}")

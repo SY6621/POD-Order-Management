@@ -290,13 +290,18 @@
             <el-empty description="选择订单查看邮件" :image-size="60" />
           </div>
           <div v-else class="email-preview">
-            <div class="email-body">
-              <p>Hi {{ selectedOrder.customer_name }}!</p>
-              <p>Thank you for your order! Here is the preview of your custom pet tag:</p>
-              <p><strong>Front:</strong> {{ selectedOrder.front_text }}</p>
-              <p><strong>Back:</strong> {{ selectedOrder.back_text }}</p>
-              <p>Please confirm the design looks correct, or let us know if you need any changes.</p>
-              <p>Best regards,<br>Customer Support Team</p>
+            <!-- 加载中状态 -->
+            <div v-if="isLoadingEmail" class="email-body text-slate-400 text-sm">
+              <p>正在加载邮件内容...</p>
+            </div>
+            <!-- 有邮件记录时显示 -->
+            <div v-else-if="latestEmailContent" class="email-body" style="white-space: pre-wrap;">
+              {{ latestEmailContent }}
+            </div>
+            <!-- 无邮件记录时显示提示 -->
+            <div v-else class="email-body text-slate-400 text-sm">
+              <p>暂无邮件记录</p>
+              <p class="text-xs mt-2">发送邮件后将在此显示</p>
             </div>
             <el-button size="small" type="primary" class="copy-btn" @click="copyEmail">
               <el-icon class="copy-icon"><DocumentCopy /></el-icon>
@@ -432,6 +437,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Edit, ArrowDown, Loading, CircleClose, Warning, RefreshRight, InfoFilled, CircleCheckFilled, WarningFilled, DocumentCopy } from '@element-plus/icons-vue'
 import supabase from '@/utils/supabase'
+import { useOrderStore } from '@/stores/orderStore'
+
+const store = useOrderStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -453,6 +461,8 @@ const confirming = ref(false) // 确认操作loading状态
 const modifying = ref(false) // 修改操作loading状态
 const modifyDialogVisible = ref(false) // 修改对话框显示状态
 const modifyReason = ref('') // 修改原因
+const latestEmailContent = ref(null) // 最新邮件内容
+const isLoadingEmail = ref(false) // 邮件加载状态
 
 // 从URL获取参数
 const shopCode = computed(() => route.params.shopCode)
@@ -626,6 +636,8 @@ async function loadOrders(shopId) {
     // 默认选中第一个订单
     if (orders.value.length > 0) {
       selectedOrder.value = orders.value[0]
+      // 【修复】初始加载时也需要获取邮件记录
+      await fetchEmailLog()
     }
     
     console.log('✅ 订单数据处理完成')
@@ -703,6 +715,42 @@ function selectOrder(order) {
   selectedOrder.value = order
   customerFeedback.value = ''
   showDesignPanel.value = false // 切换订单时关闭面板
+  // 获取该订单的邮件记录
+  fetchEmailLog()
+}
+
+// 获取订单最新邮件记录
+async function fetchEmailLog() {
+  if (!selectedOrder.value?.id) {
+    console.log('⚠️ fetchEmailLog: 无选中订单')
+    return
+  }
+  isLoadingEmail.value = true
+  console.log('📧 开始获取邮件记录，订单ID:', selectedOrder.value.id)
+  try {
+    const emailLog = await store.getEmailLogByOrderId(selectedOrder.value.id)
+    console.log('📧 邮件记录查询结果:', emailLog)
+    if (emailLog) {
+      // 提取英文部分（ServiceLink面向客户）
+      const content = emailLog.content || ''
+      // 如果content包含 "=== English Version ===" 分隔符，提取英文部分
+      const englishMatch = content.split('=== English Version ===')
+      if (englishMatch.length > 1) {
+        latestEmailContent.value = englishMatch[1].trim()
+      } else {
+        latestEmailContent.value = content
+      }
+      console.log('✅ 邮件内容加载成功')
+    } else {
+      latestEmailContent.value = null
+      console.log('ℹ️ 该订单暂无邮件记录')
+    }
+  } catch (err) {
+    console.error('❌ 获取邮件记录失败:', err)
+    latestEmailContent.value = null
+  } finally {
+    isLoadingEmail.value = false
+  }
 }
 
 // 切换修改设计面板
@@ -889,14 +937,11 @@ async function requestModify() {
 
 // 复制邮件
 function copyEmail() {
-  const emailContent = `Hi ${selectedOrder.value.customer_name}!
-Thank you for your order! Here is the preview of your custom pet tag:
-Front: ${selectedOrder.value.front_text}
-Back: ${selectedOrder.value.back_text}
-Please confirm the design looks correct, or let us know if you need any changes.
-Best regards,
-Customer Support Team`
-  navigator.clipboard.writeText(emailContent)
+  if (!latestEmailContent.value) {
+    ElMessage.warning('暂无邮件内容可复制')
+    return
+  }
+  navigator.clipboard.writeText(latestEmailContent.value)
   ElMessage.success('邮件内容已复制')
 }
 

@@ -1457,8 +1457,11 @@ class AIGenerateEmailRequest(BaseModel):
     color: str = "Gold"
     size: str = "Small"
     tone: str = "friendly"  # friendly / professional / warm
+    length: str = "standard"  # short / standard / detailed
     sender_name: str = "Customer Support Team"
     modify_reason: Optional[str] = None  # 仅 modify_confirm 场景需要
+    customer_request: Optional[str] = None  # 客户修改要求原始文本
+    operator_note: Optional[str] = None  # 运营填写的修改完成说明
     effect_image_url: Optional[str] = None
 
 
@@ -1641,6 +1644,13 @@ async def ai_generate_email(request: AIGenerateEmailRequest):
                 status_code=400
             )
         
+        valid_lengths = ["short", "standard", "detailed"]
+        if request.length not in valid_lengths:
+            return JSONResponse(
+                {"success": False, "message": f"无效的长度类型，有效值: {', '.join(valid_lengths)}", "data": None},
+                status_code=400
+            )
+        
         # modify_confirm 场景需要 modify_reason
         if request.scene == "modify_confirm" and not request.modify_reason:
             return JSONResponse(
@@ -1659,20 +1669,36 @@ async def ai_generate_email(request: AIGenerateEmailRequest):
             "color": request.color,
             "size": request.size,
             "tone": request.tone,
+            "length": request.length,
             "sender_name": request.sender_name,
             "effect_image_url": request.effect_image_url
         }
         
-        # modify_confirm 场景添加修改原因
-        if request.scene == "modify_confirm" and request.modify_reason:
-            params["modify_reason"] = request.modify_reason
+        # modify_confirm 场景添加修改相关信息
+        if request.scene == "modify_confirm":
+            if request.modify_reason:
+                params["modify_reason"] = request.modify_reason
+            if request.customer_request:
+                params["customer_request"] = request.customer_request
+            if request.operator_note:
+                params["operator_note"] = request.operator_note
         
         # 调用AI服务生成邮件
         result = ai_service.generate_email(params)
         
+        # 构建返回格式，包含中英文内容
+        response_data = {
+            "subject": result.get("subject", ""),
+            "body": result.get("body", ""),
+            "chinese_content": result.get("body", ""),  # AI生成的是英文，但按接口规范提供字段
+            "english_content": result.get("body", ""),
+            "scene": result.get("scene", request.scene),
+            "generated_by": result.get("generated_by", "template")
+        }
+        
         return {
             "success": True,
-            "data": result
+            "data": response_data
         }
         
     except Exception as e:

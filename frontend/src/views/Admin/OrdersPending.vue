@@ -60,8 +60,9 @@
                   <td class="px-3 whitespace-nowrap text-slate-600">{{ order.quantity }}</td>
                   <td class="px-3 whitespace-nowrap">
                     <span v-if="order.status === '新订单'" class="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">待处理</span>
-                    <span v-else-if="order.status === '待回复'" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">待回复</span>
-                    <span v-else-if="order.status === '待创建'" class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
+                    <span v-else-if="order.status === '客户修改'" class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">客户修改</span>
+                    <span v-else-if="order.status === '待回复'" class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">待回复</span>
+                    <span v-else-if="order.status === '待创建'" class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">待创建</span>
                     <span v-else class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
                   </td>
                   <td class="px-3 whitespace-nowrap">
@@ -71,7 +72,7 @@
                   <td class="px-3 whitespace-nowrap">
                     <div class="flex items-center gap-1">
                       <!-- 待处理状态：生成效果图 -->
-                      <template v-if="order.status === '新订单'">
+                      <template v-if="order.status === '新订单' || order.status === '客户修改'">
                         <el-button size="small" type="primary" link @click.stop="selectOrder(order); orderTab = 'new'">生成效果图</el-button>
                         <el-button size="small" type="default" link @click.stop="selectOrder(order)">详情</el-button>
                       </template>
@@ -485,9 +486,29 @@
               <button @click="copyFirstEmail" class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 text-xs">
                 📋 复制
               </button>
-              <button @click="sendFirstEmail" :disabled="isSendingFirstEmail" class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-xs font-medium">
+              <!-- 两步确认：确认效果图按钮 -->
+              <button 
+                v-if="!isEffectConfirmed"
+                @click="confirmEffect"
+                class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium">
+                ✓ 确认效果图
+              </button>
+              <button 
+                v-else
+                disabled
+                class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-500 cursor-not-allowed rounded-lg text-xs font-medium">
+                ✅ 效果图已确认
+              </button>
+              <!-- 确认并发送按钮 -->
+              <button 
+                @click="sendFirstEmail"
+                :disabled="!canSendFirstEmail || isSendingFirstEmail"
+                :class="canSendFirstEmail && !isSendingFirstEmail
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+                class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium">
                 <span v-if="isSendingFirstEmail">发送中...</span>
-                <span v-else>✅ 确认并发送 →</span>
+                <span v-else>📤 传送效果图/邮件</span>
               </button>
             </div>
           </div>
@@ -611,36 +632,32 @@
             </div>
             <div class="p-3 space-y-3">
               <!-- 邮件状态信息 -->
-              <div class="space-y-2 text-xs">
+              <div class="space-y-1 text-xs">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">发送时间:</span>
-                  <span class="text-slate-700">{{ formatDate(selectedOrder.updated_at) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">模板名称:</span>
-                  <span class="text-slate-700">{{ selectedOrder.email_template_name || '标准确认' }}</span>
+                  <span class="text-slate-700">{{ formatDate(selectedOrder.email_sent_at || selectedOrder.updated_at) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">等待天数:</span>
-                  <span :class="waitingDays > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">
-                    {{ waitingDays }} 天
-                    <span v-if="waitingDays > 3" class="text-[10px] ml-1">⚠️ 超时</span>
+                  <span :class="daysSince(selectedOrder.email_sent_at || selectedOrder.updated_at) > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">
+                    {{ daysSince(selectedOrder.email_sent_at || selectedOrder.updated_at) }} 天
+                    <span v-if="daysSince(selectedOrder.email_sent_at || selectedOrder.updated_at) > 3" class="text-[10px] ml-1">⚠️ 超时</span>
                   </span>
                 </div>
               </div>
 
               <!-- 操作按钮 -->
               <div class="flex gap-2 pt-2 border-t border-slate-100">
-                <button @click="resendEmail" :disabled="isResendingEmail" class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
-                  <span v-if="isResendingEmail">发送中...</span>
-                  <span v-else>📧 重发邮件</span>
-                </button>
-                <button @click="confirmByCustomerFromPanel" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                <button @click="markCustomerConfirmed" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
                   ✅ 客户已确认
                 </button>
+                <button @click="markCustomerModify" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                  ✏️ 客户要修改
+                </button>
               </div>
-              <button @click="revertToPendingFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
-                ↩️ 回退到待处理
+              <button @click="resendEmail" :disabled="isResendingEmail" class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                <span v-if="isResendingEmail">发送中...</span>
+                <span v-else>📧 重发邮件</span>
               </button>
             </div>
           </div>
@@ -648,7 +665,7 @@
           <!-- Tab3: 待创建 - 操作面板 -->
           <div v-if="orderTab === 'pending' && selectedOrder" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-3 py-2 border-b border-slate-100 bg-slate-50">
-              <h3 class="font-bold text-slate-800 text-sm">🚀 创建物流单</h3>
+              <h3 class="font-bold text-slate-800 text-sm">📦 准备下单</h3>
             </div>
             <div class="p-3 space-y-3">
               <p class="text-xs text-slate-500">客户已确认效果图，现在可以创建物流单。</p>
@@ -656,13 +673,12 @@
               <!-- 操作按钮 -->
               <div class="flex gap-2">
                 <button @click="goToShipping" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
                   📦 创建物流单
                 </button>
+                <button @click="returnToPendingFromTab3" class="flex-1 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 py-2.5 text-xs font-medium flex items-center justify-center gap-1 transition-all">
+                  ↩️ 退回待处理
+                </button>
               </div>
-              <button @click="revertToEffectSentFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition-all">
-                ↩️ 回退到待回复
-              </button>
             </div>
           </div>
 
@@ -672,9 +688,12 @@
               <h3 class="font-bold text-slate-800 text-sm">⚡ 快捷操作</h3>
             </div>
             <div class="p-3 space-y-3">
-              <!-- 待处理：显示去生成效果图 -->
-              <template v-if="selectedOrder.status === '新订单'">
-                <p class="text-xs text-slate-500">此订单需要生成效果图并发送首封确认邮件。</p>
+              <!-- 待处理/客户修改：显示去生成效果图 -->
+              <template v-if="selectedOrder.status === '新订单' || selectedOrder.status === '客户修改'">
+                <p class="text-xs text-slate-500">
+                  <span v-if="selectedOrder.status === '客户修改'">客户要求修改，请重新生成效果图。</span>
+                  <span v-else>此订单需要生成效果图并发送首封确认邮件。</span>
+                </p>
                 <div class="flex gap-2">
                   <button @click="orderTab = 'new'; selectOrder(selectedOrder)" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
                     🎨 去生成效果图
@@ -682,38 +701,40 @@
                 </div>
               </template>
 
-              <!-- 待回复：显示重发邮件/客户已确认/回退 -->
+              <!-- 待回复：显示客户已确认/客户要修改 -->
               <template v-else-if="selectedOrder.status === '待回复'">
-                <div class="space-y-2 text-xs mb-2">
+                <div class="space-y-1 text-xs mb-2">
                   <div class="flex items-center justify-between">
                     <span class="text-slate-500">等待天数:</span>
-                    <span :class="waitingDays > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">{{ waitingDays }} 天</span>
+                    <span :class="daysSince(selectedOrder.email_sent_at || selectedOrder.updated_at) > 3 ? 'text-red-600 font-bold' : 'text-slate-700'">
+                      {{ daysSince(selectedOrder.email_sent_at || selectedOrder.updated_at) }} 天
+                    </span>
                   </div>
                 </div>
                 <div class="flex gap-2">
-                  <button @click="resendEmail" :disabled="isResendingEmail" class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs font-medium transition-all">
-                    {{ isResendingEmail ? '发送中...' : '📧 重发邮件' }}
-                  </button>
-                  <button @click="confirmByCustomerFromPanel" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                  <button @click="markCustomerConfirmed" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
                     ✅ 客户已确认
                   </button>
+                  <button @click="markCustomerModify" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg text-xs font-medium transition-all">
+                    ✏️ 客户要修改
+                  </button>
                 </div>
-                <button @click="revertToPendingFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs transition-all">
-                  ↩️ 回退到待处理
+                <button @click="resendEmail" :disabled="isResendingEmail" class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-2 rounded-lg text-xs transition-all">
+                  {{ isResendingEmail ? '发送中...' : '📧 重发邮件' }}
                 </button>
               </template>
 
-              <!-- 待创建：显示创建物流单/回退到待回复 -->
+              <!-- 待创建：显示创建物流单/退回待处理 -->
               <template v-else-if="selectedOrder.status === '待创建'">
                 <p class="text-xs text-slate-500">客户已确认，可以创建物流单。</p>
                 <div class="flex gap-2">
                   <button @click="goToShipping" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-medium transition-all">
                     📦 创建物流单
                   </button>
+                  <button @click="returnToPendingFromTab3" class="flex-1 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 py-2 text-xs font-medium transition-all">
+                    ↩️ 退回待处理
+                  </button>
                 </div>
-                <button @click="revertToEffectSentFromPanel" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-2 rounded-lg text-xs transition-all">
-                  ↩️ 回退到待回复
-                </button>
               </template>
 
               <!-- 其他状态 -->
@@ -988,12 +1009,12 @@ const copyFirstEmail = async () => {
 
 // 确认并发送
 const sendFirstEmail = async () => {
-  if (!selectedOrder.value) {
-    ElMessage.warning('请先选择一条订单')
-    return
-  }
-  if (!firstEmailPreview.value) {
-    ElMessage.warning('邮件内容为空')
+  if (!canSendFirstEmail.value || !selectedOrder.value) {
+    if (!selectedOrder.value) {
+      ElMessage.warning('请先选择一条订单')
+    } else if (!isEffectConfirmed.value) {
+      ElMessage.warning('请先确认效果图')
+    }
     return
   }
 
@@ -1009,13 +1030,27 @@ const sendFirstEmail = async () => {
       sender_name: firstEmailSender.value
     })
 
-    // 2. 更新订单 email_sent 状态
-    await store.updateEmailSentStatus(selectedOrder.value.id, true)
+    // 2. 更新订单状态为"待回复"
+    const { error } = await supabase
+      .from('orders')
+      .update({ 
+        status: '待回复',
+        email_sent: true,
+        email_sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', selectedOrder.value.id)
+    
+    if (error) throw error
 
     // 3. 刷新订单列表
     await store.getPendingOrders()
 
-    ElMessage.success('邮件已保存，订单已流转！')
+    // 4. 清空选中 + 重置确认状态
+    selectedOrder.value = null
+    isEffectConfirmed.value = false
+
+    ElMessage.success('已发送，订单已移至"待回复"')
   } catch (err) {
     console.error('发送失败:', err)
     ElMessage.error('发送失败：' + (err.message || '未知错误'))
@@ -1051,6 +1086,18 @@ onMounted(async () => {
   window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'confirmDesign') {
       confirmDesign()
+    }
+    // 监听设计器参数变化消息，自动撤销效果图确认
+    if (event.data && event.data.type === 'paramChanged') {
+      if (isEffectConfirmed.value) {
+        isEffectConfirmed.value = false
+        // 通知 iframe 恢复按钮状态
+        const iframe = document.querySelector('iframe')
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'resetEffectConfirm' }, '*')
+        }
+        console.log('⚠️ 设计器参数已变化，效果图确认已自动撤销')
+      }
     }
   })
 })
@@ -1124,8 +1171,78 @@ const waitingDays = computed(() => {
   return Math.floor(diff / (1000 * 60 * 60 * 24))
 })
 
+// ===== 两步确认逻辑 =====
+const isEffectConfirmed = ref(false) // 效果图确认状态
+
+// 效果图确认方法
+const confirmEffect = () => {
+  if (!selectedOrder.value) return
+  if (!selectedOrder.value.effect_image_url) {
+    ElMessage.warning('请先生成效果图')
+    return
+  }
+  isEffectConfirmed.value = true
+  ElMessage.success('效果图已确认')
+}
+
+// 计算是否可以发送首封邮件
+const canSendFirstEmail = computed(() => {
+  return isEffectConfirmed.value && firstEmailPreview.value && firstEmailPreview.value.trim() !== ''
+})
+
+// 选中订单切换时重置确认状态
+watch(selectedOrder, () => {
+  isEffectConfirmed.value = false
+})
+
 // 重发邮件loading状态
 const isResendingEmail = ref(false)
+
+// Tab2 "待回复"：客户已确认 → 移到待创建
+const markCustomerConfirmed = async () => {
+  if (!selectedOrder.value) return
+  try {
+    const { error } = await supabase
+      .from('orders').update({ status: '待创建' }).eq('id', selectedOrder.value.id)
+    if (error) throw error
+    await store.getPendingOrders()
+    selectedOrder.value = null
+    ElMessage.success('订单已移至"待创建"')
+  } catch (e) { ElMessage.error('操作失败：' + e.message) }
+}
+
+// Tab2 "待回复"：客户要修改 → 退回待处理（客户修改状态）
+const markCustomerModify = async () => {
+  if (!selectedOrder.value) return
+  try {
+    const { error } = await supabase
+      .from('orders').update({ status: '客户修改' }).eq('id', selectedOrder.value.id)
+    if (error) throw error
+    await store.getPendingOrders()
+    selectedOrder.value = null
+    ElMessage.success('订单已退回"待处理"（客户修改）')
+  } catch (e) { ElMessage.error('操作失败：' + e.message) }
+}
+
+// Tab3 "待创建"：退回待处理
+const returnToPendingFromTab3 = async () => {
+  if (!selectedOrder.value) return
+  try {
+    const { error } = await supabase
+      .from('orders').update({ status: '新订单' }).eq('id', selectedOrder.value.id)
+    if (error) throw error
+    await store.getPendingOrders()
+    selectedOrder.value = null
+    ElMessage.success('订单已退回"待处理"')
+  } catch (e) { ElMessage.error('操作失败：' + e.message) }
+}
+
+// 等待天数（基于 email_sent_at 字段）
+const daysSince = (dateStr) => {
+  if (!dateStr) return 0
+  const diff = Date.now() - new Date(dateStr).getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
+}
 
 // 客户已确认 - 表格行操作
 const confirmByCustomer = async (order) => {
@@ -1188,21 +1305,54 @@ const revertToEffectSentFromPanel = async () => {
 
 // 重发邮件
 const resendEmail = async () => {
-  if (!selectedOrder.value) {
-    ElMessage.warning('请先选择订单')
-    return
-  }
+  if (!selectedOrder.value) return
   isResendingEmail.value = true
   try {
-    // 这里可以调用邮件发送API
-    // 暂时模拟发送成功
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    ElMessage.success('邮件已重新发送')
-    // 更新发送时间
-    await supabase.from('orders').update({ updated_at: new Date().toISOString() }).eq('id', selectedOrder.value.id)
+    // 1. 获取最近一次邮件记录内容
+    const { data: lastEmail } = await supabase
+      .from('email_logs')
+      .select('*')
+      .eq('order_id', selectedOrder.value.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    if (!lastEmail) {
+      ElMessage.warning('未找到历史邮件记录，请返回Tab1重新发送')
+      return
+    }
+
+    // 2. 保存新的邮件日志（标记为重发）
+    await supabase
+      .from('email_logs')
+      .insert({
+        order_id: selectedOrder.value.id,
+        email_type: 'resend_confirm',
+        subject: lastEmail.subject,
+        content: lastEmail.content,
+        effect_image_url: lastEmail.effect_image_url || selectedOrder.value.effect_image_url || '',
+        sender_name: lastEmail.sender_name || 'Sophia',
+        status: 'sent'
+      })
+
+    // 3. 更新订单的 email_sent_at 为最新时间
+    await supabase
+      .from('orders')
+      .update({
+        email_sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', selectedOrder.value.id)
+
+    // 4. 刷新订单数据
     await store.getPendingOrders()
-  } catch (e) {
-    ElMessage.error('发送失败: ' + e.message)
+    const refreshed = store.orders.find(o => o.id === selectedOrder.value.id)
+    if (refreshed) selectedOrder.value = refreshed
+
+    ElMessage.success('✅ 邮件已重发')
+  } catch (err) {
+    console.error('重发邮件失败:', err)
+    ElMessage.error('重发失败：' + (err.message || '未知错误'))
   } finally {
     isResendingEmail.value = false
   }
@@ -1255,23 +1405,15 @@ watch(orderTab, (newTab) => {
 })
 
 const allOrders = computed(() => {
-  // 根据当前Tab决定显示哪些订单
-  // 全部Tab：显示所有订单（包括pending, producing, confirmed等）
-  // 其他Tab：只显示pending状态的订单（由filteredOrders进一步过滤）
-  if (orderTab.value === 'all') {
-    // 全部Tab：显示所有状态的订单
-    console.log('🔍 allOrders 计算(全部Tab):', store.orders.length, '条全部订单')
-    return store.orders
-  }
-  // 其他Tab：只显示新订单状态的订单
-  const filtered = store.orders.filter(o => o.status === '新订单')
-  console.log('🔍 allOrders 计算:', store.orders.length, '->', filtered.length, {
+  // 返回所有待确认模块相关状态的订单（新订单, 客户修改, 待回复, 待创建）
+  // 具体Tab筛选由 filteredOrders 负责
+  console.log('🔍 allOrders 计算:', store.orders.length, '条订单', {
     订单状态分布: store.orders.reduce((acc, o) => {
       acc[o.status] = (acc[o.status] || 0) + 1
       return acc
     }, {})
   })
-  return filtered
+  return store.orders
 })
 
 const filteredOrders = computed(() => {
@@ -1283,18 +1425,18 @@ const filteredOrders = computed(() => {
   }
   
   // 按Tab状态筛选（新4Tab结构）
-  // 待处理：status = '新订单'（新订单/待确认）
+  // 待处理：status = '新订单' 或 '客户修改'
   // 待回复：status = '待回复'（已发效果图等客户确认）
   // 待创建：status = '待创建'（客户已确认，等待创建物流单）
-  // 全部：显示所有待确认订单（新订单, 待回复, 待创建）
+  // 全部：显示所有待确认订单（新订单, 客户修改, 待回复, 待创建）
   if (orderTab.value === 'new') {
-    orders = orders.filter(o => o.status === '新订单')
+    orders = orders.filter(o => o.status === '新订单' || o.status === '客户修改')
   } else if (orderTab.value === 'waiting') {
     orders = orders.filter(o => o.status === '待回复')
   } else if (orderTab.value === 'pending') {
     orders = orders.filter(o => o.status === '待创建')
   } else if (orderTab.value === 'all') {
-    orders = orders.filter(o => ['新订单', '待回复', '待创建'].includes(o.status))
+    orders = orders.filter(o => ['新订单', '客户修改', '待回复', '待创建'].includes(o.status))
   }
   
   return orders
@@ -1302,8 +1444,8 @@ const filteredOrders = computed(() => {
 
 // Tab计数计算属性（新4Tab结构）
 const newCount = computed(() => {
-  // 待处理：status = '新订单'
-  let orders = allOrders.value.filter(o => o.status === '新订单')
+  // 待处理：status = '新订单' 或 '客户修改'
+  let orders = allOrders.value.filter(o => o.status === '新订单' || o.status === '客户修改')
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
@@ -1326,8 +1468,8 @@ const pendingCreateCount = computed(() => {
   return orders.length
 })
 const allCount = computed(() => {
-  // 全部：显示所有待确认订单（新订单, 待回复, 待创建）
-  let orders = allOrders.value.filter(o => ['新订单', '待回复', '待创建'].includes(o.status))
+  // 全部：显示所有待确认订单（新订单, 客户修改, 待回复, 待创建）
+  let orders = allOrders.value.filter(o => ['新订单', '客户修改', '待回复', '待创建'].includes(o.status))
   if (activeAccount.value !== 'all') {
     orders = orders.filter(o => o.operator === activeAccount.value || o.shops?.operator === activeAccount.value)
   }
@@ -1491,54 +1633,21 @@ const confirmDesign = async () => {
     ElMessage.warning('请先选择一条订单')
     return
   }
-  
-  // 确认弹窗
+
   try {
-    await ElMessageBox.confirm(
-      `确认发送效果图并流转订单？\n\n订单号: ${selectedOrder.value.etsy_order_id || selectedOrder.value.id}\n客户: ${selectedOrder.value.customer_name || '-'}\n\n点击确认后：\n1. 效果图将保存到服务器\n2. 订单将流转到「邮件撰写」Tab\n3. 请编写邮件发送给客户确认`,
-      '确认发送效果图',
-      {
-        confirmButtonText: '确认发送',
-        cancelButtonText: '取消',
-        type: 'primary',
-        dangerouslyUseHTMLString: false
-      }
-    )
-  } catch (e) {
-    // 用户取消
-    return
-  }
-  
-  const currentOrderId = selectedOrder.value.id
-  console.log('📌 confirmDesign 开始, 订单ID:', currentOrderId)
-  
-  try {
-    // 保存效果图（等待完成）
+    // 1. 保存效果图到服务器
     await saveEffectImage()
     console.log('✅ 效果图保存完成')
-    
-    // 刷新订单列表，确保数据同步
+
+    // 2. 刷新订单列表确保数据同步
     await store.getPendingOrders()
-    console.log('✅ 订单列表已刷新, 总数:', store.orders.length)
-    
-    // 查找更新后的订单
-    const savedOrder = store.orders.find(o => o.id === currentOrderId)
-    console.log('🔍 查找订单:', savedOrder ? {
-      id: savedOrder.id,
-      status: savedOrder.status,
-      effect_image_url: savedOrder.effect_image_url ? '已设置' : '未设置',
-      email_sent: savedOrder.email_sent
-    } : '未找到')
-    
-    if (savedOrder) {
-      // 先选中订单
-      selectedOrder.value = savedOrder
-    }
-    
-    // 跳转到邮件撰写Tab
-    orderTab.value = 'email'
-    
-    ElMessage.success('✅ 效果图已保存，订单已流转到「邮件撰写」Tab，请编写邮件发送给客户确认')
+    const savedOrder = store.orders.find(o => o.id === selectedOrder.value.id)
+    if (savedOrder) selectedOrder.value = savedOrder
+
+    // 3. 标记效果图已确认
+    isEffectConfirmed.value = true
+
+    ElMessage.success('✅ 效果图已确认')
   } catch (e) {
     console.error('❌ confirmDesign 失败:', e)
     ElMessage.error('❌ 操作失败：' + e.message)

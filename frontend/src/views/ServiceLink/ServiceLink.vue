@@ -76,9 +76,9 @@
       <!-- 左侧：订单列表 -->
       <aside class="order-list-panel notion-style">
         <!-- 头部 -->
-        <div class="header">
-          <h1>订单列表</h1>
-          <p>点击订单查看详情</p>
+        <div style="padding: 8px 12px; border-bottom: 1px solid #eee;">
+          <span style="font-weight: 600; font-size: 14px; color: #1a1a1a;">订单列表</span>
+          <span style="font-size: 11px; color: #999; margin-left: 6px;">点击查看详情</span>
         </div>
 
         <!-- 新订单分组 -->
@@ -87,78 +87,82 @@
           <div
             v-for="order in newOrders"
             :key="order.id"
-            class="order-card"
+            class="order-card compact-card"
             :class="{ highlight: selectedOrder?.id === order.id }"
             @click="selectOrder(order)"
           >
-            <span class="status-badge badge-red">新订单</span>
-            <div class="user-link">{{ order.customer_name }}</div>
-            <div class="order-number"># {{ order.etsy_order_id }}</div>
-            <div class="flex gap-3">
-              <div class="flex-shrink-0">
-                <!-- 产品实拍图：优先显示真实图片 -->
-                <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
-                  <img 
-                    v-if="order.product_image" 
-                    :src="order.product_image" 
-                    :alt="'产品图-' + order.etsy_order_id"
-                    class="product-real-img"
-                    @error="onProductImageError($event, order)"
-                  />
-                  <svg v-else width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path :d="getShapeIconPath(order.product_shape)"></path>
-                  </svg>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- 产品实拍图（小图） -->
+              <img
+                v-if="order.product_image"
+                :src="order.product_image"
+                style="width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: #f3f4f6;"
+              />
+              <div v-else style="width: 36px; height: 36px; border-radius: 4px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+                  <path :d="getShapeIconPath(order.product_shape)"></path>
+                </svg>
+              </div>
+              <div style="flex: 1; min-width: 0; overflow: hidden;">
+                <!-- 客户名 + 状态标签 -->
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-weight: 600; font-size: 13px; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ order.customer_name }}</span>
+                  <span class="status-badge-compact badge-red-compact">新订单</span>
                 </div>
+                <!-- 订单ID（红色粗体） -->
+                <div style="font-size: 12px; color: #ef4444; font-weight: 700;"># {{ order.etsy_order_id }}</div>
+                <!-- 英文标题（单行截断） -->
+                <div style="font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
               </div>
-              <div class="flex-1">
-                <span class="item-tag">Personalisable</span>
-                <div class="item-desc">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
-                <div class="item-meta">Color + Size: <span class="meta-bold">{{ formatColorSize(order.product_color, order.size) }}</span></div>
-                <div class="item-meta">Engraving Side: <span class="meta-bold">{{ order.engraving_sides || 'Double-sided' }}</span></div>
-                <div class="item-meta">Personalization <span class="meta-bold">Front: {{ order.front_text }} Back: {{ order.back_text || '-' }}</span></div>
-              </div>
+            </div>
+            <!-- 超时标识（如果有） -->
+            <div v-if="isOverdue(order)" style="margin-top: 4px; padding: 1px 6px; background: #fef0f0; border: 1px solid #fde2e2; border-radius: 3px; display: inline-flex; align-items: center;">
+              <span style="color: #f56c6c; font-size: 10px; font-weight: 500;">⚠️ 超时 {{ getOverdueHours(order) }}h</span>
             </div>
           </div>
         </div>
-
+        
         <!-- 已发送效果图分组 -->
         <div class="section-tag tag-sent">已发送效果图</div>
         <div class="order-list notion-list">
           <div
             v-for="order in sentOrders"
             :key="order.id"
-            class="order-card"
+            class="order-card compact-card"
             :class="{ highlight: selectedOrder?.id === order.id }"
             @click="selectOrder(order)"
           >
-            <span class="status-badge badge-blue">待确认</span>
-            <div class="user-link">{{ order.customer_name }}</div>
-            <div class="order-number"># {{ order.etsy_order_id }}</div>
-            <div class="flex gap-3">
-              <div class="flex-shrink-0">
-                <!-- 产品实拍图：优先显示真实图片 -->
-                <div class="product-img flex items-center justify-center border border-gray-100 text-gray-300">
-                  <img 
-                    v-if="order.product_image" 
-                    :src="order.product_image" 
-                    :alt="'产品图-' + order.etsy_order_id"
-                    class="product-real-img"
-                    @error="onProductImageError($event, order)"
-                  />
-                  <svg v-else width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path :d="getShapeIconPath(order.product_shape)"></path>
-                  </svg>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- 产品实拍图（小图） -->
+              <img
+                v-if="order.product_image"
+                :src="order.product_image"
+                style="width: 36px; height: 36px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: #f3f4f6;"
+              />
+              <div v-else style="width: 36px; height: 36px; border-radius: 4px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+                  <path :d="getShapeIconPath(order.product_shape)"></path>
+                </svg>
+              </div>
+              <div style="flex: 1; min-width: 0; overflow: hidden;">
+                <!-- 客户名 + 状态标签 -->
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-weight: 600; font-size: 13px; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ order.customer_name }}</span>
+                  <span class="status-badge-compact badge-blue-compact">待确认</span>
                 </div>
+                <!-- 订单ID（红色粗体） -->
+                <div style="font-size: 12px; color: #ef4444; font-weight: 700;"># {{ order.etsy_order_id }}</div>
+                <!-- 英文标题（单行截断） -->
+                <div style="font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
               </div>
-              <div class="flex-1">
-                <span class="item-tag">Personalisable</span>
-                <div class="item-desc">Custom {{ order.product_shape || 'Heart' }} Pet ID Tag: Deep Engraved Stainless Steel with Enamel</div>
-                <div class="item-meta">Personalization <span class="meta-bold">Front: {{ order.front_text }}</span></div>
-              </div>
+            </div>
+            <!-- 超时标识（如果有） -->
+            <div v-if="isOverdue(order)" style="margin-top: 4px; padding: 1px 6px; background: #fef0f0; border: 1px solid #fde2e2; border-radius: 3px; display: inline-flex; align-items: center;">
+              <span style="color: #f56c6c; font-size: 10px; font-weight: 500;">⚠️ 超时 {{ getOverdueHours(order) }}h</span>
             </div>
           </div>
         </div>
-
+        
         <!-- 底部留白 -->
         <div class="h-8"></div>
       </aside>
@@ -303,7 +307,7 @@
               <p>暂无邮件记录</p>
               <p class="text-xs mt-2">发送邮件后将在此显示</p>
             </div>
-            <el-button size="small" type="primary" class="copy-btn" @click="copyEmail">
+            <el-button size="small" class="copy-btn" @click="copyEmail">
               <el-icon class="copy-icon"><DocumentCopy /></el-icon>
               复制邮件内容
             </el-button>
@@ -420,6 +424,32 @@
           maxlength="500"
           show-word-limit
         />
+        <!-- 上传参考图片（可选） -->
+        <div style="margin-top: 16px;">
+          <p class="dialog-hint" style="margin-bottom: 8px;">上传参考图片（可选）：</p>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <label 
+              style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px dashed #d9d9db; border-radius: 6px; cursor: pointer; color: #606266; font-size: 13px; transition: all 0.2s;"
+              @mouseenter="$event.target.style.borderColor='#409eff'; $event.target.style.color='#409eff'"
+              @mouseleave="$event.target.style.borderColor='#d9d9db'; $event.target.style.color='#606266'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              选择图片
+              <input type="file" accept="image/*" multiple style="display: none;" @change="handleModifyImageUpload" />
+            </label>
+            <span v-if="modifyImages.length > 0" style="font-size: 12px; color: #67c23a;">已选择 {{ modifyImages.length }} 张图片</span>
+          </div>
+          <!-- 图片预览 -->
+          <div v-if="modifyImages.length > 0" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+            <div v-for="(img, idx) in modifyImages" :key="idx" style="position: relative; width: 60px; height: 60px;">
+              <img :src="img.preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #eee;" />
+              <span 
+                @click="modifyImages.splice(idx, 1)" 
+                style="position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: #f56c6c; color: #fff; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+              >&times;</span>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
         <el-button @click="modifyDialogVisible = false">取消</el-button>
@@ -461,6 +491,7 @@ const confirming = ref(false) // 确认操作loading状态
 const modifying = ref(false) // 修改操作loading状态
 const modifyDialogVisible = ref(false) // 修改对话框显示状态
 const modifyReason = ref('') // 修改原因
+const modifyImages = ref([]) // 修改请求附带的图片
 const latestEmailContent = ref(null) // 最新邮件内容
 const isLoadingEmail = ref(false) // 邮件加载状态
 
@@ -469,7 +500,7 @@ const shopCode = computed(() => route.params.shopCode)
 const token = computed(() => route.query.token)
 
 // 统计
-const pendingCount = computed(() => orders.value.filter(o => o.email_status === 'pending').length)
+const pendingCount = computed(() => orders.value.filter(o => o.email_status === 'pending' || !o.email_status).length)
 const sentCount = computed(() => orders.value.filter(o => o.email_status === 'sent').length)
 const confirmedCount = computed(() => orders.value.filter(o => o.email_status === 'confirmed').length)
 const modifyCount = computed(() => orders.value.filter(o => o.email_status === 'modify').length)
@@ -546,18 +577,18 @@ async function validateAndLoad() {
 
 /**
  * 从Supabase加载订单数据
- * 查询条件: shop_id = validated_shop_id AND status = 'pending'
+ * 查询条件: shop_id = validated_shop_id AND status IN ('待回复', '待创建')
  */
 async function loadOrders(shopId) {
   try {
     console.log('📦 开始加载订单数据，店铺ID:', shopId)
     
-    // 查询待确认订单（pending状态）
+    // 查询待确认订单（待回复、待创建状态）
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
       .select('*')
       .eq('shop_id', shopId)
-      .eq('status', 'pending')
+      .in('status', ['待回复', '待创建'])
       .order('created_at', { ascending: false })
     
     if (ordersError) {
@@ -857,7 +888,30 @@ async function confirmOrder() {
  */
 function showModifyDialog() {
   modifyReason.value = ''
+  modifyImages.value = [] // 清空图片
   modifyDialogVisible.value = true
+}
+
+// 处理图片上传
+function handleModifyImageUpload(e) {
+  const files = Array.from(e.target.files)
+  files.forEach(file => {
+    if (file.size > 5 * 1024 * 1024) {
+      ElMessage.warning(`图片 ${file.name} 超过5MB，已跳过`)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      modifyImages.value.push({
+        file: file,
+        preview: ev.target.result,
+        name: file.name
+      })
+    }
+    reader.readAsDataURL(file)
+  })
+  // 重置input以允许重复选择
+  e.target.value = ''
 }
 
 /**
@@ -882,10 +936,14 @@ async function requestModify() {
     modifying.value = true
     console.log('✏️ 开始请求修改:', selectedOrder.value.etsy_order_id, '原因:', modifyReason.value)
 
-    // 1. 更新订单状态
+    // 1. 更新订单状态（同时更新status字段）
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ email_status: 'modify' })
+      .update({ 
+        email_status: 'modify',
+        status: '客户修改',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', selectedOrder.value.id)
 
     if (updateError) {
@@ -893,14 +951,18 @@ async function requestModify() {
       throw updateError
     }
 
-    // 2. 记录操作日志（包含修改原因）
+    // 2. 记录操作日志（包含修改原因和图片信息）
+    let logContent = `修改原因: ${modifyReason.value.trim()}`
+    if (modifyImages.value.length > 0) {
+      logContent += `\n附带参考图片: ${modifyImages.value.map(img => img.name).join(', ')}`
+    }
     const { error: logError } = await supabase
       .from('service_link_logs')
       .insert({
         order_id: selectedOrder.value.id,
         shop_id: shopInfo.value.id,
         action_type: 'request_modify',
-        action_detail: modifyReason.value.trim(),
+        action_detail: logContent,
         created_at: new Date().toISOString()
       })
 
@@ -996,6 +1058,20 @@ function getColorStroke(color) {
 const newOrders = computed(() => orders.value.filter(o => o.email_status === 'pending' || !o.email_status))
 const sentOrders = computed(() => orders.value.filter(o => ['sent', 'confirmed', 'modify'].includes(o.email_status)))
 
+// 超时判断：创建超过24小时且未确认
+function isOverdue(order) {
+  if (order.email_status === 'confirmed') return false
+  const createTime = new Date(order.email_sent_at || order.updated_at || order.created_at)
+  const hours = (Date.now() - createTime.getTime()) / (1000 * 60 * 60)
+  return hours > 24
+}
+
+function getOverdueHours(order) {
+  const createTime = new Date(order.email_sent_at || order.updated_at || order.created_at)
+  const hours = (Date.now() - createTime.getTime()) / (1000 * 60 * 60)
+  return Math.floor(hours)
+}
+
 // 当前订单的操作日志
 const currentOrderLogs = computed(() => {
   if (!selectedOrder.value) return []
@@ -1088,10 +1164,14 @@ async function handleCustomerConfirm() {
     confirming.value = true
     console.log('✅ 客户确认设计:', selectedOrder.value.etsy_order_id)
 
-    // 1. 更新订单状态
+    // 1. 更新订单状态（同时更新status字段）
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ email_status: 'confirmed' })
+      .update({ 
+        email_status: 'confirmed',
+        status: '待创建',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', selectedOrder.value.id)
 
     if (updateError) {
@@ -1423,11 +1503,12 @@ onMounted(() => {
 /* 分类装饰标签 */
 .order-list-panel.notion-style .section-tag {
   display: inline-block;
-  padding: 4px 16px;
+  padding: 3px 12px;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  margin: 20px 20px 10px;
+  line-height: 1.2;
+  margin: 8px 12px 4px;
 }
 
 .order-list-panel.notion-style .tag-new {
@@ -1442,7 +1523,7 @@ onMounted(() => {
 
 /* 订单列表 */
 .order-list-panel.notion-style .notion-list {
-  padding: 0 16px;
+  padding: 4px 8px;
 }
 
 /* 订单卡片 */
@@ -1460,6 +1541,44 @@ onMounted(() => {
 .order-list-panel.notion-style .order-card:hover {
   border-color: #d1d5db;
   background-color: #fafafa;
+}
+
+/* 紧凑版订单卡片 */
+.order-list-panel.notion-style .compact-card {
+  padding: 6px 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 4px;
+}
+
+.order-list-panel.notion-style .compact-card:hover {
+  background: #f8f9fa;
+  border-color: #e0e0e0;
+}
+
+.order-list-panel.notion-style .compact-card.highlight {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+/* 紧凑版状态标签 */
+.status-badge-compact {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.badge-red-compact {
+  background-color: #ef4444;
+  color: white;
+}
+
+.badge-blue-compact {
+  background-color: #3b82f6;
+  color: white;
 }
 
 .order-list-panel.notion-style .order-card.highlight {
@@ -1613,11 +1732,12 @@ onMounted(() => {
 /* 分类装饰标签 */
 .section-tag {
   display: inline-block;
-  padding: 4px 16px;
+  padding: 3px 12px;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  margin: 16px 16px 10px;
+  line-height: 1.2;
+  margin: 8px 12px 4px;
 }
 
 .tag-new {
@@ -1752,7 +1872,7 @@ onMounted(() => {
 
 /* 中间面板 - 订单详情 */
 .detail-panel {
-  flex: 1;
+  width: 68%;
   background: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -2303,7 +2423,7 @@ onMounted(() => {
 
 /* 右侧面板 */
 .action-panel {
-  width: 360px;
+  width: 32%;
   background: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -2347,10 +2467,17 @@ onMounted(() => {
 }
 
 .copy-btn {
-  width: 100%;
-  background: #6b7280 !important;
-  border-color: #6b7280 !important;
-  color: #ffffff !important;
+  width: 33% !important;
+  margin: 0 auto !important;
+  display: block !important;
+  background: #e5e7eb !important;
+  border-color: #d1d5db !important;
+  color: #6b7280 !important;
+}
+.copy-btn:hover {
+  background: #d1d5db !important;
+  border-color: #c0c4cc !important;
+  color: #4b5563 !important;
 }
 
 /* 操作历史 */
@@ -2506,18 +2633,19 @@ onMounted(() => {
 .action-buttons {
   padding: 16px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
 }
 
 .confirm-btn {
-  width: 100%;
+  width: 33%;
   background: #22c55e !important;
   border-color: #22c55e !important;
   color: #ffffff !important;
   font-weight: 500;
-  font-size: 14px !important;
-  padding: 12px 20px !important;
+  font-size: 13px !important;
+  padding: 10px 0 !important;
   height: auto !important;
 }
 
@@ -2527,13 +2655,13 @@ onMounted(() => {
 }
 
 .modify-btn {
-  width: 100%;
+  width: 33%;
   background: #f97316 !important;
   border-color: #f97316 !important;
   color: #ffffff !important;
   font-weight: 500;
-  font-size: 14px !important;
-  padding: 12px 20px !important;
+  font-size: 13px !important;
+  padding: 10px 0 !important;
   height: auto !important;
 }
 

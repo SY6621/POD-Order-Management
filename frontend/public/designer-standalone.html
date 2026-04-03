@@ -125,6 +125,12 @@
             transition: background 0.2s;
         }
         .btn-ghost:hover { background: #e2e8f0; }
+        .btn-confirmed {
+            background: #e5e7eb;
+            color: #6b7280;
+            cursor: not-allowed;
+            border: 1px solid #d1d5db;
+        }
         .params-chip {
             font-size: 10px;
             color: #64748b;
@@ -423,12 +429,7 @@
                 </svg>
                 保存为默认值
             </button>
-            <button class="btn-primary" onclick="edSendToParent()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 6 9 17l-5-5"/>
-                </svg>
-                发送效果图
-            </button>
+
         </div>
         <div class="params-chip" id="ed-params">当前参数：形状: heart | 颜色: Silver | 正面字号: 24px | Y: 54 | 背面文字字号: 11px | 文字Y: 40.5 | 电话字号: 11px | 电话Y: 54</div>
     </div>
@@ -799,7 +800,29 @@
           // 如果直接调用失败，通过 postMessage 通知父页面
           window.parent.postMessage({ type: 'confirmDesign' }, '*');
         }
+        // 按钮变灰
+        var btn = document.getElementById('btn-confirm-effect');
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-confirmed');
+          btn.innerHTML = '✅ 效果图已确认';
+        }
       };
+
+      // 监听设计器参数变化，通知父页面
+      document.addEventListener('input', function(e) {
+        var tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+          window.parent.postMessage({ type: 'paramChanged' }, '*');
+        }
+      });
+      document.addEventListener('change', function(e) {
+        var tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+          window.parent.postMessage({ type: 'paramChanged' }, '*');
+        }
+      });
 
       window.edSaveDraft = function() {
         // 备用：保存当前参数到 localStorage
@@ -1447,7 +1470,18 @@
           // 通知父页面加载完成
           event.source.postMessage({ type: 'designerLoaded', orderId: data.orderId }, '*');
         }
-        
+
+        // 处理重置效果图确认状态请求
+        if (event.data && event.data.type === 'resetEffectConfirm') {
+          var btn = document.getElementById('btn-confirm-effect');
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('btn-confirmed');
+            btn.classList.add('btn-primary');
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> 确认效果图';
+          }
+        }
+
         // 处理获取SVG请求
         if (event.data && event.data.type === 'getSVG') {
           const svgData = window.edGetSVGData ? await window.edGetSVGData() : null;

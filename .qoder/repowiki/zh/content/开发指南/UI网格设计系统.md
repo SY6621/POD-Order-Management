@@ -5,6 +5,8 @@
 - [EffectDesigner.vue](file://frontend/src/components/EffectDesigner.vue)
 - [AdminDashboard.vue](file://frontend/src/views/Admin/AdminDashboard.vue)
 - [FactoryWorkshop.vue](file://frontend/src/views/FactoryWorkshop/FactoryWorkshop.vue)
+- [DesignLink.vue](file://frontend/src/views/DesignLink/DesignLink.vue)
+- [designer-standalone.html](file://frontend/public/designer-standalone.html)
 - [adminStore.js](file://frontend/src/stores/adminStore.js)
 - [orderStore.js](file://frontend/src/stores/orderStore.js)
 - [design-tokens.css](file://frontend/src/styles/design-tokens.css)
@@ -18,16 +20,25 @@
 - [order-management.md](file://frontend/design-system/etsy-order-automation/pages/order-management.md)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 新增独立设计师页面（designer-standalone.html）支持iframe嵌入
+- 增强父子应用通信机制，支持postMessage协议
+- 扩展设计器功能，包含自定义图案上传和默认值管理
+- 优化字体加载机制，支持动态字体切换
+- 增加SVG矢量化功能，实现精确的文本到路径转换
+
 ## 目录
 1. [简介](#简介)
 2. [项目结构](#项目结构)
 3. [核心组件](#核心组件)
 4. [架构概览](#架构概览)
 5. [详细组件分析](#详细组件分析)
-6. [依赖分析](#依赖分析)
-7. [性能考虑](#性能考虑)
-8. [故障排除指南](#故障排除指南)
-9. [结论](#结论)
+6. [独立设计师页面](#独立设计师页面)
+7. [依赖分析](#依赖分析)
+8. [性能考虑](#性能考虑)
+9. [故障排除指南](#故障排除指南)
+10. [结论](#结论]
 
 ## 简介
 
@@ -39,6 +50,7 @@ UI网格设计系统是一个基于Vue 3和Element Plus构建的企业级订单�
 - **组件化设计**：可复用的UI组件和样式规范
 - **前后端分离架构**：Vue前端 + Python后端的现代化技术栈
 - **数据驱动设计**：基于Supabase的云端数据管理
+- **嵌入式设计能力**：支持独立设计师页面和iframe集成
 
 ## 项目结构
 
@@ -58,6 +70,8 @@ SRC --> ROUTER[router/]
 COMPONENTS --> EFFECT_DESIGNER[EffectDesigner.vue]
 VIEWS --> ADMIN_DASHBOARD[AdminDashboard.vue]
 VIEWS --> FACTORY_WORKSHOP[FactoryWorkshop.vue]
+VIEWS --> DESIGN_LINK[DesignLink.vue]
+PUBLIC --> DESIGNER_STANDALONE[designer-standalone.html]
 STORES --> ADMIN_STORE[adminStore.js]
 STORES --> ORDER_STORE[orderStore.js]
 STYLES --> DESIGN_TOKENS[design-tokens.css]
@@ -208,6 +222,8 @@ subgraph "客户端层"
 Browser[浏览器]
 VueApp[Vue应用]
 ElementPlus[Element Plus组件库]
+DesignLink[DesignLink页面]
+DesignerStandalone[独立设计器页面]
 end
 subgraph "前端状态管理"
 Pinia[Pinia状态管理]
@@ -243,6 +259,8 @@ VueApp --> FlaskAPI
 FlaskAPI --> TemplateService
 FlaskAPI --> EmailService
 FlaskAPI --> PDFService
+DesignLink --> DesignerStandalone
+DesignerStandalone --> Browser
 ```
 
 **图表来源**
@@ -393,6 +411,144 @@ LoadUserData --> Ready[系统就绪]
 - [orderStore.js:1-763](file://frontend/src/stores/orderStore.js#L1-L763)
 - [adminStore.js:1-359](file://frontend/src/stores/adminStore.js#L1-L359)
 
+## 独立设计师页面
+
+### 设计器页面架构
+
+独立设计师页面（designer-standalone.html）是一个完全独立的SVG设计器，支持iframe嵌入和父子应用通信。
+
+```mermaid
+sequenceDiagram
+participant Parent as 父应用
+participant Designer as 独立设计器
+participant FontLoader as 字体加载器
+participant SVGRenderer as SVG渲染器
+Parent->>Designer : postMessage(loadOrder)
+Designer->>Designer : 解析订单数据
+Designer->>FontLoader : 动态加载字体
+FontLoader-->>Designer : 字体加载完成
+Designer->>SVGRenderer : 渲染SVG图形
+SVGRenderer-->>Designer : 图形渲染完成
+Designer-->>Parent : postMessage(designerLoaded)
+```
+
+**图表来源**
+- [designer-standalone.html:1422-1472](file://frontend/public/designer-standalone.html#L1422-L1472)
+
+### 嵌入式设计功能
+
+独立设计器页面提供了完整的SVG设计功能，包括形状编辑、颜色选择、文本编辑和字体管理。
+
+```mermaid
+classDiagram
+class DesignerPage {
++edUpdate() void
++edDownload() void
++edSaveDefaults() void
++edGetSVGData() Promise~String~
++edUploadPattern() void
++edUpdatePattern() void
++edClearPattern() void
+}
+class FontManager {
++loadFont() Promise~void~
++loadFontForVector() Promise~Font~
++FONT_EXT : Object
++loadedFonts : Set
+}
+class PatternManager {
++customPatternDataUrl : String
++edUploadPattern() void
++edUpdatePattern() void
++edClearPattern() void
+}
+class SVGGenerator {
++textToVectorPath() Promise~Object~
++textToPathPrecise() String
++traceOutlineToPath() String
+}
+DesignerPage --> FontManager
+DesignerPage --> PatternManager
+DesignerPage --> SVGGenerator
+```
+
+**图表来源**
+- [designer-standalone.html:465-491](file://frontend/public/designer-standalone.html#L465-L491)
+- [designer-standalone.html:690-784](file://frontend/public/designer-standalone.html#L690-L784)
+- [designer-standalone.html:952-1154](file://frontend/public/designer-standalone.html#L952-L1154)
+
+### 父子应用通信机制
+
+设计器页面实现了完整的postMessage通信协议，支持订单数据加载、参数变更通知和SVG数据获取。
+
+```mermaid
+flowchart TD
+LoadOrder[加载订单数据] --> ParseData["解析订单数据"]
+ParseData --> UpdateForm["更新表单字段"]
+UpdateForm --> ApplyDefaults["应用默认值"]
+ApplyDefaults --> RenderSVG["渲染SVG图形"]
+RenderSVG --> NotifyParent["通知父应用"]
+ParamChanged[参数变更] --> SendNotification["发送变更通知"]
+SendNotification --> ParentAction["父应用响应"]
+GetSVG[获取SVG数据] --> GenerateSVG["生成SVG数据"]
+GenerateSVG --> ReturnSVG["返回SVG数据"]
+ReturnSVG --> ParentAction
+```
+
+**图表来源**
+- [designer-standalone.html:813-825](file://frontend/public/designer-standalone.html#L813-L825)
+- [designer-standalone.html:1485-1492](file://frontend/public/designer-standalone.html#L1485-L1492)
+
+### 自定义图案上传功能
+
+设计器支持自定义SVG图案上传，提供实时预览和精确的位置调整功能。
+
+```mermaid
+sequenceDiagram
+participant User as 用户
+participant UploadBtn as 上传按钮
+participant FileReader as 文件读取器
+participant PatternControl as 图案控制器
+User->>UploadBtn : 选择SVG文件
+UploadBtn->>FileReader : 读取文件内容
+FileReader-->>UploadBtn : 返回文件内容
+UploadBtn->>PatternControl : 显示图案控制面板
+PatternControl->>PatternControl : 更新图案位置和缩放
+PatternControl-->>User : 实时预览效果
+```
+
+**图表来源**
+- [designer-standalone.html:693-717](file://frontend/public/designer-standalone.html#L693-L717)
+- [designer-standalone.html:719-774](file://frontend/public/designer-standalone.html#L719-L774)
+
+### 默认值管理系统
+
+设计器实现了智能的默认值管理，支持按形状、字体和背面类型分组保存和自动应用。
+
+```mermaid
+flowchart TD
+SaveDefaults[保存默认值] --> GetShape["获取形状"]
+GetShape --> GetFont["获取字体"]
+GetFont --> GetBackType["获取背面类型"]
+GetBackType --> GenerateKey["生成存储键"]
+GenerateKey --> StoreDefaults["存储默认值"]
+StoreDefaults --> Success[保存成功]
+AutoApply[自动应用默认值] --> CheckKey["检查存储键"]
+CheckKey --> HasDefaults{"存在默认值?"}
+HasDefaults --> |是| ApplyDefaults["应用默认值"]
+HasDefaults --> |否| SkipDefaults["跳过应用"]
+ApplyDefaults --> RenderAgain["重新渲染"]
+SkipDefaults --> RenderAgain
+```
+
+**图表来源**
+- [designer-standalone.html:864-885](file://frontend/public/designer-standalone.html#L864-L885)
+- [designer-standalone.html:888-913](file://frontend/public/designer-standalone.html#L888-L913)
+
+**章节来源**
+- [designer-standalone.html:1-1498](file://frontend/public/designer-standalone.html#L1-L1498)
+- [DesignLink.vue:64-72](file://frontend/src/views/DesignLink/DesignLink.vue#L64-L72)
+
 ## 依赖分析
 
 系统采用了现代化的前端技术栈，具有清晰的依赖关系和模块化结构。
@@ -480,6 +636,8 @@ Flask --> Pydantic
 3. **虚拟滚动**：对于大量订单数据使用虚拟滚动技术
 4. **图片优化**：使用WebP格式和适当的尺寸适配
 5. **CSS优化**：使用CSS自定义属性减少样式计算开销
+6. **字体预加载**：动态字体加载优化，避免阻塞渲染
+7. **SVG渲染优化**：使用Canvas进行精确的文本到路径转换
 
 ### 后端性能优化
 
@@ -520,9 +678,19 @@ Flask --> Pydantic
 2. 验证SVG代码的语法正确性
 3. 确认浏览器兼容性
 
+#### 独立设计器页面加载失败
+
+**症状**：设计器页面无法正常加载或功能异常
+**原因**：跨域通信问题或字体加载失败
+**解决方案**：
+1. 检查postMessage通信协议
+2. 验证字体文件的可访问性
+3. 确认跨域策略配置
+
 **章节来源**
 - [supabase.js:8-10](file://frontend/src/utils/supabase.js#L8-L10)
 - [orderStore.js:106-112](file://frontend/src/stores/orderStore.js#L106-L112)
+- [designer-standalone.html:1422-1472](file://frontend/public/designer-standalone.html#L1422-L1472)
 
 ## 结论
 
@@ -533,9 +701,11 @@ UI网格设计系统是一个功能完整、架构清晰的企业级应用系统
 - **模块化架构**：清晰的组件划分和状态管理便于维护和扩展
 - **性能优化**：多种性能优化策略提升了用户体验
 - **可扩展性**：模块化的架构设计便于功能扩展和业务发展
+- **嵌入式设计能力**：支持独立设计器页面和iframe集成，增强了系统的灵活性
 
 未来可以考虑的改进方向：
 - 增加更多的动画效果和交互反馈
 - 实现更完善的权限管理和审计功能
 - 优化移动端的用户体验
 - 增加更多的报表和数据分析功能
+- 扩展设计器的功能，支持更多样式的图案和效果

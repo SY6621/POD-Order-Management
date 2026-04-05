@@ -12,6 +12,8 @@
 - [database_service.py](file://backend/src/services/database_service.py)
 - [translation_service.py](file://backend/src/services/translation_service.py)
 - [ai_service.py](file://backend/src/services/ai_service.py)
+- [DesignLink.vue](file://frontend/src/views/DesignLink/DesignLink.vue)
+- [OrdersPending.vue](file://frontend/src/views/Admin/OrdersPending.vue)
 - [email-templates.json](file://frontend/src/config/email-templates.json)
 - [EmailTemplates.vue](file://frontend/src/views/Admin/EmailTemplates.vue)
 - [fetch_new_order.py](file://backend/scripts/fetch_new_order.py)
@@ -21,11 +23,11 @@
 
 ## 更新摘要
 **变更内容**
-- 新增AIGenerateEmailRequest模型和参数验证机制
-- 增强邮件长度控制功能，支持short、standard、detailed三种长度
-- 新增客户请求规格和操作员备注功能
-- 完善API端点的错误处理和参数校验
-- 更新AI服务的邮件生成逻辑和模板系统
+- 新增generateAIReply函数用于自动化邮件内容创建，支持基于客户输入的智能回复生成
+- 更新了邮件回复系统的三区域设计：客户需求捕获区、AI回复生成区、签名选择区
+- 增强了AI邮件生成的本地模板引擎功能
+- 新增预设快捷内容功能，支持快速组合客户修改要求
+- 完善了邮件回复的完整工作流程和状态管理
 
 ## 目录
 1. [项目概述](#项目概述)
@@ -52,6 +54,8 @@ AI邮件生成系统是一个基于Python和Vue.js的完整订单自动化处理
 - **物流集成**：与4PX物流系统的无缝对接
 - **参数验证**：严格的API参数验证和错误处理机制
 - **邮件长度控制**：支持多种邮件长度模式的智能生成
+- **智能回复生成**：基于客户输入的自动化邮件回复生成
+- **三区域设计**：客户需求捕获、AI回复生成、签名选择的完整工作流
 
 ## 项目结构
 
@@ -63,6 +67,7 @@ subgraph "前端界面层"
 FE1[Vue.js 前端]
 FE2[邮件模板管理]
 FE3[订单管理系统]
+FE4[智能回复生成器]
 end
 subgraph "后端服务层"
 BE1[FastAPI API服务]
@@ -77,6 +82,7 @@ end
 FE1 --> BE1
 FE2 --> BE1
 FE3 --> BE1
+FE4 --> BE1
 BE1 --> BE2
 BE2 --> BE3
 BE3 --> DB
@@ -119,6 +125,15 @@ BE3 --> ML
 - **EmailLog**：邮件日志表
 - **SkuMapping**：SKU映射表
 
+### 4. 前端智能回复组件
+
+新增的前端智能回复组件提供了完整的邮件回复工作流：
+
+- **三区域设计**：客户需求捕获区、AI回复生成区、签名选择区
+- **预设快捷内容**：支持快速组合常用修改要求
+- **本地AI引擎**：基于关键词匹配的智能回复生成
+- **完整工作流程**：从效果图确认到邮件发送的完整流程
+
 **章节来源**
 - [main.py:1-800](file://backend/src/api/main.py#L1-L800)
 - [order.py:1-356](file://backend/src/models/order.py#L1-L356)
@@ -132,6 +147,7 @@ graph TD
 subgraph "表现层"
 UI[Vue.js 用户界面]
 Templates[邮件模板管理]
+ReplyGen[智能回复生成器]
 end
 subgraph "应用层"
 API[FastAPI API网关]
@@ -150,6 +166,7 @@ Logistics[物流服务]
 end
 UI --> API
 Templates --> API
+ReplyGen --> API
 API --> Services
 Services --> Controllers
 Controllers --> ORM
@@ -284,10 +301,96 @@ ErrorReason --> End
 
 这些功能使得系统能够更好地跟踪订单修改历史，提供更透明的服务流程。
 
+### 智能回复生成器
+
+**新增** 系统现在集成了完整的智能回复生成功能，采用三区域设计的工作流程。
+
+#### 三区域设计架构
+
+```mermaid
+graph TB
+subgraph "智能回复生成器"
+Area1[客户需求捕获区]
+Area2[AI回复生成区]
+Area3[签名选择区]
+Area4[操作按钮区]
+end
+subgraph "关键词匹配引擎"
+Keywords[预设快捷内容]
+Engine[本地AI模板引擎]
+end
+Area1 --> Keywords
+Keywords --> Engine
+Engine --> Area2
+Area2 --> Area3
+Area3 --> Area4
+```
+
+**图表来源**
+- [DesignLink.vue:162-191](file://frontend/src/views/DesignLink/DesignLink.vue#L162-L191)
+
+#### 客户需求捕获区
+
+- **预设快捷内容**：提供8种常用修改要求的快速选择
+- **自定义输入**：支持手动输入详细的客户修改要求
+- **实时组合**：支持多选项组合生成完整的修改要求
+
+#### AI回复生成区
+
+- **智能生成**：基于关键词匹配的回复内容生成
+- **实时预览**：生成的回复内容可直接预览和编辑
+- **本地处理**：无需网络请求，响应速度快
+
+#### 签名选择区
+
+- **多签名选择**：支持Sophia、Emma、Olivia等多种签名
+- **自定义签名**：支持输入自定义签名名称
+- **落款管理**：统一管理邮件落款信息
+
+#### 关键词匹配功能
+
+系统内置了智能关键词匹配引擎，支持以下修改类型的自动识别：
+
+| 修改类型 | 关键词 | 生成段落 |
+|---------|--------|----------|
+| 设计稿完成 | "设计稿已修改完成" | "I've revised the design based on your request. The updated proof is now ready for your review." |
+| 文字修改 | "文字"、"拼写"、"名字" | "I've corrected the text/spelling as requested. Please check the updated design." |
+| 字体更换 | "字体" | "I've changed the font style as you suggested. Hope you like the new look!" |
+| 颜色调整 | "颜色" | "I've updated the color to match your preference." |
+| 尺寸修改 | "尺寸"、"大小" | "I've adjusted the size according to your requirements." |
+| 正反面内容 | "正反面" | "I've updated the content on both sides of the tag as requested." |
+| 图案重设计 | "图案" | "I've redesigned the pattern based on your feedback." |
+| 耐心等待 | "耐心等待" | "I sincerely apologize for the wait and appreciate your patience." |
+
+#### 完整工作流程
+
+```mermaid
+sequenceDiagram
+participant User as 用户
+participant ReplyGen as 智能回复生成器
+participant LocalEngine as 本地AI引擎
+participant Database as 数据库
+User->>ReplyGen : 输入客户修改要求
+ReplyGen->>LocalEngine : 分析关键词
+LocalEngine->>LocalEngine : 匹配预设模板
+LocalEngine-->>ReplyGen : 生成回复段落
+ReplyGen->>ReplyGen : 组合完整邮件内容
+ReplyGen-->>User : 显示生成的回复
+User->>ReplyGen : 选择签名
+User->>ReplyGen : 点击发送
+ReplyGen->>Database : 保存邮件记录
+ReplyGen->>Database : 更新订单状态
+ReplyGen-->>User : 发送成功提示
+```
+
+**图表来源**
+- [DesignLink.vue:584-730](file://frontend/src/views/DesignLink/DesignLink.vue#L584-L730)
+
 **章节来源**
 - [main.py:1448-1466](file://backend/src/api/main.py#L1448-L1466)
 - [main.py:1631-1710](file://backend/src/api/main.py#L1631-L1710)
 - [ai_service.py:256-265](file://backend/src/services/ai_service.py#L256-L265)
+- [DesignLink.vue:584-730](file://frontend/src/views/DesignLink/DesignLink.vue#L584-L730)
 
 ### 效果图生成服务
 
@@ -515,6 +618,15 @@ ChangeLanguage --> Preview
 
 新增的参数验证机制在API层进行早期错误检测，减少了无效请求对系统资源的消耗。
 
+### 5. 智能回复性能优化
+
+**新增** 智能回复生成器采用了本地处理策略：
+
+- **预设模板缓存**：预加载所有预设模板内容
+- **关键词索引**：建立关键词到模板的快速映射
+- **响应式更新**：使用Vue.js的响应式系统实时更新
+- **防抖处理**：避免频繁的重复计算
+
 ## 故障排除指南
 
 ### 常见问题及解决方案
@@ -559,6 +671,24 @@ ChangeLanguage --> Preview
 - 验证Supabase配置
 - 查看连接池状态
 
+#### 6. 智能回复生成失败
+
+**症状**：智能回复生成器无法生成回复
+**解决方案**：
+- 检查网络连接（如需在线AI服务）
+- 验证预设模板配置
+- 确认关键词匹配逻辑
+- 查看浏览器控制台错误信息
+
+#### 7. 效果图保存失败
+
+**症状**：效果图无法保存到存储服务
+**解决方案**：
+- 检查存储服务配置
+- 验证文件权限
+- 确认存储空间充足
+- 查看设计器通信状态
+
 **章节来源**
 - [email_service.py:45-63](file://backend/src/services/email_service.py#L45-L63)
 - [ai_service.py:52-68](file://backend/src/services/ai_service.py#L52-L68)
@@ -576,6 +706,8 @@ AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台
 4. **扩展性强**：模块化设计便于功能扩展
 5. **用户体验好**：直观的前端界面和实时预览
 6. **可靠性高**：完善的参数验证和错误处理机制
+7. **智能回复能力**：基于客户输入的自动化邮件回复生成
+8. **三区域设计**：客户需求捕获、AI回复生成、签名选择的完整工作流
 
 ### 应用价值
 
@@ -584,6 +716,7 @@ AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台
 3. **降低成本**：减少人工成本和错误率
 4. **提升客户体验**：及时、个性化的客户服务
 5. **增强透明度**：完整的修改历史记录
+6. **智能工作流**：从客户需求到邮件发送的完整自动化
 
 ### 发展前景
 
@@ -594,5 +727,6 @@ AI邮件生成系统是一个功能完整、架构清晰的订单自动化平台
 - 增强的分析和报告功能
 - 移动端应用支持
 - 实时协作功能
+- 更丰富的智能回复模板
 
-该系统为电商订单处理提供了一个完整的解决方案，具有很高的实用价值和推广前景。新增的参数验证、邮件长度控制、客户请求规格和操作员备注功能使其在功能完整性和用户体验方面都有了显著提升。
+该系统为电商订单处理提供了一个完整的解决方案，具有很高的实用价值和推广前景。新增的智能回复生成功能和三区域设计使其在功能完整性和用户体验方面都有了显著提升，为客服工作提供了强有力的技术支持。

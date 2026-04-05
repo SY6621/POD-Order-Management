@@ -1326,7 +1326,7 @@ onMounted(() => {
 }
 
 .header-content {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -1374,7 +1374,7 @@ onMounted(() => {
 
 /* 统计栏 */
 .stats-bar {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 20px auto;
   padding: 0 32px;
   display: flex;
@@ -1410,7 +1410,7 @@ onMounted(() => {
 
 /* 主内容 */
 .main-content {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 0 auto;
   padding: 0 32px 32px;
   display: flex;
@@ -1420,7 +1420,7 @@ onMounted(() => {
 
 /* 左侧面板 - 订单列表 */
 .order-list-panel {
-  width: 340px;
+  width: 400px;
   background: #ffffff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -2201,7 +2201,7 @@ onMounted(() => {
 }
 
 .order-card-right {
-  width: 240px;
+  width: 285px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;

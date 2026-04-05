@@ -1250,7 +1250,7 @@ onMounted(async () => {
 }
 
 .header-content {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 0 auto;
   padding: 0 24px;
   display: flex;
@@ -1290,7 +1290,7 @@ onMounted(async () => {
 
 /* 当前订单信息栏 */
 .current-order-bar {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 16px auto;
   padding: 12px 24px;
   background: #fff;
@@ -1329,7 +1329,7 @@ onMounted(async () => {
 
 /* 主内容区 */
 .main-content {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 0 auto;
   padding: 0 24px 24px;
   display: flex;
@@ -1855,7 +1855,7 @@ onMounted(async () => {
 
 /* 未选择订单提示 */
 .no-order-selected {
-  max-width: 1600px;
+  max-width: 1900px;
   margin: 40px auto;
   padding: 40px;
   background: #fff;

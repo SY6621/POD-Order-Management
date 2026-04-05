@@ -514,10 +514,10 @@
           </div>
         </div>
 
-        <!-- 效果图展示框（邮件撰写Tab和待创建Tab显示） -->
-        <div v-if="(orderTab === 'email' || orderTab === 'pending') && selectedOrder?.effect_image_url" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- 效果图展示框（邮件撰写Tab、待创建Tab、待处理Tab的客户修改订单显示） -->
+        <div v-if="(orderTab === 'email' || orderTab === 'pending' || (orderTab === 'new' && selectedOrder?.status === '客户修改')) && selectedOrder?.effect_image_url" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <h3 class="font-bold text-slate-800 text-sm">效果图</h3>
+            <h3 class="font-bold text-slate-800 text-sm">第一版效果图</h3>
             <span class="text-[10px] text-green-500 flex items-center gap-0.5">
               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
               已生成
@@ -1020,6 +1020,26 @@ const sendFirstEmail = async () => {
 
   isSendingFirstEmail.value = true
   try {
+    // 0. 先保存设计器最新效果图到 Supabase Storage
+    try {
+      await saveEffectImage()
+      console.log('✅ 最新效果图已保存')
+      // 刷新订单数据确保 effect_image_url 是最新的
+      await store.getPendingOrders()
+      const refreshedOrder = store.orders.find(o => o.id === selectedOrder.value.id)
+      if (refreshedOrder) {
+        selectedOrder.value = refreshedOrder
+      }
+    } catch (imgErr) {
+      console.warn('⚠️ 效果图保存失败，将使用已有效果图:', imgErr.message)
+      // 效果图保存失败不阻断邮件发送流程
+    }
+
+    // 检查效果图URL是否存在
+    if (!selectedOrder.value.effect_image_url) {
+      console.warn('⚠️ 效果图URL为空，邮件中可能不包含效果图')
+    }
+  
     // 1. 保存邮件记录到 email_logs 表
     await store.saveEmailLog({
       order_id: selectedOrder.value.id,
@@ -1035,6 +1055,7 @@ const sendFirstEmail = async () => {
       .from('orders')
       .update({ 
         status: '待回复',
+        email_status: 'sent',
         email_sent: true,
         email_sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -1053,6 +1074,7 @@ const sendFirstEmail = async () => {
     ElMessage.success('已发送，订单已移至"待回复"')
   } catch (err) {
     console.error('发送失败:', err)
+    console.error('发送失败详情:', JSON.stringify(err, null, 2))
     ElMessage.error('发送失败：' + (err.message || '未知错误'))
   } finally {
     isSendingFirstEmail.value = false

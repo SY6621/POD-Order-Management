@@ -320,27 +320,7 @@
             <h3>⚡ 快捷操作</h3>
           </div>
           <div class="action-buttons">
-            <!-- 确认按钮：仅当email_status为sent时显示 -->
-            <el-button
-              v-if="selectedOrder.email_status === 'sent'"
-              type="success"
-              class="confirm-btn"
-              :loading="confirming"
-              @click="confirmOrder"
-            >
-              <span class="btn-icon">✅</span> 确认订单
-            </el-button>
-            <!-- 请求修改按钮：仅当email_status为sent时显示 -->
-            <el-button
-              v-if="selectedOrder.email_status === 'sent'"
-              type="warning"
-              class="modify-btn"
-              :loading="modifying"
-              @click="showModifyDialog"
-            >
-              <span class="btn-icon">✏️</span> 请求修改
-            </el-button>
-            <!-- 新订单/待确认时显示客户操作按钮 -->
+            <!-- 新订单/待确认/sent时显示客户操作按钮 -->
             <template v-if="selectedOrder.email_status === 'pending' || !selectedOrder.email_status || selectedOrder.email_status === 'sent'">
               <el-button
                 type="success"
@@ -849,8 +829,8 @@ async function confirmOrder() {
       .insert({
         order_id: selectedOrder.value.id,
         shop_id: shopInfo.value.id,
-        action_type: 'confirm',
-        action_detail: '客户确认订单',
+        action: 'confirm',
+        action_details: { detail: '客户确认订单' },
         created_at: new Date().toISOString()
       })
 
@@ -961,8 +941,11 @@ async function requestModify() {
       .insert({
         order_id: selectedOrder.value.id,
         shop_id: shopInfo.value.id,
-        action_type: 'request_modify',
-        action_detail: logContent,
+        action: 'request_modify',
+        action_details: {
+          reason: modifyReason.value.trim(),
+          images: modifyImages.value.map(img => img.name)
+        },
         created_at: new Date().toISOString()
       })
 
@@ -1113,24 +1096,77 @@ function onDetailProductImageError() {
 // 获取设计链接
 function getDesignLink() {
   const designToken = shopInfo.value?.design_token || token.value
-  return `/design/${shopCode.value}?token=${designToken}`
+  const orderId = selectedOrder.value?.id || ''
+  return `/design/${shopCode.value}?token=${designToken}&order_id=${orderId}`
 }
 
-// 下载JPG图片
-function downloadImage() {
+// 下载效果图（自动处理SVG转JPG）
+async function downloadImage() {
   if (!selectedOrder.value) return
   
-  // 如果有效果图URL，下载效果图
-  if (selectedOrder.value.effect_image_url) {
-    const link = document.createElement('a')
-    link.href = selectedOrder.value.effect_image_url
-    link.download = `effect_${selectedOrder.value.etsy_order_id}.jpg`
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  } else {
+  const imageUrl = selectedOrder.value.effect_image_url
+  if (!imageUrl) {
     ElMessage.warning('暂无效果图可下载')
+    return
+  }
+  
+  try {
+    // 获取图片
+    const response = await fetch(imageUrl)
+    const blob = await response.blob()
+    const contentType = blob.type
+    
+    const orderId = selectedOrder.value.etsy_order_id || selectedOrder.value.id
+    
+    if (contentType.includes('svg') || imageUrl.endsWith('.svg')) {
+      // SVG 转 JPG
+      const svgText = await blob.text()
+      const img = new Image()
+      const svgBlob = new Blob([svgText], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(svgBlob)
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        // 固定宽度900，高度按比例
+        const targetWidth = 900
+        const naturalWidth = img.naturalWidth || 400
+        const naturalHeight = img.naturalHeight || 400
+        const scale = targetWidth / naturalWidth
+        canvas.width = targetWidth
+        canvas.height = Math.round(naturalHeight * scale)
+        const ctx = canvas.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        
+        canvas.toBlob((jpgBlob) => {
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(jpgBlob)
+          link.download = `effect_${orderId}.jpg`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(link.href)
+          URL.revokeObjectURL(url)
+        }, 'image/jpeg', 0.95)
+      }
+      img.src = url
+    } else {
+      // 已经是 JPG/PNG，直接下载
+      const extension = contentType.includes('png') ? 'png' : 'jpg'
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `effect_${orderId}.${extension}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+    }
+    
+    ElMessage.success('效果图下载中...')
+  } catch (e) {
+    console.error('下载失败:', e)
+    ElMessage.error('下载失败: ' + e.message)
   }
 }
 
@@ -1185,8 +1221,8 @@ async function handleCustomerConfirm() {
       .insert({
         order_id: selectedOrder.value.id,
         shop_id: shopInfo.value.id,
-        action_type: 'customer_confirm',
-        action_detail: '客户确认设计',
+        action: 'customer_confirm',
+        action_details: { detail: '客户确认设计' },
         created_at: new Date().toISOString()
       })
 

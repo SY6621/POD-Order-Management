@@ -1,7 +1,8 @@
 <template>
-  <div class="min-h-screen bg-slate-50 flex">
-    <!-- 侧边导航 -->
-    <aside class="w-64 bg-slate-900 text-white flex flex-col">
+  <div class="admin-layout-wrapper">
+    <div class="admin-layout-container">
+      <!-- 侧边导航 -->
+      <aside class="admin-sidebar">
       <!-- Logo -->
       <div class="p-6 border-b border-slate-800">
         <div class="flex items-center gap-3">
@@ -219,12 +220,46 @@
       </div>
     </aside>
 
-    <!-- 主内容区 -->
-    <main class="flex-1 overflow-auto bg-slate-50">
-      <router-view />
-    </main>
+      <!-- 主内容区 -->
+      <main class="admin-main-content">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* 整体布局容器 - 限制最大宽度1900px并居中 */
+.admin-layout-wrapper {
+  min-height: 100vh;
+  background-color: #f8fafc; /* slate-50 */
+}
+
+.admin-layout-container {
+  display: flex;
+  max-width: 1900px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* 侧边导航栏 - 保持原有样式 */
+.admin-sidebar {
+  width: 256px; /* w-64 = 16rem = 256px */
+  background-color: #0f172a; /* slate-900 */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* 主内容区 - 自适应填充剩余空间 */
+.admin-main-content {
+  flex: 1;
+  overflow: auto;
+  background-color: #f8fafc; /* slate-50 */
+  min-width: 0; /* 防止flex子项溢出 */
+}
+</style>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'

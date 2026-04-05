@@ -1007,6 +1007,103 @@ const copyFirstEmail = async () => {
   }
 }
 
+// 生成安全 Token（64位十六进制字符串）
+const generateSecureToken = () => {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+// 确保店铺有 Token（用于客服外链和设计链接）
+const ensureShopTokens = async (shopId) => {
+  if (!shopId) {
+    console.warn('⚠️ 店铺ID为空，跳过Token生成')
+    return
+  }
+
+  try {
+    // 1. 查询店铺当前状态
+    const { data: shop, error: shopError } = await supabase
+      .from('shops')
+      .select('id, code, name, service_token, design_token, service_link_enabled, design_link_enabled')
+      .eq('id', shopId)
+      .single()
+
+    if (shopError) {
+      console.error('❌ 查询店铺失败:', shopError)
+      return
+    }
+
+    if (!shop) {
+      console.warn('⚠️ 店铺不存在，跳过Token生成')
+      return
+    }
+
+    console.log('🔍 店铺Token状态:', {
+      shop_code: shop.code,
+      service_token: shop.service_token ? '已有' : '缺失',
+      design_token: shop.design_token ? '已有' : '缺失',
+      service_link_enabled: shop.service_link_enabled,
+      design_link_enabled: shop.design_link_enabled
+    })
+
+    // 2. 检查是否需要生成Token
+    const needsServiceToken = !shop.service_token
+    const needsDesignToken = !shop.design_token
+    const needsEnableService = !shop.service_link_enabled
+    const needsEnableDesign = !shop.design_link_enabled
+
+    if (!needsServiceToken && !needsDesignToken && !needsEnableService && !needsEnableDesign) {
+      console.log('✅ 店铺Token已就绪，无需更新')
+      return
+    }
+
+    // 3. 生成缺失的Token
+    const now = new Date().toISOString()
+    const updateData = {
+      service_link_updated_at: now,
+      design_link_updated_at: now
+    }
+
+    if (needsServiceToken) {
+      updateData.service_token = generateSecureToken()
+      updateData.service_link_enabled = true
+      updateData.service_link_created_at = now
+      console.log('🔑 生成新的service_token')
+    }
+
+    if (needsDesignToken) {
+      updateData.design_token = generateSecureToken()
+      updateData.design_link_enabled = true
+      updateData.design_link_created_at = now
+      console.log('🔑 生成新的design_token')
+    }
+
+    if (needsEnableService) {
+      updateData.service_link_enabled = true
+    }
+
+    if (needsEnableDesign) {
+      updateData.design_link_enabled = true
+    }
+
+    // 4. 更新店铺
+    const { error: updateError } = await supabase
+      .from('shops')
+      .update(updateData)
+      .eq('id', shopId)
+
+    if (updateError) {
+      console.error('❌ 更新店铺Token失败:', updateError)
+    } else {
+      console.log('✅ 店铺Token已更新')
+    }
+  } catch (e) {
+    console.error('❌ 确保店铺Token失败:', e)
+    // 不阻断主流程
+  }
+}
+
 // 确认并发送
 const sendFirstEmail = async () => {
   if (!canSendFirstEmail.value || !selectedOrder.value) {
@@ -1040,7 +1137,15 @@ const sendFirstEmail = async () => {
       console.warn('⚠️ 效果图URL为空，邮件中可能不包含效果图')
     }
   
-    // 1. 保存邮件记录到 email_logs 表
+    // 1. 确保店铺有Token（用于客服外链和设计链接）
+    const shopId = selectedOrder.value.shop_id
+    if (shopId) {
+      await ensureShopTokens(shopId)
+    } else {
+      console.warn('⚠️ 订单缺少shop_id，无法生成客服外链Token')
+    }
+
+    // 2. 保存邮件记录到 email_logs 表
     await store.saveEmailLog({
       order_id: selectedOrder.value.id,
       email_type: 'first_confirm',
@@ -1050,7 +1155,7 @@ const sendFirstEmail = async () => {
       sender_name: firstEmailSender.value
     })
 
-    // 2. 更新订单状态为"待回复"
+    // 3. 更新订单状态为"待回复"
     const { error } = await supabase
       .from('orders')
       .update({ 
@@ -1064,10 +1169,10 @@ const sendFirstEmail = async () => {
     
     if (error) throw error
 
-    // 3. 刷新订单列表
+    // 4. 刷新订单列表
     await store.getPendingOrders()
 
-    // 4. 清空选中 + 重置确认状态
+    // 5. 清空选中 + 重置确认状态
     selectedOrder.value = null
     isEffectConfirmed.value = false
 
